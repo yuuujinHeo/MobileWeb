@@ -1,1 +1,12 @@
 . filter=lfs diff=lfs merge=lfs -text
+node_mobile filter=lfs diff=lfs merge=lfs -text
+node_mobile/@next filter=lfs diff=lfs merge=lfs -text
+node_mobile/@next/swc-linux-x64-gnu/* filter=lfs diff=lfs merge=lfs -text
+node_mobile/@next/swc-linux-x64-gnu/ filter=lfs diff=lfs merge=lfs -text
+node_mobiles/@next/swc-linux-x64-gnu/* filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-gnu/next-swc.linux-x64-gnu.node filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-gnu/package.json filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-gnu/README.md filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-musl/next-swc.linux-x64-musl.node filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-musl/package.json filter=lfs diff=lfs merge=lfs -text
+node_modules/@next/swc-linux-x64-musl/README.md filter=lfs diff=lfs merge=lfs -text
