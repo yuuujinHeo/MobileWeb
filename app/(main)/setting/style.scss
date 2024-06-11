@@ -1,0 +1,35 @@
+// .fixed-toolbar{
+//     position:fixed;
+//     display: flex;
+//     // top:0;
+//     // width: 100%;
+//     // margin-right: 50px;
+//     // margin-top: 50px;
+//     // display: flex;
+//     // flex: 1 1 auto;
+//     width: 100%;
+//     z-index: 1000;
+//     margin-left: auto !important;
+//     margin-right: auto !important;
+//     // width: 1504px;
+//     margin-left: 300px;
+// }
+
+// .content{
+//     padding: 20px;
+// }
+.fixed-toolbar{
+    position:fixed;
+    display: flex;
+    /* width: 100%; */
+    z-index: 1000;
+    right: 0;
+    max-width: 1540px;
+    margin-right: 100px;
+    // padding-right: 0;
+}
+.column{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}

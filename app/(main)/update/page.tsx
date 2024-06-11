@@ -28,14 +28,17 @@ import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import fs from 'fs';
 import { Dialog } from 'primereact/dialog';
+// import { ListBox } from 'primereact/listbox';
 import { FileUpload,  FileUploadState, FileUploadHandlerEvent, FileUploadSelectEvent, FileUploadUploadEvent } from 'primereact/fileupload';
 import {SettingState, ROBOT_TYPE, slam, robot, setting} from '../../../interface/settings';
 import { forEachChild } from 'typescript';
 import { encode } from 'punycode';
 import {userContext} from '../../../interface/user'
 import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
+import { start } from 'repl';
+
+
 const Update: React.FC = () =>{
-    const [runningTest, setRunningTest] = useState(false);
     const [displayUpload, setDisplayUpload] = useState(false);
     const [displayRollback, setDisplayRollback] = useState(false);
     const [programRollback, setProgramRollback] = useState('');
@@ -52,6 +55,14 @@ const Update: React.FC = () =>{
     const [curVersionTest, setCurVersionTest] = useState<version>(defaultVersion);
     const [newVersionText, setNewVersionText] = useState<newversion>(defaultNewVersion);
     const [curVersionText, setCurVersionText] = useState<version>(defaultVersion);
+    const [newVersionUI, setNewVersionUI] = useState<newversion>(defaultNewVersion);
+    const [curVersionUI, setCurVersionUI] = useState<version>(defaultVersion);
+    const [runningTest, setRunningTest] = useState(false);
+    const [runningUI, setRunningUI] = useState(false);
+    const [waitingTest, setWaitingTest] = useState(false);
+    const [waitingUI, setWatingUI] = useState(false);
+
+    const url = "http://10.108.1.10";
 
     const onFileUpload = () => {
         console.log("onupload");
@@ -84,14 +95,13 @@ const Update: React.FC = () =>{
             'authorization': state.token
         }
         };
-        axios.post("http://192.168.1.88:11335/upload/files", formData, config)
+        axios.post(url+":11335/upload/files", formData, config)
           .then(response => {
             console.log('File uploaded successfully:', response.data);
             uploader.current?.clear();
             uploader.current?.setUploadedFiles(event.files);  
           })
           .catch(error => {
-            console.log("?>")
             toast.current?.show({
                 severity: 'error',
                 summary: 'Failed',
@@ -108,18 +118,23 @@ const Update: React.FC = () =>{
 
     const readUpdate = async() =>{
         try{
-            console.log("newVersion = ",newVersionText);
-            const response = await axios.get('http://192.168.1.88:11335/versions/text.txt');
+            const response = await axios.get(url+':11335/versions/text.txt');
             console.log("text(new):",response.data)
             setNewVersionText(response.data);
-            console.log("?????");
         }catch(error){
             alert(error);
         }
         try{
-            const response = await axios.get('http://192.168.1.88:11335/versions/test');
+            const response = await axios.get(url+':11335/versions/test');
             console.log("test(new):",newVersionTest)
             setNewVersionTest(response.data);
+        }catch(error){
+            alert(error);
+        }
+        try{
+            const response = await axios.get(url+':11335/versions/MAIN_MOBILE');
+            console.log("main_mobile(new):",newVersionUI)
+            setNewVersionUI(response.data);
         }catch(error){
             alert(error);
         }
@@ -127,27 +142,36 @@ const Update: React.FC = () =>{
 
     const readVersion = async() =>{
         try{
-            console.log("newVersion = ",newVersionText);
-            const response = await axios.get('http://192.168.1.88:11334/versions/text.txt');
+            const response = await axios.get(url+':11334/versions/text.txt');
             console.log("text:",response.data.data);
             setCurVersionText(response.data.data);
         }catch(error){
-            alert(error);
+            console.error("text = ",error);
         }
         try{
-            const response = await axios.get('http://192.168.1.88:11334/versions/test');
+            const response = await axios.get(url+':11334/versions/test');
             console.log("test:",response.data.data);
             setCurVersionTest(response.data.data);
         }catch(error){
-            console.error(error);
-            alert(error);
+            console.error("test = ",error);
+        }
+        try{
+            const response = await axios.get(url+':11334/versions/MAIN_MOBILE');
+            console.log("ui:",response.data.data);
+            if(response.data.data != undefined){
+                setCurVersionUI(response.data.data);
+            }   
+        }catch(error){
+            console.error("ui = ",error);
         }
 
     }
 
     useEffect(()=>{
+        console.log(curVersionUI);
         readUpdate();
         readVersion();
+        console.log(curVersionUI);
     },[])
 
     function update(_program:string, _version:string){
@@ -155,9 +179,69 @@ const Update: React.FC = () =>{
             updateText(_version);
         }else if(_program === "test"){
             updateTest(_version);
+        }else if(_program === "MAIN_MOBILE"){
+            updateUI(_version);
+        }else{
+
         }
     }
 
+    async function updateUI(_version:string){
+        try{
+            setWatingUI(true); 
+            console.log(curVersionUI);
+            if(_version==undefined){
+                toast_main.current?.show({
+                    severity: 'error',
+                    summary: 'Update',
+                    detail: 'Version is undefined',
+                    life: 3000
+                })
+                setWatingUI(false); 
+            }else if(_version==curVersionUI.version){
+                toast_main.current?.show({
+                    severity: 'warn',
+                    summary: 'Update',
+                    detail: 'Already updated',
+                    life: 3000
+                })
+                setWatingUI(false); 
+            }else{
+                const body = {
+                    program: "MAIN_MOBILE",
+                    new_version: _version,
+                    cur_version: curVersionUI.version,
+                    path: '/home/rainbow/RB_MOBILE/release/MAIN_MOBILE',
+                    auth:state
+                }
+                console.log("??????????");
+                const _url =url+':11334/update/'
+                const response = await axios.post(_url,body);
+    
+                console.log(response);
+
+                toast_main.current?.show({
+                    severity: 'success',
+                    summary: 'Update',
+                    detail: 'Update successfully finished\r\n'+response.data.log.date,
+                    life: 3000
+                })
+
+                setCurVersionUI({prev_version:response.data.log.prev_version,version:response.data.log.new_version,date:response.data.log.date});
+                setDisplayRollback(false);
+                setWatingUI(false); 
+            }
+        }catch(error){
+            console.log(error);
+            toast_main.current?.show({
+                severity: 'error',
+                summary: 'Update',
+                detail: 'Update Failed',
+                life: 3000
+            })
+            setWatingUI(false); 
+        }
+    }
 
     async function updateText(_version:string){
         try{
@@ -180,14 +264,14 @@ const Update: React.FC = () =>{
                     program: "text.txt",
                     new_version: _version,
                     cur_version: curVersionText.version,
-                    path:'/home/rainbow/Desktop/Program/text.txt',
+                    path:'/home/rainbow/RB_MOBILE/release/text.txt',
                     auth:state
                 }
 
-                const url = 'http://192.168.1.88:11334/update/'
+                const _url = url+':11334/update/'
 
                 console.log(body);
-                const response = await axios.post(url,body);
+                const response = await axios.post(_url,body);
     
 
                 toast_main.current?.show({
@@ -208,11 +292,11 @@ const Update: React.FC = () =>{
                 detail: 'Update Failed',
                 life: 3000
             })
+            setWatingUI(false); 
         }
     }
     async function updateTest(_version:string){
         try{
-            console.log(curVersionTest);
             if(_version==undefined){
                 toast_main.current?.show({
                     severity: 'error',
@@ -232,14 +316,15 @@ const Update: React.FC = () =>{
                     program: "test",
                     new_version: _version,
                     cur_version: curVersionTest.version,
-                    path:'/home/rainbow/Desktop/Program/test',
+                    path:'/home/rainbow/RB_MOBILE/release/test',
                     auth:state
                 }
 
-                const url = 'http://192.168.1.88:11334/update/'
-                const response = await axios.post(url,body);
+                const _url = url+':11334/update/'
+                const response = await axios.post(_url,body);
     
 
+                console.log("response = ",response);
                 toast_main.current?.show({
                     severity: 'success',
                     summary: 'Update',
@@ -251,6 +336,7 @@ const Update: React.FC = () =>{
                 setDisplayRollback(false);
             }
         }catch(error){
+            console.error("what's error?",error);
             toast_main.current?.show({
                 severity: 'error',
                 summary: 'Update',
@@ -277,7 +363,7 @@ const Update: React.FC = () =>{
             if(programRollback != ''){
                 console.log("?????????????",programRollback);
                 try{
-                    const response = await axios.get('http://192.168.1.88:11335/versions/all/'+programRollback);
+                    const response = await axios.get(url+':11335/versions/all/'+programRollback);
                     setRollbackVersions(response.data);
                 }catch(error){
                     console.error("readVersion : ",error);
@@ -322,65 +408,87 @@ const Update: React.FC = () =>{
                     <Dropdown value={rollbackVersion} onChange={(e) => setRollbackVersion(e.value)} options={rollbackVersions} optionLabel="version" placeholder="Select a Rollback Version" 
                         valueTemplate={selectedVersionTemplate} itemTemplate={versionTemplate} className="border w-full" />
                 </div>   
-                <Button style={{marginLeft:10}} onClick={() =>update(programRollback, rollbackVersion.version )}>Rollback</Button> 
+                <Button disabled={waitingUI} style={{marginLeft:10}} onClick={() =>{update(programRollback, rollbackVersion.version );
+                                                                                    setDisplayRollback(false);}}>Rollback</Button> 
             </Dialog>
         )
     }
 
-    async function startTest(){
+    async function startProgram(filename:string){
         try{
-            const response = await axios.get('http://192.168.1.88:11334/start/test');
-            toast_main.current?.show({
-                severity: 'success',
-                summary: 'Program',
-                detail: 'Program successfully started',
-                life: 3000
-            })
-            setRunningTest(response.data);
+            const response = await axios.get(url+':11334/start/'+filename);
+
+            if(response.data.message){
+                toast_main.current?.show({
+                    severity: 'warn',
+                    summary: filename,
+                    detail: 'Already started',
+                    life: 3000
+                })
+            }else{
+                toast_main.current?.show({
+                    severity: 'success',
+                    summary: filename,
+                    detail: 'Program successfully started',
+                    life: 3000
+                })
+                if(filename == "MAIN_MOBILE"){
+                    setRunningUI(response.data);
+                }else if(filename == "test"){
+                    setRunningTest(response.data);
+                }
+            }
         }catch(error){
-            console.log(error.response);
             toast_main.current?.show({
                 severity: 'error',
-                summary: 'Program',
-                detail: 'Start Failed : '+error.response,
+                summary: filename,
+                detail: 'Start Failed',
                 life: 3000
             })
         }
     }
-    async function restartTest(){
+    async function restartProgram(filename:string){
         try{
-            const response = await axios.get('http://192.168.1.88:11334/restart/test');
+            const response = await axios.get(url+':11334/restart/'+filename);
             toast_main.current?.show({
                 severity: 'success',
-                summary: 'Program',
+                summary: filename,
                 detail: 'Program successfully re-started',
                 life: 3000
             })
-            setRunningTest(response.data);
+            if(filename == "MAIN_MOBILE"){
+                setRunningUI(response.data);
+            }else if(filename == "test"){
+                setRunningTest(response.data);
+            }
         }catch(error){
             toast_main.current?.show({
                 severity: 'error',
-                summary: 'Program',
+                summary: filename,
                 detail: 'Restart Failed',
                 life: 3000
             })
 
         }
     }
-    async function stopTest(){
+    async function stopProgram(filename:string){
         try{
-            const response = await axios.get('http://192.168.1.88:11334/stop/test');
+            const response = await axios.get(url+':11334/stop/'+filename);
             toast_main.current?.show({
                 severity: 'success',
-                summary: 'Program',
+                summary: filename,
                 detail: 'Program successfully stopped',
                 life: 3000
             })
-            setRunningTest(response.data);
+            if(filename == "MAIN_MOBILE"){
+                setRunningUI(response.data);
+            }else if(filename == "test"){
+                setRunningTest(response.data);
+            }
         }catch(error){
             toast_main.current?.show({
                 severity: 'error',
-                summary: 'Program',
+                summary: filename,
                 detail: 'Stop Failed',
                 life: 3000
             })
@@ -397,7 +505,7 @@ const Update: React.FC = () =>{
                 <div className="card" >
                     <h3>text.txt</h3>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label className="col-12 mb-2 md:col-2 md:mb-0">
                             현재 버전
                         </label>
                         <div className="col-12 md:col-10">
@@ -405,7 +513,7 @@ const Update: React.FC = () =>{
                         </div>
                     </div>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label className="col-12 mb-2 md:col-2 md:mb-0">
                             최신 버전
                         </label>
                         <div className="col-12 md:col-10">
@@ -413,7 +521,7 @@ const Update: React.FC = () =>{
                         </div>
                     </div>
                     <div className="field grid">
-                        <label htmlFor="name3" className='md:col-2 md:mb-0 col-12 mb-2'>
+                        <label className='md:col-2 md:mb-0 col-12 mb-2'>
                             마지막 업데이트 날짜
                         </label>
                         <div className="col-12 md:col-10">
@@ -428,7 +536,7 @@ const Update: React.FC = () =>{
                 <div className="card" >
                     <h3>Test</h3>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label  className="col-12 mb-2 md:col-2 md:mb-0">
                             현재 버전
                         </label>
                         <div className="col-12 md:col-10">
@@ -436,7 +544,7 @@ const Update: React.FC = () =>{
                         </div>
                     </div>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label className="col-12 mb-2 md:col-2 md:mb-0">
                             최신 버전
                         </label>
                         <div className="col-12 md:col-10">
@@ -444,7 +552,7 @@ const Update: React.FC = () =>{
                         </div>
                     </div>
                     <div className="field grid">
-                        <label htmlFor="name3" className='md:col-2 md:mb-0 col-12 mb-2'>
+                        <label className='md:col-2 md:mb-0 col-12 mb-2'>
                             마지막 업데이트 날짜
                         </label>
                         <div className="col-12 md:col-10">
@@ -453,32 +561,45 @@ const Update: React.FC = () =>{
                     </div> 
                 <Button onClick={() => update("test",newVersionTest.version)}>Update</Button>
                 <Button style={{marginLeft:10}} onClick={() => {setProgramRollback('test');setDisplayRollback(true)}}>Rollback</Button>
-                <Button style={{marginLeft:10}} onClick={startTest}>Start</Button>
-                <Button style={{marginLeft:10}} onClick={stopTest}>Stop</Button>
-                <Button style={{marginLeft:10}} onClick={restartTest}>ReStart</Button>
+                <Button style={{marginLeft:10}} onClick={() => startProgram("test")}>Start</Button>
+                <Button style={{marginLeft:10}} onClick={() => stopProgram("test")}>Stop</Button>
+                <Button style={{marginLeft:10}} onClick={() => restartProgram("test")}>ReStart</Button>
                 </div>
             </Panel>
-            {/* <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
+            <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
-                    <h3>SLAMNAV</h3>
+                    <h3>MAIN_MOBILE</h3>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label className="col-12 mb-2 md:col-2 md:mb-0">
                             현재 버전
                         </label>
                         <div className="col-12 md:col-10">
-                            <InputText  id="SLAMNAV_CUR_VERSION" type="text" style={{width: '20vw'}} readOnly/>
+                            <InputText  value={curVersionUI.version} type="text" style={{width: '20vw'}} readOnly/>
                         </div>
                     </div>
                     <div className="field grid">
-                        <label htmlFor="name3" className="col-12 mb-2 md:col-2 md:mb-0">
+                        <label className="col-12 mb-2 md:col-2 md:mb-0">
                             최신 버전
                         </label>
                         <div className="col-12 md:col-10">
-                            <InputText  id="SLAMNAV_CUR_VERSION" type="text" style={{width: '20vw'}} readOnly/>
+                            <InputText type="text" value={newVersionUI.version} style={{width: '20vw'}} readOnly/>
                         </div>
                     </div>
+                    <div className="field grid">
+                        <label className='md:col-2 md:mb-0 col-12 mb-2'>
+                            마지막 업데이트 날짜
+                        </label>
+                        <div className="col-12 md:col-10">
+                            <InputText  value={curVersionUI.date} type="text" style={{width: '20vw'}} readOnly/>
+                        </div>
+                    </div> 
+                <Button disabled={waitingUI} onClick={() => {update("MAIN_MOBILE",newVersionUI.version)}}>Update</Button>
+                <Button style={{marginLeft:10}} disabled={waitingUI} onClick={() => {setProgramRollback('MAIN_MOBILE');setDisplayRollback(true)}}>Rollback</Button>
+                <Button style={{marginLeft:10}} disabled={waitingUI} onClick={() =>{startProgram("MAIN_MOBILE")}}>Start</Button>
+                <Button style={{marginLeft:10}} disabled={waitingUI} onClick={() => stopProgram("MAIN_MOBILE")}>Stop</Button>
+                <Button style={{marginLeft:10}} disabled={waitingUI} onClick={() => restartProgram("MAIN_MOBILE")}>ReStart</Button> 
                 </div>
-            </Panel> */}
+            </Panel>
         </main>
     );
 }

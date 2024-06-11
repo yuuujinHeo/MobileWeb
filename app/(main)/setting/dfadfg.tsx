@@ -35,7 +35,7 @@ const Setting = () =>{
 
     async function init(){
         try{
-            const response = await axios.get('http://192.168.1.88:11334/setting');
+            const response = await axios.get('http://10.108.1.10:11334/setting');
             console.log("--------------",response.data.slam);   
             setSettingState({
                 robot:response.data.robot,
