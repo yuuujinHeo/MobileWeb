@@ -30,7 +30,6 @@ import fs from 'fs';
 import { Dialog } from 'primereact/dialog';
 // import { ListBox } from 'primereact/listbox';
 import { FileUpload,  FileUploadState, FileUploadHandlerEvent, FileUploadSelectEvent, FileUploadUploadEvent } from 'primereact/fileupload';
-import {SettingState, ROBOT_TYPE, slam, robot, setting} from '../../../interface/settings';
 import { forEachChild } from 'typescript';
 import { encode } from 'punycode';
 import {userContext} from '../../../interface/user'

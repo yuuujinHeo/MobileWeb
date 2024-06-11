@@ -173,7 +173,9 @@ const Setting: React.FC = () => {
         },
         enableReinitialize: true,
         validate: (values) => {
-            const errors = {};
+            var errors = {
+                SIM_MODE:''
+            }
             if(values.SIM_MODE != 0 && values.SIM_MODE != 1){
                 errors.SIM_MODE = "0이나 1의 값이어야 합니다";
             }
@@ -457,6 +459,7 @@ const Setting: React.FC = () => {
                 console.error(error);
             }
         }
+
         useEffect(()=>{
             loadPreset();
         },[])
