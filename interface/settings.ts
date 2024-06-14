@@ -83,6 +83,17 @@ export interface ObsSetting{
     OBS_SIZE_THRESHOLD:number;
     OBS_TARGET_DIST:number;
 }
+export interface PresetSetting{
+    LIMIT_V:        number;
+    LIMIT_W:        number;
+    LIMIT_V_ACC:    number;
+    LIMIT_W_ACC:    number;
+    LIMIT_PIVOT_W:  number;
+    PP_MIN_LD:      number;
+    PP_MAX_LD:      number;
+    PP_ST_V:        number;
+    PP_ED_V:        number;
+}
 
 export const _robot=yup.object().shape({
     PLATFORM_NAME: yup.string().required(),
@@ -106,7 +117,15 @@ export const _control=yup.object().shape({
     DRIVE_GOAL_TH:yup.number().required()
 });
 export const _annotation=yup.object().shape({
-    ANNOT_QA_STEP:yup.number().required()
+    LIMIT_V:yup.number().required(),
+    LIMIT_W:yup.number().required(),
+    LIMIT_V_ACC:yup.number().required(),
+    LIMIT_W_ACC:yup.number().required(),
+    LIMIT_PIVOT_W:yup.number().required(),
+    PP_MIN_LD:yup.number().required(),
+    PP_MAX_LD:yup.number().required(),
+    PP_ST_V:yup.number().required(),
+    PP_ED_V:yup.number().required()
 });
 export const _default=yup.object().shape({
     ROBOT_SIZE_MAX_X:yup.number().required(),
@@ -166,6 +185,9 @@ export const _obs=yup.object().shape({
     OBS_MAP_RANGE:yup.number().required(),
     OBS_SIZE_THRESHOLD:yup.number().required(),
     OBS_TARGET_DIST:yup.number().required()
+});
+export const _preset=yup.object().shape({
+    ANNOT_QA_STEP:yup.number().required()
 });
 
 

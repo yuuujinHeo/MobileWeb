@@ -26,7 +26,8 @@ const AppMenu = () => {
             label: 'Setting',
             items: [
                 { label: 'Config', icon: 'pi pi-fw pi-sliders-h', to: '/setting' },
-                { label: 'Update', icon: 'pi pi-fw pi-file-import', to: '/update' }
+                { label: 'Update', icon: 'pi pi-fw pi-file-import', to: '/update' },
+                { label: 'Network', icon: 'pi pi-fw pi-wifi', to: '/network' }
             ]
         }
     ];

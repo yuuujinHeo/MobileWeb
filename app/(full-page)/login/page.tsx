@@ -41,7 +41,6 @@ const LoginPage = () => {
       useEffect(() =>{
         if(state.token != ""){
             router.push('/')
-            // navigator('/');
             console.log("pass to /")
         }
       })
@@ -53,7 +52,7 @@ const LoginPage = () => {
     return (
         <div className={containerClassName}>
             <div className="flex flex-column align-items-center justify-content-center">
-                <img src={`/layout/images/rainbow_logo.png`} className="mb-5 w-15rem flex-shrink-0" />
+                {/* <img src={`/layout/images/rainbow_logo.png`} className="mb-5 w-15rem flex-shrink-0" /> */}
                 <div
                     style={{
                         borderRadius: '56px',

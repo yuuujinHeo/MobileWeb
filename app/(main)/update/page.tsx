@@ -121,21 +121,21 @@ const Update: React.FC = () =>{
             console.log("text(new):",response.data)
             setNewVersionText(response.data);
         }catch(error){
-            alert(error);
+            // alert(error);
         }
         try{
             const response = await axios.get(url+':11335/versions/test');
             console.log("test(new):",newVersionTest)
             setNewVersionTest(response.data);
         }catch(error){
-            alert(error);
+            // alert(error);
         }
         try{
             const response = await axios.get(url+':11335/versions/MAIN_MOBILE');
             console.log("main_mobile(new):",newVersionUI)
             setNewVersionUI(response.data);
         }catch(error){
-            alert(error);
+            // alert(error);
         }
     }
 
@@ -167,10 +167,11 @@ const Update: React.FC = () =>{
     }
 
     useEffect(()=>{
-        console.log(curVersionUI);
-        readUpdate();
+        console.log("update useEffect")
+        // console.log(curVersionUI);
+        // readUpdate();
         readVersion();
-        console.log(curVersionUI);
+        // console.log(curVersionUI);
     },[])
 
     function update(_program:string, _version:string){
@@ -370,7 +371,7 @@ const Update: React.FC = () =>{
             }
         }
         useEffect(()=>{
-            readVersions();
+            // readVersions();
         },[])
 
         const selectedVersionTemplate = (option:any, props:DropdownProps) => {
