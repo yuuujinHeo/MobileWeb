@@ -1,10 +1,10 @@
-
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import Joystick from "@/components/Joystick";
 
-import "../../../styles/canvas.scss";
+import "./canvas.scss";
 import axios from "axios";
 
 const Map: React.FC = () => {
@@ -114,59 +114,67 @@ const Map: React.FC = () => {
       return;
 
     const cloud = await getCloud();
-    const geo = new THREE.BufferGeometry();
 
-    const positions: number[] = [];
-    const colors: number[] = [];
+    if (cloud) {
+      const geo = new THREE.BufferGeometry();
 
-    const color = new THREE.Color();
+      const positions: number[] = [];
+      const colors: number[] = [];
 
-    cloud.forEach((arr: string[]) => {
-      // set positions
-      const parsedArr = arr.slice(0, 3).map(parseFloat);
-      positions.push(...parsedArr);
+      const color = new THREE.Color();
 
-      if (colors.length) {
-        color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
-      } else {
-        color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
-      }
+      cloud.forEach((arr: string[]) => {
+        // set positions
+        const parsedArr = arr.slice(0, 3).map(parseFloat);
+        positions.push(...parsedArr);
 
-      colors.push(color.r, color.g, color.b);
-    });
+        if (colors.length) {
+          color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
+        } else {
+          color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
+        }
 
-    geo.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
-    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        colors.push(color.r, color.g, color.b);
+      });
 
-    geo.computeBoundingSphere();
+      geo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
-    const material = new THREE.PointsMaterial({
-      size: 0.3,
-      vertexColors: true,
-    });
+      geo.computeBoundingSphere();
 
-    const points = new THREE.Points(geo, material);
-    points.rotation.x = -(Math.PI / 2);
+      const material = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+      });
 
-    sceneRef.current.add(points);
+      const points = new THREE.Points(geo, material);
+      points.rotation.x = -(Math.PI / 2);
 
-    const animate = () => {
-      if (
-        rendererRef.current !== null &&
-        sceneRef.current !== null &&
-        cameraRef.current !== null
-      ) {
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
-      }
-    };
+      sceneRef.current.add(points);
 
-    rendererRef.current.setAnimationLoop(animate);
+      const animate = () => {
+        if (
+          rendererRef.current !== null &&
+          sceneRef.current !== null &&
+          cameraRef.current !== null
+        ) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      };
+
+      rendererRef.current.setAnimationLoop(animate);
+    }
   };
 
-  return <canvas className="canvas" ref={canvasRef} />;
+  return (
+    <main>
+      <canvas className="canvas" ref={canvasRef} />
+      <Joystick></Joystick>
+    </main>
+  );
 };
 
 export default Map;
