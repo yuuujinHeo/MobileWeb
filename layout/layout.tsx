@@ -6,6 +6,7 @@ import { useEventListener, useMountEffect, useUnmountEffect } from 'primereact/h
 import React, { useContext, useEffect, useRef } from 'react';
 import { classNames } from 'primereact/utils';
 import AppFooter from './AppFooter';
+import { Provider } from 'react-redux';
 import AppSidebar from './AppSidebar';
 import AppTopbar from './AppTopbar';
 import AppConfig from './AppConfig';
@@ -14,7 +15,7 @@ import { PrimeReactContext } from 'primereact/api';
 import { ChildContainerProps, LayoutState, AppTopbarRef } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {userContext} from '../interface/user'
-// import { useRouter } from 'next/navigation';
+import { store } from '@/store/store';
 
 const Layout = ({ children }: ChildContainerProps) => {
     const {state,setState} = useContext(userContext);
@@ -42,9 +43,6 @@ const Layout = ({ children }: ChildContainerProps) => {
     const pathname = usePathname();
     const searchParams = useSearchParams();
     useEffect(() => {
-        // if(state.token == ""){
-        //     router.push('/login')
-        // }
         hideMenu();
         hideProfileMenu();
     }, [pathname, searchParams]);
@@ -130,20 +128,22 @@ const Layout = ({ children }: ChildContainerProps) => {
     });
 
     return (
-        <React.Fragment>
-            <div className={containerClass}>
-                <AppTopbar ref={topbarRef} />
-                <div ref={sidebarRef} className="layout-sidebar">
-                    <AppSidebar />
+        <Provider store={store}>
+            <React.Fragment>
+                <div className={containerClass}>
+                    <AppTopbar ref={topbarRef} />
+                    <div ref={sidebarRef} className="layout-sidebar">
+                        <AppSidebar />
+                    </div>
+                    <div className="layout-main-container">
+                        <div className="layout-main">{children}</div>
+                        <AppFooter />
+                    </div>
+                    <AppConfig />
+                    <div className="layout-mask"></div>
                 </div>
-                <div className="layout-main-container">
-                    <div className="layout-main">{children}</div>
-                    <AppFooter />
-                </div>
-                <AppConfig />
-                <div className="layout-mask"></div>
-            </div>
-        </React.Fragment>
+            </React.Fragment>
+        </Provider>
     );
 };
 

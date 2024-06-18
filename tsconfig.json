@@ -8,10 +8,10 @@
     ],
     "allowJs": true,
     "skipLibCheck": true,
-    "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    // "strict": false,
     "module": "esnext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
@@ -27,14 +27,16 @@
       "@/*": [
         "./*"
       ]
-    }
+    },
+    "strict": false
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "app/(main)/setting/page.js", "app/(main)/blocks/page.js"  ],
+    ".next/types/**/*.ts",
+    "app/(main)/blocks/page.js"
+  ],
   "exclude": [
     "node_modules"
   ]

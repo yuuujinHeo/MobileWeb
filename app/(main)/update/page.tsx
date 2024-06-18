@@ -26,6 +26,8 @@ import styles from './index.module.scss';
 import { classNames } from 'primereact/utils';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
+import { useDispatch, UseDispatch, useSelector } from 'react-redux';
+import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import fs from 'fs';
 import { Dialog } from 'primereact/dialog';
 // import { ListBox } from 'primereact/listbox';
@@ -38,6 +40,8 @@ import { start } from 'repl';
 
 
 const Update: React.FC = () =>{
+    const dispatch = useDispatch();
+    const mobileURL = useSelector(selectMobile);
     const [displayUpload, setDisplayUpload] = useState(false);
     const [displayRollback, setDisplayRollback] = useState(false);
     const [programRollback, setProgramRollback] = useState('');
@@ -60,8 +64,6 @@ const Update: React.FC = () =>{
     const [runningUI, setRunningUI] = useState(false);
     const [waitingTest, setWaitingTest] = useState(false);
     const [waitingUI, setWatingUI] = useState(false);
-
-    const url = "http://10.108.1.10";
 
     const onFileUpload = () => {
         console.log("onupload");
@@ -94,7 +96,7 @@ const Update: React.FC = () =>{
             'authorization': state.token
         }
         };
-        axios.post(url+":11335/upload/files", formData, config)
+        axios.post(mobileURL+":11335/upload/files", formData, config)
           .then(response => {
             console.log('File uploaded successfully:', response.data);
             uploader.current?.clear();
@@ -117,21 +119,21 @@ const Update: React.FC = () =>{
 
     const readUpdate = async() =>{
         try{
-            const response = await axios.get(url+':11335/versions/text.txt');
+            const response = await axios.get(mobileURL+':11335/versions/text.txt');
             console.log("text(new):",response.data)
             setNewVersionText(response.data);
         }catch(error){
             // alert(error);
         }
         try{
-            const response = await axios.get(url+':11335/versions/test');
+            const response = await axios.get(mobileURL+':11335/versions/test');
             console.log("test(new):",newVersionTest)
             setNewVersionTest(response.data);
         }catch(error){
             // alert(error);
         }
         try{
-            const response = await axios.get(url+':11335/versions/MAIN_MOBILE');
+            const response = await axios.get(mobileURL+':11335/versions/MAIN_MOBILE');
             console.log("main_mobile(new):",newVersionUI)
             setNewVersionUI(response.data);
         }catch(error){
@@ -141,21 +143,21 @@ const Update: React.FC = () =>{
 
     const readVersion = async() =>{
         try{
-            const response = await axios.get(url+':11334/versions/text.txt');
+            const response = await axios.get(mobileURL+':11334/versions/text.txt');
             console.log("text:",response.data.data);
             setCurVersionText(response.data.data);
         }catch(error){
             console.error("text = ",error);
         }
         try{
-            const response = await axios.get(url+':11334/versions/test');
+            const response = await axios.get(mobileURL+':11334/versions/test');
             console.log("test:",response.data.data);
             setCurVersionTest(response.data.data);
         }catch(error){
             console.error("test = ",error);
         }
         try{
-            const response = await axios.get(url+':11334/versions/MAIN_MOBILE');
+            const response = await axios.get(mobileURL+':11334/versions/MAIN_MOBILE');
             console.log("ui:",response.data.data);
             if(response.data.data != undefined){
                 setCurVersionUI(response.data.data);
@@ -215,7 +217,7 @@ const Update: React.FC = () =>{
                     auth:state
                 }
                 console.log("??????????");
-                const _url =url+':11334/update/'
+                const _url =mobileURL+':11334/update/'
                 const response = await axios.post(_url,body);
     
                 console.log(response);
@@ -268,7 +270,7 @@ const Update: React.FC = () =>{
                     auth:state
                 }
 
-                const _url = url+':11334/update/'
+                const _url = mobileURL+':11334/update/'
 
                 console.log(body);
                 const response = await axios.post(_url,body);
@@ -320,7 +322,7 @@ const Update: React.FC = () =>{
                     auth:state
                 }
 
-                const _url = url+':11334/update/'
+                const _url = mobileURL+':11334/update/'
                 const response = await axios.post(_url,body);
     
 
@@ -363,7 +365,7 @@ const Update: React.FC = () =>{
             if(programRollback != ''){
                 console.log("?????????????",programRollback);
                 try{
-                    const response = await axios.get(url+':11335/versions/all/'+programRollback);
+                    const response = await axios.get(mobileURL+':11335/versions/all/'+programRollback);
                     setRollbackVersions(response.data);
                 }catch(error){
                     console.error("readVersion : ",error);
@@ -416,7 +418,7 @@ const Update: React.FC = () =>{
 
     async function startProgram(filename:string){
         try{
-            const response = await axios.get(url+':11334/start/'+filename);
+            const response = await axios.get(mobileURL+':11334/start/'+filename);
 
             if(response.data.message){
                 toast_main.current?.show({
@@ -449,7 +451,7 @@ const Update: React.FC = () =>{
     }
     async function restartProgram(filename:string){
         try{
-            const response = await axios.get(url+':11334/restart/'+filename);
+            const response = await axios.get(mobileURL+':11334/restart/'+filename);
             toast_main.current?.show({
                 severity: 'success',
                 summary: filename,
@@ -473,7 +475,7 @@ const Update: React.FC = () =>{
     }
     async function stopProgram(filename:string){
         try{
-            const response = await axios.get(url+':11334/stop/'+filename);
+            const response = await axios.get(mobileURL+':11334/stop/'+filename);
             toast_main.current?.show({
                 severity: 'success',
                 summary: filename,

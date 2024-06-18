@@ -5,7 +5,7 @@ import { Chart } from 'primereact/chart';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
 import { Menu } from 'primereact/menu';
-import React, { createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect, useRef, useState } from 'react';
+import React, {createContext, Dispatch, ReactNode, SetStateAction, useContext, useEffect, useRef, useState } from 'react';
 // import { ProductService } from '../../demo/service/ProductService';
 import Link from 'next/link';
 import { Demo } from '@/types';
@@ -16,21 +16,29 @@ import { Tag } from 'primereact/tag';
 import { DataView } from 'primereact/dataview';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Toolbar } from 'primereact/toolbar';
+import { Toast } from 'primereact/toast';
 import { InputText } from 'primereact/inputtext';
 import { Rating } from 'primereact/rating';
 import { ChartData, ChartOptions } from 'chart.js';
 import { NetworkInfo } from '@/interface/network';
+import { useDispatch, UseDispatch, useSelector } from 'react-redux';
+import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import axios from 'axios';
 import '../setting/style.scss';
+import { useRouter } from 'next/navigation';
 
-const Network = () =>{
+const Network:React.FC = () =>{
     const [curEthernet, setCurEthernet] = useState<NetworkInfo>();
     const [curWifi, setCurWifi] = useState<NetworkInfo>();
     const [curBt, setCurBt] = useState<NetworkInfo>();
     const [wifis, setWifis] = useState<NetworkInfo[]>([]);
     const [executed, setExecuted] = useState(false);
     const [visibleWifi, setVisibleWifi] = useState(false);
-
+    const toast = useRef<Toast | null>(null);
+    const dispatch = useDispatch();
+    const mobileURL = useSelector(selectMobile);
+    const pathname=useRouter();
+    
     const formik_ethernet = useFormik({
         initialValues:{
             type:curEthernet?.type,
@@ -146,7 +154,7 @@ const Network = () =>{
     async function getCurrentInfo(){
         try{
             console.log("??????????????");
-            const response = await axios.get('http://10.108.1.10:11334/network/current');
+            const response = await axios.get(mobileURL+'/network/current');
             console.log("--------------",response.data);   
             setCurEthernet(response.data.ethernet);
             setCurWifi(response.data.wifi);
@@ -163,6 +171,9 @@ const Network = () =>{
     useEffect(()=>{
         console.log("network useEffect")
         getCurrentInfo();
+        console.log(mobileURL)
+        const currentURL = window.location.href;
+        console.log("?",currentURL)
     },[])
 
     function refresh(){
@@ -174,7 +185,7 @@ const Network = () =>{
     async function save_ethernet(){
         console.log("save ethernet");
         try{
-            const response = await axios.post('http://10.108.1.10:11334/network/ethernet',formik_ethernet.values);
+            const response = await axios.put(mobileURL+'/network/ethernet',formik_ethernet.values);
             console.log(response);
         }catch(error){
             console.error(error);
@@ -192,7 +203,7 @@ const Network = () =>{
 
     async function getWifiList(){
         try{
-            const response = await axios.get('http://10.108.1.10:11334/network/wifi/list');
+            const response = await axios.get(mobileURL+'/network/wifi/list');
             console.log(response.data);
             setWifis(response.data);
         }catch(error){
@@ -203,7 +214,7 @@ const Network = () =>{
     async function reScan(){
         
         try{
-            const response = await axios.get('http://10.108.1.10:11334/network/wifi/scan');
+            const response = await axios.get(mobileURL+'/network/wifi/scan');
             console.log(response.data);
             setWifis(response.data);
         }catch(error){
@@ -226,6 +237,25 @@ const Network = () =>{
                 return 1;
             }
         }
+        const connectWifi = async(wifi) =>{
+            console.log("connectWifi, ",wifi);
+            try{
+                setBlock(true);
+                const response = await axios.post(mobileURL+'/network/wifi',wifi);
+                console.log("RESPONSE:",response.data);
+                setWifis(response.data);
+                setBlock(false);
+            }catch(error){
+                console.error(error);
+                toast.current?.show({
+                    severity: 'error',
+                    summary: 'Wifi 연결 실패',
+                    detail: '실행할 수 없습니다',
+                    life: 3000
+                })
+                setBlock(false);
+            }
+        };
         const renderListItem = (wifi) => {
             return (
               <div className="col-12 p-md-3" >
@@ -236,7 +266,7 @@ const Network = () =>{
                         <Rating value={getRating(wifi.quality)} readOnly cancel={false}></Rating>
                     </div>
                         <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
-                            <Button >연결</Button>
+                            <Button onClick={()=>{connectWifi(wifi)}}>연결</Button>
                         </div>
                     </div>
                 </div>
@@ -287,14 +317,14 @@ const Network = () =>{
 
     const ethernet_header = (
         <div className='grid justify-content-center mt-2 mb-1 ml-3'>
-            <label className="font-bold items-center text-2xl block">{formik_ethernet.values.device}</label>
+            <label className="font-bold items-center text-2xl block">{formik_ethernet.values.device?formik_ethernet.values.device:'Ethernet'}</label>
             <Tag severity={formik_ethernet.values.state===100?"success":"danger"} value={formik_ethernet.values.state===100?"connected":"disconnected"}  className="ml-5"></Tag>
             
         </div>
     );
     const wifi_header = (
         <div className='grid justify-content-center mt-2 mb-1 ml-3'>
-            <label className="font-bold items-center text-2xl block">{formik_wifi.values.device}</label>
+            <label className="font-bold items-center text-2xl block">{formik_wifi.values.device?formik_wifi.values.device:'Wifi'}</label>
             <Tag severity={formik_wifi.values.state===100?"success":"danger"} value={formik_wifi.values.state===100?"connected":"disconnected"}  className="ml-5"></Tag>
         </div>
     );
@@ -308,6 +338,8 @@ const Network = () =>{
     return (
         <div className="column gap-3">
         <PopupWifi></PopupWifi>
+        <Toast ref={toast}></Toast>
+                
         <Panel header = {ethernet_header} > 
             <div className="column ">
                 <div className='grid gap-3' >

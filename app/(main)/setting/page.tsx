@@ -16,17 +16,21 @@ import { Toast } from 'primereact/toast';
 import { BlockUI } from 'primereact/blockui';
 import {SettingState, PresetSetting, ROBOT_TYPE,_robot, _preset, _debug, _loc, _control, _annotation, _default, _motor, _mapping, _obs} from '../../../interface/settings';
 import './style.scss';
+import { useDispatch, UseDispatch, useSelector } from 'react-redux';
+import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 
 const Setting: React.FC = () => {
     const [settingState, setSettingState] = useState<SettingState>();
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
     const toast = useRef<Toast | null>(null);
+    const dispatch = useDispatch();
+    const mobileURL = useSelector(selectMobile);
 
     const default_setting = async(data:SettingState | undefined=undefined) =>{
         try{
             if(data == undefined){
-                const response = await axios.get('http://10.108.1.10:11334/setting');
+                const response = await axios.get(mobileURL+'/setting');
                 setSettingState({
                     robot:response.data.robot,
                     debug:response.data.debug,
@@ -87,7 +91,7 @@ const Setting: React.FC = () => {
                                             "mapping":formik_mapping.values,
                                             "obs":formik_obs.values,
                                         });
-            const response = await axios.post('http://10.108.1.10:11334/setting',json,{
+            const response = await axios.post(mobileURL+'/setting',json,{
                 headers:{
                     'Content-Type':'application/json'
                 }
