@@ -16,6 +16,7 @@ import { Tag } from 'primereact/tag';
 import { DataView } from 'primereact/dataview';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Toolbar } from 'primereact/toolbar';
+import { GetServerSideProps } from 'next';
 import { Toast } from 'primereact/toast';
 import { InputText } from 'primereact/inputtext';
 import { Rating } from 'primereact/rating';
@@ -25,7 +26,10 @@ import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import axios from 'axios';
 import '../setting/style.scss';
+import {store,AppDispatch, RootState} from '../../../store/store';
+import { increment } from '@/store/counterSlice';
 import { useRouter } from 'next/navigation';
+import { current } from '@reduxjs/toolkit';
 
 const Network:React.FC = () =>{
     const [curEthernet, setCurEthernet] = useState<NetworkInfo>();
@@ -34,11 +38,22 @@ const Network:React.FC = () =>{
     const [wifis, setWifis] = useState<NetworkInfo[]>([]);
     const [executed, setExecuted] = useState(false);
     const [visibleWifi, setVisibleWifi] = useState(false);
+    const [mobileURL, setMobileURL] = useState('');
     const toast = useRef<Toast | null>(null);
-    const dispatch = useDispatch();
-    const mobileURL = useSelector(selectMobile);
-    const pathname=useRouter();
+    const dispatch = useDispatch<AppDispatch>();
     
+    useEffect(()=>{
+        console.log("network useEffect")
+        setURL()
+    },[])
+    useEffect(()=>{
+        console.log("useEffect : ",mobileURL);
+        if(mobileURL != ''){
+            getCurrentInfo();
+        }
+    },[mobileURL])
+
+
     const formik_ethernet = useFormik({
         initialValues:{
             type:curEthernet?.type,
@@ -153,7 +168,7 @@ const Network:React.FC = () =>{
 
     async function getCurrentInfo(){
         try{
-            console.log("??????????????");
+            console.log("??????????????",mobileURL);
             const response = await axios.get(mobileURL+'/network/current');
             console.log("--------------",response.data);   
             setCurEthernet(response.data.ethernet);
@@ -168,13 +183,20 @@ const Network:React.FC = () =>{
         }
     }
 
-    useEffect(()=>{
-        console.log("network useEffect")
-        getCurrentInfo();
-        console.log(mobileURL)
-        const currentURL = window.location.href;
-        console.log("?",currentURL)
-    },[])
+
+    async function setURL(){
+        if(mobileURL == ''){
+            const currentURL = window.location.href;
+            console.log(currentURL);
+            if(currentURL.startsWith('http')){
+                console.log(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334")
+                setMobileURL(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334");
+            }else{
+                console.log("->",currentURL+":11334")
+                setMobileURL(currentURL+":11334");
+            }
+        }
+    }
 
     function refresh(){
         console.log("refresh");

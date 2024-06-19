@@ -12,13 +12,14 @@ const networkSlice = createSlice({
   name: 'network',
   initialState:{
     monitor: 'http://10.108.1.10:11335',
-    mobile: 'http://10.108.1.10:11334'
+    mobile: ''
   },
   reducers: {
     setMonitorURL(state,action: PayloadAction<string>) {
       state.monitor = action.payload;
     },
     setMobileURL(state,action: PayloadAction<string>) {
+      console.log("---------->",state.mobile, action.payload);
       state.mobile = action.payload;
     }
   },

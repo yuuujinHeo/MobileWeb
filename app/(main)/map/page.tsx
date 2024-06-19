@@ -16,9 +16,12 @@ const Map: React.FC = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
+  const [mobileURL, setMobileURL] = useState('');
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
+    setURL();
+
     if (!canvasRef.current) return;
 
     const scene = new THREE.Scene();
@@ -90,14 +93,29 @@ const Map: React.FC = () => {
     rendererRef.current,
     cameraRef.current,
     controlRef.current,
+    mobileURL
   ]);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+    async function setURL(){
+        if(mobileURL == ''){
+            const currentURL = window.location.href;
+            console.log(currentURL);
+            if(currentURL.startsWith('http')){
+                console.log(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334")
+                setMobileURL(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334");
+            }else{
+                console.log("->",currentURL+":11334")
+                setMobileURL(currentURL+":11334");
+            }
+        }
+    }
 
   // Get data from lidar
   const getCloud = async () => {
     try {
       const resp = await axios.get(url + "/map/cloud/test");
+      //const resp = await axios.get(mobileURL + "/map/cloud/test");
       return resp.data;
     } catch (e) {
       console.error(

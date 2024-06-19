@@ -8,12 +8,14 @@ import '../styles/layout/layout.scss';
 import { Provider } from 'react-redux'
 import {GlobalUserProvider} from '../interface/user'
 import { store } from '@/store/store';
+import { useEffect } from 'react';
 
 interface RootLayoutProps {
     children: React.ReactNode;
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
+
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
