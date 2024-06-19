@@ -99,7 +99,10 @@ const Map: React.FC = () => {
       const resp = await axios.get(url + ":11334/map/cloud/test");
       return resp.data;
     } catch (e) {
-      console.error(e);
+      console.error(
+        "An error Occured while getting cloud data. The error is:",
+        e
+      );
     }
   };
 
