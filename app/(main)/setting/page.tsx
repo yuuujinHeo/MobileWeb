@@ -20,6 +20,7 @@ import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 
 const Setting: React.FC = () => {
+    const [mobileURL, setMobileURL] = useState('');
     const [settingState, setSettingState] = useState<SettingState>({
         robot:{
             PLATFORM_NAME:'',
@@ -108,20 +109,17 @@ const Setting: React.FC = () => {
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
     const toast = useRef<Toast | null>(null);
-    // const [mobileURL, setMobileURL] = useState('');
-    var mobileURL = '';
-
 
     useEffect(() =>{
-        setURL().then((url) =>{
-            default_setting();
-        })
+        setURL();
     },[])
 
-    if(settingState == null || settingState == undefined){
-        console.log("!!!!!");
-        
-    }
+    useEffect(()=>{
+        console.log("useEffect : ",mobileURL);
+        if(mobileURL != ''){
+            default_setting();
+        }
+    },[mobileURL])
 
     async function setURL(){
         if(mobileURL == ''){
@@ -133,7 +131,7 @@ const Setting: React.FC = () => {
             }else{
                 mURL = currentURL+":11334";
             }
-            mobileURL = mURL;
+            setMobileURL(mURL);
             // setMobileURL(mURL);
             console.log("url :",mURL,mobileURL);
             return mURL;
@@ -194,17 +192,17 @@ const Setting: React.FC = () => {
 
     const send_setting = async() =>{
         try{
-            console.log(send_setting);
-            const json = JSON.stringify({"robot":formik_robot.values
-            //                                 "debug":formik_debug.values,
-            //                                 "loc":formik_loc.values,
-            //                                 "control":formik_control.values,
-            //                                 "annotation":formik_annotation.values,
-            //                                 "default":formik_default.values,
-            //                                 "motor":formik_motor.values,
-            //                                 "mapping":formik_mapping.values,
-            //                                 "obs":formik_obs.values,
+            const json = JSON.stringify({"robot":formik_robot.values,
+                                            "debug":formik_debug.values,
+                                            "loc":formik_loc.values,
+                                            "control":formik_control.values,
+                                            "annotation":formik_annotation.values,
+                                            "default":formik_default.values,
+                                            "motor":formik_motor.values,
+                                            "mapping":formik_mapping.values,
+                                            "obs":formik_obs.values,
                                         });
+                                        console.log("mobileURL?????",mobileURL);
             const response = await axios.post(mobileURL+'/setting',json,{
                 headers:{
                     'Content-Type':'application/json'
@@ -219,7 +217,7 @@ const Setting: React.FC = () => {
 
             default_setting(response.data);
 
-            console.log("--------------",json,response);   
+            console.log("--------------",json,response.data);   
         }catch(error){
             toast.current?.show({
                 severity: 'error',
@@ -234,14 +232,14 @@ const Setting: React.FC = () => {
     function initForm(){
         if(settingState){
             formik_robot.handleReset(settingState.robot);
-            // formik_debug.handleReset(settingState.debug);
-            // formik_loc.handleReset(settingState.loc);
-            // formik_control.handleReset(settingState.control);
-            // formik_annotation.handleReset(settingState.annotation);
-            // formik_default.handleReset(settingState.default);
-            // formik_motor.handleReset(settingState.motor);
-            // formik_mapping.handleReset(settingState.mapping);
-            // formik_obs.handleReset(settingState.obs);
+            formik_debug.handleReset(settingState.debug);
+            formik_loc.handleReset(settingState.loc);
+            formik_control.handleReset(settingState.control);
+            formik_annotation.handleReset(settingState.annotation);
+            formik_default.handleReset(settingState.default);
+            formik_motor.handleReset(settingState.motor);
+            formik_mapping.handleReset(settingState.mapping);
+            formik_obs.handleReset(settingState.obs);
         }
     }   
 
@@ -539,6 +537,7 @@ const Setting: React.FC = () => {
     }
     const i_size= 300;
     const url = "http://10.108.1.10";
+    
     const PopupPreset = () =>{
         const cm = useRef<ContextMenu>(null);
         const [selectPreset, setSelectPreset] = useState<number | null>(null);
