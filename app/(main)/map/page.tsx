@@ -1,11 +1,13 @@
-
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
-import "../../../styles/canvas.scss";
+import "./canvas.scss";
 import axios from "axios";
+
+const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -22,7 +24,6 @@ const Map: React.FC = () => {
 
     if (!canvasRef.current) return;
 
-    // scene
     const scene = new THREE.Scene();
 
     const color = new THREE.Color(0xffffff);
@@ -62,10 +63,7 @@ const Map: React.FC = () => {
 
     control.maxPolarAngle = Math.PI / 2;
 
-    // resize handling
-    window.addEventListener("resize", onWindowResize);
-
-    function onWindowResize() {
+    const onWindowResize = () => {
       if (!canvasRef.current) return;
       camera.aspect =
         canvasRef.current.clientWidth / canvasRef.current.clientHeight;
@@ -76,7 +74,10 @@ const Map: React.FC = () => {
         canvasRef.current.clientWidth,
         canvasRef.current.clientHeight
       );
-    }
+    };
+
+    // resize handling
+    window.addEventListener("resize", onWindowResize);
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
@@ -95,6 +96,7 @@ const Map: React.FC = () => {
     mobileURL
   ]);
 
+  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
     async function setURL(){
         if(mobileURL == ''){
             const currentURL = window.location.href;
@@ -112,10 +114,14 @@ const Map: React.FC = () => {
   // Get data from lidar
   const getCloud = async () => {
     try {
-      const resp = await axios.get(mobileURL + "/map/cloud/test");
+      const resp = await axios.get(url + "/map/cloud/test");
+      //const resp = await axios.get(mobileURL + "/map/cloud/test");
       return resp.data;
     } catch (e) {
-      console.error(e);
+      console.error(
+        "An error Occured while getting cloud data. The error is:",
+        e
+      );
     }
   };
 
@@ -130,59 +136,67 @@ const Map: React.FC = () => {
       return;
 
     const cloud = await getCloud();
-    const geo = new THREE.BufferGeometry();
 
-    const positions: number[] = [];
-    const colors: number[] = [];
+    if (cloud) {
+      const geo = new THREE.BufferGeometry();
 
-    const color = new THREE.Color();
+      const positions: number[] = [];
+      const colors: number[] = [];
 
-    cloud.forEach((arr: string[]) => {
-      // set positions
-      const parsedArr = arr.slice(0, 3).map(parseFloat);
-      positions.push(...parsedArr);
+      const color = new THREE.Color();
 
-      if (colors.length) {
-        color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
-      } else {
-        color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
-      }
+      cloud.forEach((arr: string[]) => {
+        // set positions
+        const parsedArr = arr.slice(0, 3).map(parseFloat);
+        positions.push(...parsedArr);
 
-      colors.push(color.r, color.g, color.b);
-    });
+        if (colors.length) {
+          color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
+        } else {
+          color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
+        }
 
-    geo.setAttribute(
-      "position",
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
-    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+        colors.push(color.r, color.g, color.b);
+      });
 
-    geo.computeBoundingSphere();
+      geo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
-    const material = new THREE.PointsMaterial({
-      size: 0.3,
-      vertexColors: true,
-    });
+      geo.computeBoundingSphere();
 
-    const points = new THREE.Points(geo, material);
-    points.rotation.x = -(Math.PI / 2);
+      const material = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+      });
 
-    sceneRef.current.add(points);
+      const points = new THREE.Points(geo, material);
+      points.rotation.x = -(Math.PI / 2);
 
-    const animate = () => {
-      if (
-        rendererRef.current !== null &&
-        sceneRef.current !== null &&
-        cameraRef.current !== null
-      ) {
-        rendererRef.current.render(sceneRef.current, cameraRef.current);
-      }
-    };
+      sceneRef.current.add(points);
 
-    rendererRef.current.setAnimationLoop(animate);
+      const animate = () => {
+        if (
+          rendererRef.current !== null &&
+          sceneRef.current !== null &&
+          cameraRef.current !== null
+        ) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      };
+
+      rendererRef.current.setAnimationLoop(animate);
+    }
   };
 
-  return <canvas className="canvas" ref={canvasRef} />;
+  return (
+    <main>
+      <canvas className="canvas" ref={canvasRef} />
+      <Joystick></Joystick>
+    </main>
+  );
 };
 
 export default Map;
