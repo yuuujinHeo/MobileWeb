@@ -39,6 +39,8 @@ import {userContext} from '../../../interface/user'
 // import { selectMonitor } from '@/store/networkSlice';
 import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
 import { start } from 'repl';
+import { selectSetting } from '@/store/settingSlice';
+
 
 
 const Update: React.FC = () =>{
@@ -54,19 +56,22 @@ const Update: React.FC = () =>{
     const uploader = useRef<FileUpload | null>(null);
     const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
 
-    const [newVersionTest, setNewVersionTest] = useState<newversion>(defaultNewVersion);
-    const [curVersionTest, setCurVersionTest] = useState<version>(defaultVersion);
-    const [newVersionText, setNewVersionText] = useState<newversion>(defaultNewVersion);
-    const [curVersionText, setCurVersionText] = useState<version>(defaultVersion);
     const [newVersionUI, setNewVersionUI] = useState<newversion>(defaultNewVersion);
     const [curVersionUI, setCurVersionUI] = useState<version>(defaultVersion);
-    const [runningTest, setRunningTest] = useState(false);
+    const [newVersionSLAMNAV, setNewVersionSLAMNAV] = useState<newversion>(defaultNewVersion);
+    const [curVersionSLAMNAV, setCurVersionSLAMNAV] = useState<version>(defaultVersion);
+    const [newVersionSLAMNAV2, setNewVersionSLAMNAV2] = useState<newversion>(defaultNewVersion);
+    const [curVersionSLAMNAV2, setCurVersionSLAMNAV2] = useState<version>(defaultVersion);
     const [runningUI, setRunningUI] = useState(false);
-    const [waitingTest, setWaitingTest] = useState(false);
     const [waitingUI, setWatingUI] = useState(false);
+    const [runningSLAMNAV, setRunningSLAMNAV] = useState(false);
+    const [waitingSLAMNAV, setWaitingSLAMNAV] = useState(false);
+    const [runningSLAMNAV2, setRunningSLAMNAV2] = useState(false);
+    const [waitingSLAMNAV2, setWaitingSLAMNAV2] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
     const monitorURL = useSelector((state:RootState) => selectMonitor(state));
-    // let mobileURL = 'hello';
+    const settingState = useSelector((state:RootState) => selectSetting(state));
+    
     const [mobileURL, setMobileURL] = useState('');
 
     useEffect(()=>{
@@ -128,7 +133,7 @@ const Update: React.FC = () =>{
             'authorization': state.token
         }
         };
-        axios.post(mobileURL+":11335/upload/files", formData, config)
+        axios.post(monitorURL+"/upload/files", formData, config)
           .then(response => {
             console.log('File uploaded successfully:', response.data);
             uploader.current?.clear();
@@ -150,67 +155,189 @@ const Update: React.FC = () =>{
 
 
     const readUpdate = async() =>{
-        try{
-            console.log("monitorURL : ",monitorURL);
-            const response = await axios.get(monitorURL+'/versions/text.txt');
-            console.log("text(new):",response.data)
-            setNewVersionText(response.data);
-        }catch(error){
-            // alert(error);
-        }
-        try{
-            const response = await axios.get(monitorURL+'/versions/test');
-            console.log("test(new):",newVersionTest)
-            setNewVersionTest(response.data);
-        }catch(error){
-            // alert(error);
-        }
-        try{
-            const response = await axios.get(monitorURL+'/versions/MAIN_MOBILE');
-            console.log("main_mobile(new):",newVersionUI)
-            setNewVersionUI(response.data);
-        }catch(error){
-            // alert(error);
+        
+        if(settingState.robot.PLATFORM_TYPE == "AMR"){
+            try{
+                const response = await axios.get(monitorURL+'/versions/SLAMNAV2');
+                console.log("slamnav2(new):",newVersionUI)
+                setNewVersionSLAMNAV2(response.data);
+            }catch(error){
+                // alert(error);
+            }
+        }else{
+            try{
+                const response = await axios.get(monitorURL+'/versions/MAIN_MOBILE');
+                console.log("main_mobile(new):",newVersionUI)
+                setNewVersionUI(response.data);
+            }catch(error){
+                // alert(error);
+            }
+            try{
+                const response = await axios.get(monitorURL+'/versions/SLAMNAV');
+                console.log("slamnav(new):",newVersionUI)
+                setNewVersionSLAMNAV(response.data);
+            }catch(error){
+                // alert(error);
+            }
+
         }
     }
 
     const readVersion = async() =>{
-        try{
-            const response = await axios.get(mobileURL+'/versions/text.txt');
-            console.log("text:",response.data.data);
-            setCurVersionText(response.data.data);
-        }catch(error){
-            console.error("text = ",error);
-        }
-        try{
-            const response = await axios.get(mobileURL+'/versions/test');
-            console.log("test:",response.data.data);
-            setCurVersionTest(response.data.data);
-        }catch(error){
-            console.error("test = ",error);
-        }
-        try{
-            const response = await axios.get(mobileURL+'/versions/MAIN_MOBILE');
-            console.log("ui:",response.data.data);
-            if(response.data.data != undefined){
-                setCurVersionUI(response.data.data);
-            }   
-        }catch(error){
-            console.error("ui = ",error);
+
+        if(settingState.robot.PLATFORM_TYPE == "AMR"){
+            try{
+                const response = await axios.get(mobileURL+'/versions/SLAMNAV2');
+                console.log("slamnav2:",response.data.data);
+                if(response.data.data != undefined){
+                    setCurVersionSLAMNAV2(response.data.data);
+                }   
+            }catch(error){
+                console.error("slamnav2 = ",error);
+            }
+        }else{
+            try{
+                const response = await axios.get(mobileURL+'/versions/MAIN_MOBILE');
+                console.log("ui:",response.data.data);
+                if(response.data.data != undefined){
+                    setCurVersionUI(response.data.data);
+                }   
+            }catch(error){
+                console.error("ui = ",error);
+            }
+            try{
+                const response = await axios.get(mobileURL+'/versions/SLAMNAV');
+                console.log("slamnav:",response.data.data);
+                if(response.data.data != undefined){
+                    setCurVersionSLAMNAV(response.data.data);
+                }   
+            }catch(error){
+                console.error("slamnav = ",error);
+            }
         }
 
     }
 
 
     function update(_program:string, _version:string){
-        if(_program==="text.txt"){
-            updateText(_version);
-        }else if(_program === "test"){
-            updateTest(_version);
-        }else if(_program === "MAIN_MOBILE"){
+        if(_program === "MAIN_MOBILE"){
+            updateUI(_version);
+        }else if(_program === "SLAMNAV2"){
+            updateSLAMNAV2(_version);
+        }else if(_program === "SLAMNAV"){
             updateUI(_version);
         }else{
 
+        }
+    }
+    async function updateSLAMNAV2(_version:string){
+        try{
+            setWaitingSLAMNAV2(true); 
+            console.log(curVersionSLAMNAV2);
+            if(_version==undefined){
+                toast_main.current?.show({
+                    severity: 'error',
+                    summary: 'Update',
+                    detail: 'Version is undefined',
+                    life: 3000
+                })
+                setWaitingSLAMNAV2(false); 
+            }else if(_version==curVersionSLAMNAV2.version){
+                toast_main.current?.show({
+                    severity: 'warn',
+                    summary: 'Update',
+                    detail: 'Already updated',
+                    life: 3000
+                })
+                setWaitingSLAMNAV2(false); 
+            }else{
+                const body = {
+                    program: "SLAMNAV2",
+                    new_version: _version,
+                    cur_version: curVersionSLAMNAV2.version,
+                    path: '/code/build-SLAMNAV2-Desktop-Release/SLAMNAV2',
+                    auth:state
+                }
+                const _url =mobileURL+'/update/'
+                const response = await axios.post(_url,body);
+    
+                console.log(response);
+
+                toast_main.current?.show({
+                    severity: 'success',
+                    summary: 'Update',
+                    detail: 'Update successfully finished\r\n'+response.data.log.date,
+                    life: 3000
+                })
+
+                setCurVersionSLAMNAV2({prev_version:response.data.log.prev_version,version:response.data.log.new_version,date:response.data.log.date});
+                setDisplayRollback(false);
+                setWaitingSLAMNAV2(false); 
+            }
+        }catch(error){
+            console.log(error);
+            toast_main.current?.show({
+                severity: 'error',
+                summary: 'Update',
+                detail: 'Update Failed',
+                life: 3000
+            })
+            setWaitingSLAMNAV2(false); 
+        }
+    }
+    async function updateSLAMNAV(_version:string){
+        try{
+            setWaitingSLAMNAV(true); 
+            console.log(curVersionSLAMNAV);
+            if(_version==undefined){
+                toast_main.current?.show({
+                    severity: 'error',
+                    summary: 'Update',
+                    detail: 'Version is undefined',
+                    life: 3000
+                })
+                setWaitingSLAMNAV(false); 
+            }else if(_version==curVersionSLAMNAV.version){
+                toast_main.current?.show({
+                    severity: 'warn',
+                    summary: 'Update',
+                    detail: 'Already updated',
+                    life: 3000
+                })
+                setWaitingSLAMNAV(false); 
+            }else{
+                const body = {
+                    program: "SLAMNAV",
+                    new_version: _version,
+                    cur_version: curVersionSLAMNAV.version,
+                    path: '/RB_MOBILE/release/SLAMNAV',
+                    auth:state
+                }
+                const _url =mobileURL+'/update/'
+                const response = await axios.post(_url,body);
+    
+                console.log(response);
+
+                toast_main.current?.show({
+                    severity: 'success',
+                    summary: 'Update',
+                    detail: 'Update successfully finished\r\n'+response.data.log.date,
+                    life: 3000
+                })
+
+                setCurVersionSLAMNAV({prev_version:response.data.log.prev_version,version:response.data.log.new_version,date:response.data.log.date});
+                setDisplayRollback(false);
+                setWaitingSLAMNAV(false); 
+            }
+        }catch(error){
+            console.log(error);
+            toast_main.current?.show({
+                severity: 'error',
+                summary: 'Update',
+                detail: 'Update Failed',
+                life: 3000
+            })
+            setWaitingSLAMNAV(false); 
         }
     }
 
@@ -239,11 +366,11 @@ const Update: React.FC = () =>{
                     program: "MAIN_MOBILE",
                     new_version: _version,
                     cur_version: curVersionUI.version,
-                    path: '/home/rainbow/RB_MOBILE/release/MAIN_MOBILE',
+                    path: '/RB_MOBILE/release/MAIN_MOBILE',
                     auth:state
                 }
                 console.log("??????????");
-                const _url =mobileURL+':11334/update/'
+                const _url =mobileURL+'/update/'
                 const response = await axios.post(_url,body);
     
                 console.log(response);
@@ -268,109 +395,6 @@ const Update: React.FC = () =>{
                 life: 3000
             })
             setWatingUI(false); 
-        }
-    }
-
-    async function updateText(_version:string){
-        try{
-            if(_version==undefined){
-                toast_main.current?.show({
-                    severity: 'error',
-                    summary: 'Update',
-                    detail: 'Version is undefined',
-                    life: 3000
-                })
-            }else if(_version==curVersionText.version){
-                toast_main.current?.show({
-                    severity: 'warn',
-                    summary: 'Update',
-                    detail: 'Already updated',
-                    life: 3000
-                })
-            }else{
-                const body = {
-                    program: "text.txt",
-                    new_version: _version,
-                    cur_version: curVersionText.version,
-                    path:'/home/rainbow/RB_MOBILE/release/text.txt',
-                    auth:state
-                }
-
-                const _url = mobileURL+':11334/update/'
-
-                console.log(body);
-                const response = await axios.post(_url,body);
-    
-
-                toast_main.current?.show({
-                    severity: 'success',
-                    summary: 'Update',
-                    detail: 'Update successfully finished\r\n'+response.data.log.date,
-                    life: 3000
-                })
-
-                setCurVersionText({prev_version:response.data.log.prev_version,version:response.data.log.new_version,date:response.data.log.date});
-                setDisplayRollback(false);
-            }
-        }catch(error){
-            console.error(error);
-            toast_main.current?.show({
-                severity: 'error',
-                summary: 'Update',
-                detail: 'Update Failed',
-                life: 3000
-            })
-            setWatingUI(false); 
-        }
-    }
-    async function updateTest(_version:string){
-        try{
-            if(_version==undefined){
-                toast_main.current?.show({
-                    severity: 'error',
-                    summary: 'Update',
-                    detail: 'Version is undefined',
-                    life: 3000
-                })
-            }else if(_version==curVersionTest.version){
-                toast_main.current?.show({
-                    severity: 'warn',
-                    summary: 'Update',
-                    detail: 'Already updated',
-                    life: 3000
-                })
-            }else{
-                const body = {
-                    program: "test",
-                    new_version: _version,
-                    cur_version: curVersionTest.version,
-                    path:'/home/rainbow/RB_MOBILE/release/test',
-                    auth:state
-                }
-
-                const _url = mobileURL+'/update/'
-                const response = await axios.post(_url,body);
-    
-
-                console.log("response = ",response);
-                toast_main.current?.show({
-                    severity: 'success',
-                    summary: 'Update',
-                    detail: 'Update successfully finished\r\n'+response.data.log.date,
-                    life: 3000
-                })
-
-                setCurVersionTest({prev_version:response.data.log.prev_version,version:response.data.log.new_version,date:response.data.log.date});
-                setDisplayRollback(false);
-            }
-        }catch(error){
-            console.error("what's error?",error);
-            toast_main.current?.show({
-                severity: 'error',
-                summary: 'Update',
-                detail: 'Update Failed',
-                life: 3000
-            })
         }
     }
 
@@ -463,8 +487,10 @@ const Update: React.FC = () =>{
                 })
                 if(filename == "MAIN_MOBILE"){
                     setRunningUI(response.data);
-                }else if(filename == "test"){
-                    setRunningTest(response.data);
+                }else if(filename == "SLAMNAV"){
+                    setRunningSLAMNAV(response.data);
+                }else if(filename == "SLAMNAV2"){
+                    setRunningSLAMNAV2(response.data);
                 }
             }
         }catch(error){
@@ -487,8 +513,10 @@ const Update: React.FC = () =>{
             })
             if(filename == "MAIN_MOBILE"){
                 setRunningUI(response.data);
-            }else if(filename == "test"){
-                setRunningTest(response.data);
+            }else if(filename == "SLAMNAV"){
+                setRunningSLAMNAV(response.data);
+            }else if(filename == "SLAMNAV2"){
+                setRunningSLAMNAV2(response.data);
             }
         }catch(error){
             toast_main.current?.show({
@@ -511,8 +539,10 @@ const Update: React.FC = () =>{
             })
             if(filename == "MAIN_MOBILE"){
                 setRunningUI(response.data);
-            }else if(filename == "test"){
-                setRunningTest(response.data);
+            }else if(filename == "SLAMNAV"){
+                setRunningSLAMNAV(response.data);
+            }else if(filename == "SLAMNAV2"){
+                setRunningSLAMNAV2(response.data);
             }
         }catch(error){
             toast_main.current?.show({
@@ -530,15 +560,16 @@ const Update: React.FC = () =>{
             <RollbackDialog/>
             <Toast ref={toast_main}></Toast>
             <Toolbar start={<Button label="새로고침" icon="pi pi-refresh" onClick={refresh} style={{ marginRight: '.5em' }} severity="secondary"/>} end={<Button label="업로드" onClick={() => setDisplayUpload(true)} icon="pi pi-upload" style={{ width: '10rem' }}></Button>}></Toolbar>
+            {settingState.robot.PLATFORM_TYPE == "AMR" &&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
-                    <h3>text.txt</h3>
+                    <h3>SLAMNAV2</h3>
                     <div className="field grid">
                         <label className="col-12 mb-2 md:col-2 md:mb-0">
                             현재 버전
                         </label>
                         <div className="col-12 md:col-10">
-                            <InputText  value={curVersionText.version} type="text" style={{width: '20vw'}} readOnly/>
+                            <InputText  value={curVersionSLAMNAV2.version} type="text" style={{width: '20vw'}} readOnly/>
                         </div>
                     </div>
                     <div className="field grid">
@@ -546,7 +577,7 @@ const Update: React.FC = () =>{
                             최신 버전
                         </label>
                         <div className="col-12 md:col-10">
-                            <InputText type="text" value={newVersionText.version} style={{width: '20vw'}} readOnly/>
+                            <InputText type="text" value={newVersionSLAMNAV2.version} style={{width: '20vw'}} readOnly/>
                         </div>
                     </div>
                     <div className="field grid">
@@ -554,47 +585,15 @@ const Update: React.FC = () =>{
                             마지막 업데이트 날짜
                         </label>
                         <div className="col-12 md:col-10">
-                            <InputText  value={curVersionText.date} type="text" style={{width: '20vw'}} readOnly/>
+                            <InputText  value={curVersionSLAMNAV2.date} type="text" style={{width: '20vw'}} readOnly/>
                         </div>
                     </div> 
-                <Button onClick={() => update("text.txt",newVersionText.version)}>Update</Button>
-                <Button style={{marginLeft:10}} onClick={() => {setProgramRollback('text.txt');setDisplayRollback(true)}}>Rollback</Button>
+                <Button onClick={() => update("SLAMNAV2",newVersionSLAMNAV2.version)}>Update</Button>
+                <Button style={{marginLeft:10}} onClick={() => {setProgramRollback('SLAMNAV2');setDisplayRollback(true)}}>Rollback</Button>
                 </div>
             </Panel>
-            <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
-                <div className="card" >
-                    <h3>Test</h3>
-                    <div className="field grid">
-                        <label  className="col-12 mb-2 md:col-2 md:mb-0">
-                            현재 버전
-                        </label>
-                        <div className="col-12 md:col-10">
-                            <InputText  value={curVersionTest.version} type="text" style={{width: '20vw'}} readOnly/>
-                        </div>
-                    </div>
-                    <div className="field grid">
-                        <label className="col-12 mb-2 md:col-2 md:mb-0">
-                            최신 버전
-                        </label>
-                        <div className="col-12 md:col-10">
-                            <InputText type="text" value={newVersionTest.version} style={{width: '20vw'}} readOnly/>
-                        </div>
-                    </div>
-                    <div className="field grid">
-                        <label className='md:col-2 md:mb-0 col-12 mb-2'>
-                            마지막 업데이트 날짜
-                        </label>
-                        <div className="col-12 md:col-10">
-                            <InputText  value={curVersionTest.date} type="text" style={{width: '20vw'}} readOnly/>
-                        </div>
-                    </div> 
-                <Button onClick={() => update("test",newVersionTest.version)}>Update</Button>
-                <Button style={{marginLeft:10}} onClick={() => {setProgramRollback('test');setDisplayRollback(true)}}>Rollback</Button>
-                <Button style={{marginLeft:10}} onClick={() => startProgram("test")}>Start</Button>
-                <Button style={{marginLeft:10}} onClick={() => stopProgram("test")}>Stop</Button>
-                <Button style={{marginLeft:10}} onClick={() => restartProgram("test")}>ReStart</Button>
-                </div>
-            </Panel>
+            }
+            {settingState.robot.PLATFORM_TYPE != "AMR" &&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
                     <h3>MAIN_MOBILE</h3>
@@ -629,6 +628,7 @@ const Update: React.FC = () =>{
                 <Button style={{marginLeft:10}} disabled={waitingUI} onClick={() => restartProgram("MAIN_MOBILE")}>ReStart</Button> 
                 </div>
             </Panel>
+            }
         </main>
     );
 }
