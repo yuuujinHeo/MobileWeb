@@ -7,73 +7,126 @@ import "./style.scss";
 const Joystick = () => {
   useEffect(() => {
     // Main logic
-    const { joystick, manager } = createJoystick();
-    const els = initDebugElements();
+    const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-    manager.on("start", (evt, data) => {
-      // Handle start events if needed
+    const { leftJoy, leftJoyManager, rightJoy, rightJoyManager } =
+      createJoystick();
+    const { els, els2 } = initDebugElements();
+
+    leftJoyManager.on("start", (evt) => {
+      dump(evt.type, "debug");
     });
 
-    manager.on("move", (evt, data) => {
-      dump(evt.type);
+    leftJoyManager.on("move", (evt, data) => {
       debug(data, els);
+      dump(evt.type, "debug");
       const { vx, vy, wz } = calculateVelocity(data);
       sendJogRequest(vx, vy, wz);
     });
 
-    manager.on("end", (evt, data) => {
-      // Handle end events if needed
+    leftJoyManager.on("end", (evt) => {
+      dump(evt.type, "debug");
+    });
+
+    rightJoyManager.on("start", (evt) => {
+      dump(evt.type, "debug2");
+    });
+
+    rightJoyManager.on("move", (evt, data) => {
+      debug(data, els2);
+      dump(evt.type, "debug2");
+      const { vx, vy, wz } = calculateVelocity(data);
+      sendJogRequest(vx, vy, wz);
+    });
+    rightJoyManager.on("end", (evt) => {
+      dump(evt.type, "debug2");
     });
 
     // Cleanup function
     return () => {
-      manager.destroy();
-      if (joystick.parentNode) {
-        joystick.parentNode.removeChild(joystick);
+      leftJoyManager.destroy();
+      rightJoyManager.destroy();
+      if (leftJoy.parentNode) {
+        leftJoy.parentNode.removeChild(leftJoy);
+      }
+      if (rightJoy.parentNode) {
+        rightJoy.parentNode.removeChild(rightJoy);
       }
     };
   }, []);
 
-  // [TEMP] Need to be seperated to constants
-  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-
   // Function to create joystick element and initialize nipplejs
   const createJoystick = () => {
-    const joystick = document.createElement("div");
-    joystick.id = "joystick";
+    const leftJoy = document.createElement("div");
+    leftJoy.id = "left-joystick";
+
+    const rightJoy = document.createElement("div");
+    rightJoy.id = "right-joystick";
 
     const joyContainer = document.getElementById("joystick-container");
-    joyContainer.appendChild(joystick);
+    joyContainer.appendChild(leftJoy);
+    joyContainer.appendChild(rightJoy);
 
-    const manager = nipplejs.create({
-      zone: joyContainer,
+    const leftJoyManager = nipplejs.create({
+      zone: leftJoy,
       color: "blue",
       mode: "static",
-      position: { left: "50%", top: "50%" },
+      position: { left: "33%", top: "50%" },
+      lockY: true,
     });
 
-    return { joystick, manager };
+    const rightJoyManager = nipplejs.create({
+      zone: rightJoy,
+      color: "red",
+      mode: "static",
+      position: { left: "66%", top: "50%" },
+      lockX: true,
+    });
+
+    return { leftJoy, leftJoyManager, rightJoy, rightJoyManager };
   };
 
   // Function to initialize debug elements
   const initDebugElements = () => {
     const elDebug = document.getElementById("debug");
+    const elDebug2 = document.getElementById("debug2");
+
     return {
-      position: {
-        x: elDebug.querySelector(".position .x .data"),
-        y: elDebug.querySelector(".position .y .data"),
+      els: {
+        position: {
+          x: elDebug.querySelector(".position .x .data"),
+          y: elDebug.querySelector(".position .y .data"),
+        },
+        force: elDebug.querySelector(".force .data"),
+        pressure: elDebug.querySelector(".pressure .data"),
+        distance: elDebug.querySelector(".distance .data"),
+        angle: {
+          radian: elDebug.querySelector(".angle .radian .data"),
+          degree: elDebug.querySelector(".angle .degree .data"),
+        },
+        direction: {
+          x: elDebug.querySelector(".direction .x .data"),
+          y: elDebug.querySelector(".direction .y .data"),
+          angle: elDebug.querySelector(".direction .angle .data"),
+        },
       },
-      force: elDebug.querySelector(".force .data"),
-      pressure: elDebug.querySelector(".pressure .data"),
-      distance: elDebug.querySelector(".distance .data"),
-      angle: {
-        radian: elDebug.querySelector(".angle .radian .data"),
-        degree: elDebug.querySelector(".angle .degree .data"),
-      },
-      direction: {
-        x: elDebug.querySelector(".direction .x .data"),
-        y: elDebug.querySelector(".direction .y .data"),
-        angle: elDebug.querySelector(".direction .angle .data"),
+      els2: {
+        position: {
+          x: elDebug2.querySelector(".position .x .data"),
+          y: elDebug2.querySelector(".position .y .data"),
+        },
+        force: elDebug2.querySelector(".force .data"),
+        pressure: elDebug2.querySelector(".pressure .data"),
+        distance: elDebug2.querySelector(".distance .data"),
+        angle: {
+          radian: elDebug2.querySelector(".angle .radian .data"),
+          degree: elDebug2.querySelector(".angle .degree .data"),
+        },
+        direction: {
+          x: elDebug2.querySelector(".direction .x .data"),
+          y: elDebug2.querySelector(".direction .y .data"),
+          angle: elDebug2.querySelector(".direction .angle .data"),
+        },
       },
     };
   };
@@ -93,8 +146,8 @@ const Joystick = () => {
   };
 
   let nbEvents = 0;
-  const dump = (evt: string) => {
-    const elDebug = document.getElementById("debug");
+  const dump = (evt: string, target: string) => {
+    const elDebug = document.getElementById(target);
     const elDump = elDebug.querySelector(".dump");
     setTimeout(function () {
       if (elDump.children.length > 4) {
@@ -136,55 +189,111 @@ const Joystick = () => {
   };
   return (
     <div id="joystick-container">
-      <div id="debug">
-        <ul>
-          <li className="position">
-            position:
-            <ul>
-              <li className="x">
-                x: <span className="data"></span>
-              </li>
-              <li className="y">
-                y: <span className="data"></span>
-              </li>
-            </ul>
-          </li>
-          <li className="force">
-            force: <span className="data"></span>
-          </li>
-          <li className="pressure">
-            pressure: <span className="data"></span>
-          </li>
-          <li className="distance">
-            distance: <span className="data"></span>
-          </li>
-          <li className="angle">
-            angle:
-            <ul>
-              <li className="radian">
-                radian: <span className="data"></span>
-              </li>
-              <li className="degree">
-                degree: <span className="data"></span>
-              </li>
-            </ul>
-          </li>
-          <li className="direction">
-            direction:
-            <ul>
-              <li className="x">
-                x: <span className="data"></span>
-              </li>
-              <li className="y">
-                y: <span className="data"></span>
-              </li>
-              <li className="angle">
-                angle: <span className="data"></span>
-              </li>
-            </ul>
-          </li>
-        </ul>
-        <div className="dump"></div>
+      <div className="left-debug-container">
+        <div id="debug">
+          <ul>
+            <li className="position">
+              position:
+              <ul>
+                <li className="x">
+                  x: <span className="data"></span>
+                </li>
+                <li className="y">
+                  y: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+            <li className="force">
+              force: <span className="data"></span>
+            </li>
+            <li className="pressure">
+              pressure: <span className="data"></span>
+            </li>
+            <li className="distance">
+              distance: <span className="data"></span>
+            </li>
+            <li className="angle">
+              angle:
+              <ul>
+                <li className="radian">
+                  radian: <span className="data"></span>
+                </li>
+                <li className="degree">
+                  degree: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+            <li className="direction">
+              direction:
+              <ul>
+                <li className="x">
+                  x: <span className="data"></span>
+                </li>
+                <li className="y">
+                  y: <span className="data"></span>
+                </li>
+                <li className="angle">
+                  angle: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+          </ul>
+          <div className="dump"></div>
+        </div>
+      </div>
+
+      <div className="right-debug-container">
+        <div id="debug2">
+          <ul>
+            <li className="position">
+              position:
+              <ul>
+                <li className="x">
+                  x: <span className="data"></span>
+                </li>
+                <li className="y">
+                  y: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+            <li className="force">
+              force: <span className="data"></span>
+            </li>
+            <li className="pressure">
+              pressure: <span className="data"></span>
+            </li>
+            <li className="distance">
+              distance: <span className="data"></span>
+            </li>
+            <li className="angle">
+              angle:
+              <ul>
+                <li className="radian">
+                  radian: <span className="data"></span>
+                </li>
+                <li className="degree">
+                  degree: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+            <li className="direction">
+              direction:
+              <ul>
+                <li className="x">
+                  x: <span className="data"></span>
+                </li>
+                <li className="y">
+                  y: <span className="data"></span>
+                </li>
+                <li className="angle">
+                  angle: <span className="data"></span>
+                </li>
+              </ul>
+            </li>
+          </ul>
+
+          <div className="dump"></div>
+        </div>
       </div>
     </div>
   );
