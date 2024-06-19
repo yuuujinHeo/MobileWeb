@@ -1,11 +1,13 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
+import dynamic from "next/dynamic";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-import Joystick from "@/components/Joystick";
 
 import "./canvas.scss";
 import axios from "axios";
+
+const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -19,7 +21,6 @@ const Map: React.FC = () => {
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // scene
     const scene = new THREE.Scene();
 
     const color = new THREE.Color(0xffffff);
@@ -59,10 +60,7 @@ const Map: React.FC = () => {
 
     control.maxPolarAngle = Math.PI / 2;
 
-    // resize handling
-    window.addEventListener("resize", onWindowResize);
-
-    function onWindowResize() {
+    const onWindowResize = () => {
       if (!canvasRef.current) return;
       camera.aspect =
         canvasRef.current.clientWidth / canvasRef.current.clientHeight;
@@ -73,7 +71,10 @@ const Map: React.FC = () => {
         canvasRef.current.clientWidth,
         canvasRef.current.clientHeight
       );
-    }
+    };
+
+    // resize handling
+    window.addEventListener("resize", onWindowResize);
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
@@ -91,12 +92,12 @@ const Map: React.FC = () => {
     controlRef.current,
   ]);
 
-  const url = "http://10.108.1.10";
+  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   // Get data from lidar
   const getCloud = async () => {
     try {
-      const resp = await axios.get(url + ":11334/map/cloud/test");
+      const resp = await axios.get(url + "/map/cloud/test");
       return resp.data;
     } catch (e) {
       console.error(

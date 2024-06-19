@@ -35,7 +35,7 @@ const Joystick = () => {
   }, []);
 
   // [TEMP] Need to be seperated to constants
-  const url = "http://10.108.1.10";
+  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   // Function to create joystick element and initialize nipplejs
   const createJoystick = () => {
