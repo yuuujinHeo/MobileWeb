@@ -16,7 +16,8 @@ import { ChildContainerProps, LayoutState, AppTopbarRef } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {userContext} from '../interface/user'
 import { store } from '@/store/store';
-
+import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
+    
 const Layout = ({ children }: ChildContainerProps) => {
     const {state,setState} = useContext(userContext);
     const { layoutConfig, layoutState, setLayoutState } = useContext(LayoutContext);
@@ -40,6 +41,16 @@ const Layout = ({ children }: ChildContainerProps) => {
         }
     });
 
+    useEffect(() =>{
+        console.log("useEEEEEEEEEEEEEEEEEEEFFFFFFFFFFFFf")
+        const currentURL = window.location.href;
+        if(currentURL.startsWith('http')){
+            setMobileURL(currentURL.split(':')[0]+":"+currentURL.split(':')[1])
+        }else{
+            setMobileURL(currentURL.split(':')[0]);
+        }
+    },[])
+    
     const pathname = usePathname();
     const searchParams = useSearchParams();
     useEffect(() => {
@@ -97,6 +108,7 @@ const Layout = ({ children }: ChildContainerProps) => {
             document.body.className = document.body.className.replace(new RegExp('(^|\\b)' + 'blocked-scroll'.split(' ').join('|') + '(\\b|$)', 'gi'), ' ');
         }
     };
+
 
     useEffect(() => {
         if (layoutState.overlayMenuActive || layoutState.staticMenuMobileActive) {

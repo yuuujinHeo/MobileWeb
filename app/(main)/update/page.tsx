@@ -26,6 +26,7 @@ import styles from './index.module.scss';
 import { classNames } from 'primereact/utils';
 import { Column } from 'primereact/column';
 import { DataTable } from 'primereact/datatable';
+import {store,AppDispatch, RootState} from '../../../store/store';
 import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import fs from 'fs';
@@ -35,13 +36,12 @@ import { FileUpload,  FileUploadState, FileUploadHandlerEvent, FileUploadSelectE
 import { forEachChild } from 'typescript';
 import { encode } from 'punycode';
 import {userContext} from '../../../interface/user'
+// import { selectMonitor } from '@/store/networkSlice';
 import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
 import { start } from 'repl';
 
 
 const Update: React.FC = () =>{
-    const dispatch = useDispatch();
-    const mobileURL = useSelector(selectMobile);
     const [displayUpload, setDisplayUpload] = useState(false);
     const [displayRollback, setDisplayRollback] = useState(false);
     const [programRollback, setProgramRollback] = useState('');
@@ -64,6 +64,38 @@ const Update: React.FC = () =>{
     const [runningUI, setRunningUI] = useState(false);
     const [waitingTest, setWaitingTest] = useState(false);
     const [waitingUI, setWatingUI] = useState(false);
+    const dispatch = useDispatch<AppDispatch>();
+    const monitorURL = useSelector((state:RootState) => selectMonitor(state));
+    // let mobileURL = 'hello';
+    const [mobileURL, setMobileURL] = useState('');
+
+    useEffect(()=>{
+        setURL();
+        console.log(monitorURL);
+    },[])
+
+    useEffect(()=>{
+        console.log("useEffect : ",mobileURL);
+        if(mobileURL != ''){
+            readVersion();
+            readUpdate();
+        }
+    },[mobileURL])
+
+
+    async function setURL(){
+        if(mobileURL == ''){
+            const currentURL = window.location.href;
+            var mURL = '';
+            if(currentURL.startsWith('http')){
+                mURL = currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334";
+            }else{
+                mURL = currentURL+":11334";
+            }
+            setMobileURL(mURL);
+            console.log("set mobileURL : ",mobileURL, mURL);
+        }
+    }
 
     const onFileUpload = () => {
         console.log("onupload");
@@ -119,21 +151,22 @@ const Update: React.FC = () =>{
 
     const readUpdate = async() =>{
         try{
-            const response = await axios.get(mobileURL+':11335/versions/text.txt');
+            console.log("monitorURL : ",monitorURL);
+            const response = await axios.get(monitorURL+'/versions/text.txt');
             console.log("text(new):",response.data)
             setNewVersionText(response.data);
         }catch(error){
             // alert(error);
         }
         try{
-            const response = await axios.get(mobileURL+':11335/versions/test');
+            const response = await axios.get(monitorURL+'/versions/test');
             console.log("test(new):",newVersionTest)
             setNewVersionTest(response.data);
         }catch(error){
             // alert(error);
         }
         try{
-            const response = await axios.get(mobileURL+':11335/versions/MAIN_MOBILE');
+            const response = await axios.get(monitorURL+'/versions/MAIN_MOBILE');
             console.log("main_mobile(new):",newVersionUI)
             setNewVersionUI(response.data);
         }catch(error){
@@ -143,21 +176,21 @@ const Update: React.FC = () =>{
 
     const readVersion = async() =>{
         try{
-            const response = await axios.get(mobileURL+':11334/versions/text.txt');
+            const response = await axios.get(mobileURL+'/versions/text.txt');
             console.log("text:",response.data.data);
             setCurVersionText(response.data.data);
         }catch(error){
             console.error("text = ",error);
         }
         try{
-            const response = await axios.get(mobileURL+':11334/versions/test');
+            const response = await axios.get(mobileURL+'/versions/test');
             console.log("test:",response.data.data);
             setCurVersionTest(response.data.data);
         }catch(error){
             console.error("test = ",error);
         }
         try{
-            const response = await axios.get(mobileURL+':11334/versions/MAIN_MOBILE');
+            const response = await axios.get(mobileURL+'/versions/MAIN_MOBILE');
             console.log("ui:",response.data.data);
             if(response.data.data != undefined){
                 setCurVersionUI(response.data.data);
@@ -168,13 +201,6 @@ const Update: React.FC = () =>{
 
     }
 
-    useEffect(()=>{
-        console.log("update useEffect")
-        // console.log(curVersionUI);
-        // readUpdate();
-        readVersion();
-        // console.log(curVersionUI);
-    },[])
 
     function update(_program:string, _version:string){
         if(_program==="text.txt"){
@@ -322,7 +348,7 @@ const Update: React.FC = () =>{
                     auth:state
                 }
 
-                const _url = mobileURL+':11334/update/'
+                const _url = mobileURL+'/update/'
                 const response = await axios.post(_url,body);
     
 
@@ -365,7 +391,7 @@ const Update: React.FC = () =>{
             if(programRollback != ''){
                 console.log("?????????????",programRollback);
                 try{
-                    const response = await axios.get(mobileURL+':11335/versions/all/'+programRollback);
+                    const response = await axios.get(monitorURL+'/versions/all/'+programRollback);
                     setRollbackVersions(response.data);
                 }catch(error){
                     console.error("readVersion : ",error);
@@ -373,7 +399,7 @@ const Update: React.FC = () =>{
             }
         }
         useEffect(()=>{
-            // readVersions();
+            readVersions();
         },[])
 
         const selectedVersionTemplate = (option:any, props:DropdownProps) => {
@@ -418,7 +444,8 @@ const Update: React.FC = () =>{
 
     async function startProgram(filename:string){
         try{
-            const response = await axios.get(mobileURL+':11334/start/'+filename);
+            console.log("startProgram",mobileURL);
+            const response = await axios.get(mobileURL+'/start/'+filename);
 
             if(response.data.message){
                 toast_main.current?.show({
@@ -451,7 +478,7 @@ const Update: React.FC = () =>{
     }
     async function restartProgram(filename:string){
         try{
-            const response = await axios.get(mobileURL+':11334/restart/'+filename);
+            const response = await axios.get(mobileURL+'/restart/'+filename);
             toast_main.current?.show({
                 severity: 'success',
                 summary: filename,
@@ -475,7 +502,7 @@ const Update: React.FC = () =>{
     }
     async function stopProgram(filename:string){
         try{
-            const response = await axios.get(mobileURL+':11334/stop/'+filename);
+            const response = await axios.get(mobileURL+'/stop/'+filename);
             toast_main.current?.show({
                 severity: 'success',
                 summary: filename,

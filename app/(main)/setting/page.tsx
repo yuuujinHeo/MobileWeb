@@ -20,17 +20,131 @@ import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 
 const Setting: React.FC = () => {
-    const [settingState, setSettingState] = useState<SettingState>();
+    const [settingState, setSettingState] = useState<SettingState>({
+        robot:{
+            PLATFORM_NAME:'',
+            PLATFORM_TYPE:''
+        },
+        debug:{
+            SIM_MODE:0
+        },
+        loc:{
+            LOC_CHECK_DIST:0,
+            LOC_CHECK_IE:0,
+            LOC_CHECK_IR:0,
+            LOC_FUSION_RATIO:0,
+            LOC_ICP_COST_THRESHOLD:0,
+            LOC_ICP_ERROR_THRESHOLD:0,
+            LOC_ICP_MAX_FEATURE_NUM:0
+        },
+        control:{
+            DRIVE_EXTENDED_CONTROL_TIME:0,
+            DRIVE_GOAL_D:0,
+            DRIVE_GOAL_TH:0
+        },
+        annotation:{
+            ANNOT_QA_STEP:0
+        },
+        default:{
+            ROBOT_SIZE_MAX_X:0,
+            ROBOT_SIZE_MAX_Y:0,
+            ROBOT_SIZE_MAX_Z:0,
+            ROBOT_SIZE_MIN_X:0,
+            ROBOT_SIZE_MIN_Y:0,
+            ROBOT_SIZE_MIN_Z:0,
+            ROBOT_RADIUS:0,
+            ROBOT_WHEEL_BASE:0,
+            ROBOT_WHEEL_RADIUS:0,
+            LIDAR_MAX_RANGE:0,
+            LIDAR_TF_B_X:0,
+            LIDAR_TF_B_Y:0,
+            LIDAR_TF_B_Z:0,
+            LIDAR_TF_B_RX:0,
+            LIDAR_TF_B_RY:0,
+            LIDAR_TF_B_RZ:0,
+            LIDAR_TF_F_X:0,
+            LIDAR_TF_F_Y:0,
+            LIDAR_TF_F_Z:0,
+            LIDAR_TF_F_RX:0,
+            LIDAR_TF_F_RY:0,
+            LIDAR_TF_F_RZ:0
+        },
+        motor:{
+            MOTOR_ID_L:0,
+            MOTOR_ID_R:0,
+            MOTOR_DIR:0,
+            MOTOR_GEAR_RATIO:0,
+            MOTOR_LIMIT_V:0,
+            MOTOR_LIMIT_V_ACC:0,
+            MOTOR_LIMIT_W:0,
+            MOTOR_LIMIT_W_ACC:0,
+            MOTOR_GAIN_KP:0,
+            MOTOR_GAIN_KI:0,
+            MOTOR_GAIN_KD:0
+        },
+        mapping:{
+            SLAM_ICP_COST_THRESHOLD:0,
+            SLAM_ICP_DO_ACCUM_NUM:0,
+            SLAM_ICP_DO_ERASE_GAP:0,
+            SLAM_ICP_ERROR_THRESHOLD:0,
+            SLAM_ICP_MAX_FEATURE_NUM:0,
+            SLAM_ICP_VIEW_THRESHOLD:0,
+            SLAM_KFRM_LC_TRY_DIST:0,
+            SLAM_KFRM_LC_TRY_OVERLAP:0,
+            SLAM_KFRM_UPDATE_NUM:0,
+            SLAM_VOXEL_SIZE:0,
+            SLAM_WINDOW_SIZE:0
+        },
+        obs:{
+            OBS_AVOID_DIST:0,
+            OBS_MAP_GRID_SIZE:0,
+            OBS_MAP_MARGIN:0,
+            OBS_MAP_RANGE:0,
+            OBS_SIZE_THRESHOLD:0,
+            OBS_TARGET_DIST:0
+        }
+    });
+
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
     const toast = useRef<Toast | null>(null);
-    const dispatch = useDispatch();
-    const mobileURL = useSelector(selectMobile);
+    // const [mobileURL, setMobileURL] = useState('');
+    var mobileURL = '';
 
+
+    useEffect(() =>{
+        setURL().then((url) =>{
+            default_setting();
+        })
+    },[])
+
+    if(settingState == null || settingState == undefined){
+        console.log("!!!!!");
+        
+    }
+
+    async function setURL(){
+        if(mobileURL == ''){
+            const currentURL = window.location.href;
+            var mURL;
+            console.log(currentURL);
+            if(currentURL.startsWith('http')){
+                mURL = currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334";
+            }else{
+                mURL = currentURL+":11334";
+            }
+            mobileURL = mURL;
+            // setMobileURL(mURL);
+            console.log("url :",mURL,mobileURL);
+            return mURL;
+        }
+    }
+    
     const default_setting = async(data:SettingState | undefined=undefined) =>{
         try{
             if(data == undefined){
                 const response = await axios.get(mobileURL+'/setting');
+                console.log(mobileURL+'/setting', response.data);
                 setSettingState({
                     robot:response.data.robot,
                     debug:response.data.debug,
@@ -81,15 +195,15 @@ const Setting: React.FC = () => {
     const send_setting = async() =>{
         try{
             console.log(send_setting);
-            const json = JSON.stringify({"robot":formik_robot.values,
-                                            "debug":formik_debug.values,
-                                            "loc":formik_loc.values,
-                                            "control":formik_control.values,
-                                            "annotation":formik_annotation.values,
-                                            "default":formik_default.values,
-                                            "motor":formik_motor.values,
-                                            "mapping":formik_mapping.values,
-                                            "obs":formik_obs.values,
+            const json = JSON.stringify({"robot":formik_robot.values
+            //                                 "debug":formik_debug.values,
+            //                                 "loc":formik_loc.values,
+            //                                 "control":formik_control.values,
+            //                                 "annotation":formik_annotation.values,
+            //                                 "default":formik_default.values,
+            //                                 "motor":formik_motor.values,
+            //                                 "mapping":formik_mapping.values,
+            //                                 "obs":formik_obs.values,
                                         });
             const response = await axios.post(mobileURL+'/setting',json,{
                 headers:{
@@ -116,22 +230,18 @@ const Setting: React.FC = () => {
             console.error(error);
         }
     };
-
-    useEffect(() =>{
-        default_setting();
-    },[])
   
     function initForm(){
         if(settingState){
             formik_robot.handleReset(settingState.robot);
-            formik_debug.handleReset(settingState.debug);
-            formik_loc.handleReset(settingState.loc);
-            formik_control.handleReset(settingState.control);
-            formik_annotation.handleReset(settingState.annotation);
-            formik_default.handleReset(settingState.default);
-            formik_motor.handleReset(settingState.motor);
-            formik_mapping.handleReset(settingState.mapping);
-            formik_obs.handleReset(settingState.obs);
+            // formik_debug.handleReset(settingState.debug);
+            // formik_loc.handleReset(settingState.loc);
+            // formik_control.handleReset(settingState.control);
+            // formik_annotation.handleReset(settingState.annotation);
+            // formik_default.handleReset(settingState.default);
+            // formik_motor.handleReset(settingState.motor);
+            // formik_mapping.handleReset(settingState.mapping);
+            // formik_obs.handleReset(settingState.obs);
         }
     }   
 
@@ -161,8 +271,8 @@ const Setting: React.FC = () => {
 
     const formik_robot = useFormik({
         initialValues:{
-            PLATFORM_NAME: settingState?settingState.robot.PLATFORM_NAME:'',
-            PLATFORM_TYPE: settingState?.robot.PLATFORM_TYPE
+            PLATFORM_NAME: settingState.robot.PLATFORM_NAME,
+            PLATFORM_TYPE: settingState.robot.PLATFORM_TYPE
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -948,7 +1058,7 @@ const Setting: React.FC = () => {
                                         ></InputNumber>
                                     </div>
                                 </div>
-                            </div>
+                            </div> 
                         </Panel>
                     </div>
                 </TabPanel>
