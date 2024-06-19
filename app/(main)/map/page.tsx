@@ -114,7 +114,7 @@ const Map: React.FC = () => {
   // Get data from lidar
   const getCloud = async () => {
     try {
-      const resp = await axios.get(url + "/map/cloud/test");
+      const resp = await axios.get(url + "/map/cloud/2024_06_14_19_06_41_443");
       //const resp = await axios.get(mobileURL + "/map/cloud/test");
       return resp.data;
     } catch (e) {
