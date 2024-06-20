@@ -4,14 +4,34 @@ import axios from "axios";
 import nipplejs from "nipplejs";
 import "./style.scss";
 
+// Throttle function to limit the rate of function calls
+const throttle = (func: Function, limit: number) => {
+  let lastFunc: ReturnType<typeof setTimeout>;
+  let lastRan: number;
+  return function (...args: any[]) {
+    if (!lastRan) {
+      func.apply(this, args);
+      lastRan = Date.now();
+    } else {
+      clearTimeout(lastFunc);
+      lastFunc = setTimeout(() => {
+        if (Date.now() - lastRan >= limit) {
+          func.apply(this, args);
+          lastRan = Date.now();
+        }
+      }, limit - (Date.now() - lastRan));
+    }
+  };
+};
+
 const Joystick = () => {
   useEffect(() => {
     // Main logic
-    const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-
     const { leftJoy, leftJoyManager, rightJoy, rightJoyManager } =
       createJoystick();
     const { els, els2 } = initDebugElements();
+
+    const throttledSendJogRequest = throttle(sendJogRequest, 100);
 
     leftJoyManager.on("start", (evt) => {
       dump(evt.type, "debug");
@@ -20,8 +40,8 @@ const Joystick = () => {
     leftJoyManager.on("move", (evt, data) => {
       debug(data, els);
       dump(evt.type, "debug");
-      const { vx, vy, wz } = calculateVelocity(data);
-      sendJogRequest(vx, vy, wz);
+      const { vx } = calculateVelocity(data);
+      throttledSendJogRequest(vx, 0, 0);
     });
 
     leftJoyManager.on("end", (evt) => {
@@ -35,8 +55,8 @@ const Joystick = () => {
     rightJoyManager.on("move", (evt, data) => {
       debug(data, els2);
       dump(evt.type, "debug2");
-      const { vx, vy, wz } = calculateVelocity(data);
-      sendJogRequest(vx, vy, wz);
+      const { wz } = calculateVelocity(data);
+      throttledSendJogRequest(0, 0, wz);
     });
     rightJoyManager.on("end", (evt) => {
       dump(evt.type, "debug2");
@@ -171,18 +191,20 @@ const Joystick = () => {
 
   const sendJogRequest = async (vx: number, vy: number, wz: number) => {
     try {
+      const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
       const currentTime = new Date()
         .toISOString()
         .replace("T", " ")
         .split(".")[0];
 
-      // await axios.post(url + "/jog/manual", {
-      //   command: "move",
-      //   vx: vx,
-      //   vy: vy,
-      //   wz: wz,
-      //   time: currentTime,
-      // });
+      const resp = await axios.post(url + "/jog/manual", {
+        command: "move",
+        vx: vx,
+        vy: vy,
+        wz: wz,
+        time: currentTime,
+      });
     } catch (error) {
       console.error("Error sending jog request:", error);
     }
