@@ -13,21 +13,21 @@ const Joystick = () => {
 
     let leftInterval: ReturnType<typeof setInterval> | null = null;
     let rightInterval: ReturnType<typeof setInterval> | null = null;
-    let leftValue = { vy: 0 };
+    let leftValue = { vx: 0 };
     let rightValue = { wz: 0 };
 
     leftJoyManager.on("start", (evt) => {
       dump(evt.type, "debug");
       leftInterval = setInterval(() => {
-        sendJogRequest(0, leftValue.vy, 0);
+        sendJogRequest(0, leftValue.vx, 0);
       }, 100);
     });
 
     leftJoyManager.on("move", (evt, data) => {
       debug(data, els);
       dump(evt.type, "debug");
-      const { vy } = calculateVelocity(data);
-      leftValue.vy = vy;
+      const { vx } = calculateVelocity(data);
+      leftValue.vx = vx;
     });
 
     leftJoyManager.on("end", (evt) => {
@@ -189,15 +189,15 @@ const Joystick = () => {
 
   const calculateVelocity = (data: Record<string, any>) => {
     const speedFactor = 1; // Adjust this value as needed
-    const vx = 0;
-    let vy: number, wz: number;
+    const vy = 0;
+    let vx: number, wz: number;
 
     if (data.vector.y > 0) {
-      vy = speedFactor * data.distance;
+      vx = speedFactor * data.distance;
     } else if (data.vector.y < 0) {
-      vy = -1 * speedFactor * data.distance;
+      vx = -1 * speedFactor * data.distance;
     } else {
-      vy = 0;
+      vx = 0;
     }
 
     if (data.vector.x > 0) {
