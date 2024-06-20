@@ -97,7 +97,7 @@ const Map: React.FC = () => {
 
   // const url = process.env.NEXT_PUBLIC_WEB_API_URL;
  
-    async function setURL(){
+  async function setURL(){
         if(mobileURL == ''){
             const currentURL = window.location.href;
             console.log(currentURL);
