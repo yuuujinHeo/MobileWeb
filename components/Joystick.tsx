@@ -4,26 +4,6 @@ import axios from "axios";
 import nipplejs from "nipplejs";
 import "./style.scss";
 
-// Throttle function to limit the rate of function calls
-const throttle = (func: Function, limit: number) => {
-  let lastFunc: ReturnType<typeof setTimeout>;
-  let lastRan: number;
-  return function (...args: any[]) {
-    if (!lastRan) {
-      func.apply(this, args);
-      lastRan = Date.now();
-    } else {
-      clearTimeout(lastFunc);
-      lastFunc = setTimeout(() => {
-        if (Date.now() - lastRan >= limit) {
-          func.apply(this, args);
-          lastRan = Date.now();
-        }
-      }, limit - (Date.now() - lastRan));
-    }
-  };
-};
-
 const Joystick = () => {
   useEffect(() => {
     // Main logic
@@ -31,35 +11,55 @@ const Joystick = () => {
       createJoystick();
     const { els, els2 } = initDebugElements();
 
-    const throttledSendJogRequest = throttle(sendJogRequest, 100);
+    let leftInterval: ReturnType<typeof setInterval> | null = null;
+    let rightInterval: ReturnType<typeof setInterval> | null = null;
+    let leftValue = { vy: 0 };
+    let rightValue = { wz: 0 };
 
     leftJoyManager.on("start", (evt) => {
       dump(evt.type, "debug");
+      leftInterval = setInterval(() => {
+        sendJogRequest(0, leftValue.vy, 0);
+      }, 100);
     });
 
     leftJoyManager.on("move", (evt, data) => {
       debug(data, els);
       dump(evt.type, "debug");
-      const { vx } = calculateVelocity(data);
-      throttledSendJogRequest(vx, 0, 0);
+      const { vy } = calculateVelocity(data);
+      leftValue.vy = vy;
     });
 
     leftJoyManager.on("end", (evt) => {
       dump(evt.type, "debug");
+      sendJogRequest(0, 0, 0);
+      if (leftInterval) {
+        clearInterval(leftInterval);
+        leftInterval = null;
+      }
     });
 
     rightJoyManager.on("start", (evt) => {
       dump(evt.type, "debug2");
+      rightInterval = setInterval(() => {
+        sendJogRequest(0, 0, rightValue.wz);
+      }, 100);
     });
 
     rightJoyManager.on("move", (evt, data) => {
       debug(data, els2);
       dump(evt.type, "debug2");
       const { wz } = calculateVelocity(data);
-      throttledSendJogRequest(0, 0, wz);
+      rightValue.wz = wz;
     });
+
     rightJoyManager.on("end", (evt) => {
       dump(evt.type, "debug2");
+      sendJogRequest(0, 0, 0);
+      if (rightInterval) {
+        clearInterval(rightInterval);
+        rightInterval = null;
+      }
     });
 
     // Cleanup function
@@ -71,6 +71,12 @@ const Joystick = () => {
       }
       if (rightJoy.parentNode) {
         rightJoy.parentNode.removeChild(rightJoy);
+      }
+      if (leftInterval) {
+        clearInterval(leftInterval);
+      }
+      if (rightInterval) {
+        clearInterval(rightInterval);
       }
     };
   }, []);
@@ -182,10 +188,26 @@ const Joystick = () => {
   };
 
   const calculateVelocity = (data: Record<string, any>) => {
-    const maxSpeed = 1; // Adjust this value as needed
-    const vx = maxSpeed * data.vector.x;
-    const vy = maxSpeed * data.vector.y;
-    const wz = maxSpeed * data.force;
+    const speedFactor = 1; // Adjust this value as needed
+    const vx = 0;
+    let vy: number, wz: number;
+
+    if (data.vector.y > 0) {
+      vy = speedFactor * data.distance;
+    } else if (data.vector.y < 0) {
+      vy = -1 * speedFactor * data.distance;
+    } else {
+      vy = 0;
+    }
+
+    if (data.vector.x > 0) {
+      wz = speedFactor * data.distance;
+    } else if (data.vector.x < 0) {
+      wz = -1 * speedFactor * data.distance;
+    } else {
+      wz = 0;
+    }
+
     return { vx, vy, wz };
   };
 
@@ -196,7 +218,9 @@ const Joystick = () => {
       const currentTime = new Date()
         .toISOString()
         .replace("T", " ")
-        .split(".")[0];
+        .replace("Z", "");
+
+      console.log(currentTime);
 
       const resp = await axios.post(url + "/jog/manual", {
         command: "move",
