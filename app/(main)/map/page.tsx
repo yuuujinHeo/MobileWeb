@@ -1,15 +1,24 @@
 "use client";
 import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
+
+// prime
+import { Sidebar } from "primereact/sidebar";
+import { Button } from "primereact/button";
+
+// three
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
-
-import "./canvas.scss";
+// etc
+import "./style.scss";
 import axios from "axios";
 
 const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
+  // state
+  const [visible, setVisible] = useState<boolean>(false);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -112,7 +121,6 @@ const Map: React.FC = () => {
         console.log("->", currentURL + ":11334");
         setMobileURL(currentURL + ":11334");
       }
-
     }
   }
 
@@ -199,7 +207,18 @@ const Map: React.FC = () => {
   return (
     <main>
       <canvas className="canvas" ref={canvasRef} />
-      <Joystick></Joystick>
+      <Sidebar
+        visible={visible}
+        position="bottom"
+        onHide={() => setVisible(false)}
+        className="joystick-slide"
+      >
+        <Joystick></Joystick>
+      </Sidebar>
+      <Button
+        icon="pi pi-arrow-right"
+        onClick={() => setVisible(true)}
+      ></Button>
     </main>
   );
 };
