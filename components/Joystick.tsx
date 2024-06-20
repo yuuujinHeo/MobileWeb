@@ -1,97 +1,32 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
 import nipplejs from "nipplejs";
+
+// prime
+import { Knob } from "primereact/knob";
+
 import "./style.scss";
 
+const INTERVAL_TIME = 100;
+
 const Joystick = () => {
+  const [speedFactor, setSpeedFactor] = useState<number>(0.5);
+  const [rotateFactor, setRotateFactor] = useState<number>(20);
+  const speedFactorRef = useRef(speedFactor);
+  const rotateFactorRef = useRef(rotateFactor);
+
   useEffect(() => {
-    // Main logic
-    const { leftJoy, leftJoyManager, rightJoy, rightJoyManager } =
-      createJoystick();
-    const { els, els2 } = initDebugElements();
+    speedFactorRef.current = speedFactor;
+  }, [speedFactor]);
 
-    let leftInterval: ReturnType<typeof setInterval> | null = null;
-    let rightInterval: ReturnType<typeof setInterval> | null = null;
-    let leftValue = { vx: 0 };
-    let rightValue = { wz: 0 };
+  useEffect(() => {
+    rotateFactorRef.current = rotateFactor;
+  }, [rotateFactor]);
 
-    leftJoyManager.on("start", (evt) => {
-      dump(evt.type, "debug");
-      leftInterval = setInterval(() => {
-        sendJogRequest(leftValue.vx, 0, 0);
-      }, 100);
-    });
-
-    leftJoyManager.on("move", (evt, data) => {
-      debug(data, els);
-      dump(evt.type, "debug");
-      const { vx } = calculateVelocity(data);
-      leftValue.vx = vx;
-    });
-
-    leftJoyManager.on("end", (evt) => {
-      dump(evt.type, "debug");
-      sendJogRequest(0, 0, 0);
-      if (leftInterval) {
-        clearInterval(leftInterval);
-        leftInterval = null;
-      }
-    });
-
-    rightJoyManager.on("start", (evt) => {
-      dump(evt.type, "debug2");
-      rightInterval = setInterval(() => {
-        sendJogRequest(0, 0, rightValue.wz);
-      }, 100);
-    });
-
-    rightJoyManager.on("move", (evt, data) => {
-      debug(data, els2);
-      dump(evt.type, "debug2");
-      const { wz } = calculateVelocity(data);
-      rightValue.wz = wz;
-    });
-
-    rightJoyManager.on("end", (evt) => {
-      dump(evt.type, "debug2");
-      sendJogRequest(0, 0, 0);
-      if (rightInterval) {
-        clearInterval(rightInterval);
-        rightInterval = null;
-      }
-    });
-
-    // Cleanup function
-    return () => {
-      leftJoyManager.destroy();
-      rightJoyManager.destroy();
-      if (leftJoy.parentNode) {
-        leftJoy.parentNode.removeChild(leftJoy);
-      }
-      if (rightJoy.parentNode) {
-        rightJoy.parentNode.removeChild(rightJoy);
-      }
-      if (leftInterval) {
-        clearInterval(leftInterval);
-      }
-      if (rightInterval) {
-        clearInterval(rightInterval);
-      }
-    };
-  }, []);
-
-  // Function to create joystick element and initialize nipplejs
-  const createJoystick = () => {
-    const leftJoy = document.createElement("div");
-    leftJoy.id = "left-joystick";
-
-    const rightJoy = document.createElement("div");
-    rightJoy.id = "right-joystick";
-
-    const joyContainer = document.getElementById("joystick-container");
-    joyContainer.appendChild(leftJoy);
-    joyContainer.appendChild(rightJoy);
+  const createJoystick = useCallback(() => {
+    const leftJoy = document.getElementById("left-joystick");
+    const rightJoy = document.getElementById("right-joystick");
 
     const leftJoyManager = nipplejs.create({
       zone: leftJoy,
@@ -109,238 +44,143 @@ const Joystick = () => {
       lockX: true,
     });
 
-    return { leftJoy, leftJoyManager, rightJoy, rightJoyManager };
-  };
+    return { leftJoyManager, rightJoyManager };
+  }, []);
 
-  // Function to initialize debug elements
-  const initDebugElements = () => {
-    const elDebug = document.getElementById("debug");
-    const elDebug2 = document.getElementById("debug2");
+  const calculateVelocity = useCallback(
+    (data: Record<string, any>) => {
+      const vy = 0;
+      let vx: number, wz: number;
 
-    return {
-      els: {
-        position: {
-          x: elDebug.querySelector(".position .x .data"),
-          y: elDebug.querySelector(".position .y .data"),
-        },
-        force: elDebug.querySelector(".force .data"),
-        pressure: elDebug.querySelector(".pressure .data"),
-        distance: elDebug.querySelector(".distance .data"),
-        angle: {
-          radian: elDebug.querySelector(".angle .radian .data"),
-          degree: elDebug.querySelector(".angle .degree .data"),
-        },
-        direction: {
-          x: elDebug.querySelector(".direction .x .data"),
-          y: elDebug.querySelector(".direction .y .data"),
-          angle: elDebug.querySelector(".direction .angle .data"),
-        },
-      },
-      els2: {
-        position: {
-          x: elDebug2.querySelector(".position .x .data"),
-          y: elDebug2.querySelector(".position .y .data"),
-        },
-        force: elDebug2.querySelector(".force .data"),
-        pressure: elDebug2.querySelector(".pressure .data"),
-        distance: elDebug2.querySelector(".distance .data"),
-        angle: {
-          radian: elDebug2.querySelector(".angle .radian .data"),
-          degree: elDebug2.querySelector(".angle .degree .data"),
-        },
-        direction: {
-          x: elDebug2.querySelector(".direction .x .data"),
-          y: elDebug2.querySelector(".direction .y .data"),
-          angle: elDebug2.querySelector(".direction .angle .data"),
-        },
-      },
+      if (data.vector.y > 0) {
+        vx = speedFactorRef.current * (data.distance / 50);
+      } else if (data.vector.y < 0) {
+        vx = -1 * speedFactorRef.current * (data.distance / 50);
+      } else {
+        vx = 0;
+      }
+
+      if (data.vector.x > 0) {
+        wz = rotateFactorRef.current * (data.distance / 50);
+      } else if (data.vector.x < 0) {
+        wz = -1 * rotateFactorRef.current * (data.distance / 50);
+      } else {
+        wz = 0;
+      }
+
+      return { vx, vy, wz };
+    },
+    [speedFactorRef, rotateFactorRef]
+  );
+
+  const sendJogRequest = useCallback(
+    async (vx: number, vy: number, wz: number) => {
+      try {
+        const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
+        const currentTime = new Date()
+          .toISOString()
+          .replace("T", " ")
+          .replace("Z", "");
+
+        await axios.post(url + "/jog/manual", {
+          command: "move",
+          vx: vx,
+          vy: vy,
+          wz: wz,
+          time: currentTime,
+        });
+      } catch (error) {
+        console.error("Error sending jog request:", error);
+      }
+    },
+    []
+  );
+
+  useEffect(() => {
+    const { leftJoyManager, rightJoyManager } = createJoystick();
+
+    let leftInterval: ReturnType<typeof setInterval> | null = null;
+    let rightInterval: ReturnType<typeof setInterval> | null = null;
+    let leftValue = { vx: 0 };
+    let rightValue = { wz: 0 };
+
+    const startLeftInterval = () => {
+      leftInterval = setInterval(() => {
+        sendJogRequest(leftValue.vx, 0, 0);
+      }, INTERVAL_TIME);
     };
-  };
 
-  // Function to update debug information
-  const debug = (obj: Record<string, any>, els: Record<string, any>) => {
-    const parseObj = (sub: Record<string, any>, el: Record<string, any>) => {
-      for (const i in sub) {
-        if (typeof sub[i] === "object" && el) {
-          parseObj(sub[i], el[i]);
-        } else if (el && el[i]) {
-          el[i].innerHTML = sub[i];
-        }
+    const startRightInterval = () => {
+      rightInterval = setInterval(() => {
+        sendJogRequest(0, 0, rightValue.wz);
+      }, INTERVAL_TIME);
+    };
+
+    const clearLeftInterval = () => {
+      if (leftInterval) {
+        clearInterval(leftInterval);
+        leftInterval = null;
       }
     };
-    setTimeout(() => parseObj(obj, els), 0);
-  };
 
-  let nbEvents = 0;
-  const dump = (evt: string, target: string) => {
-    const elDebug = document.getElementById(target);
-    const elDump = elDebug.querySelector(".dump");
-    setTimeout(function () {
-      if (elDump.children.length > 4) {
-        elDump.removeChild(elDump.firstChild);
+    const clearRightInterval = () => {
+      if (rightInterval) {
+        clearInterval(rightInterval);
+        rightInterval = null;
       }
-      var newEvent = document.createElement("div");
-      newEvent.innerHTML =
-        "#" + nbEvents + ' : <span class="data">' + evt + "</span>";
-      elDump.appendChild(newEvent);
-      nbEvents += 1;
-    }, 0);
-  };
+    };
 
-  const calculateVelocity = (data: Record<string, any>) => {
-    const speedFactor = 1; // Adjust this value as needed
-    const vy = 0;
-    let vx: number, wz: number;
+    leftJoyManager.on("start", startLeftInterval);
+    leftJoyManager.on("move", (evt, data) => {
+      const { vx } = calculateVelocity(data);
+      leftValue.vx = vx;
+    });
+    leftJoyManager.on("end", (evt) => {
+      sendJogRequest(0, 0, 0);
+      clearLeftInterval();
+    });
 
-    if (data.vector.y > 0) {
-      vx = speedFactor * data.distance;
-    } else if (data.vector.y < 0) {
-      vx = -1 * speedFactor * data.distance;
-    } else {
-      vx = 0;
-    }
+    rightJoyManager.on("start", startRightInterval);
+    rightJoyManager.on("move", (evt, data) => {
+      const { wz } = calculateVelocity(data);
+      rightValue.wz = wz;
+    });
+    rightJoyManager.on("end", (evt) => {
+      sendJogRequest(0, 0, 0);
+      clearRightInterval();
+    });
 
-    if (data.vector.x > 0) {
-      wz = speedFactor * data.distance;
-    } else if (data.vector.x < 0) {
-      wz = -1 * speedFactor * data.distance;
-    } else {
-      wz = 0;
-    }
+    return () => {
+      leftJoyManager.destroy();
+      rightJoyManager.destroy();
+      clearLeftInterval();
+      clearRightInterval();
+    };
+  }, [calculateVelocity, sendJogRequest, createJoystick]);
 
-    return { vx, vy, wz };
-  };
-
-  const sendJogRequest = async (vx: number, vy: number, wz: number) => {
-    try {
-      const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-
-      const currentTime = new Date()
-        .toISOString()
-        .replace("T", " ")
-        .replace("Z", "");
-
-      console.log(currentTime);
-
-      const resp = await axios.post(url + "/jog/manual", {
-        command: "move",
-        vx: vx,
-        vy: vy,
-        wz: wz,
-        time: currentTime,
-      });
-    } catch (error) {
-      console.error("Error sending jog request:", error);
-    }
-  };
   return (
     <div id="joystick-container">
-      <div className="left-debug-container">
-        <div id="debug">
-          <ul>
-            <li className="position">
-              position:
-              <ul>
-                <li className="x">
-                  x: <span className="data"></span>
-                </li>
-                <li className="y">
-                  y: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-            <li className="force">
-              force: <span className="data"></span>
-            </li>
-            <li className="pressure">
-              pressure: <span className="data"></span>
-            </li>
-            <li className="distance">
-              distance: <span className="data"></span>
-            </li>
-            <li className="angle">
-              angle:
-              <ul>
-                <li className="radian">
-                  radian: <span className="data"></span>
-                </li>
-                <li className="degree">
-                  degree: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-            <li className="direction">
-              direction:
-              <ul>
-                <li className="x">
-                  x: <span className="data"></span>
-                </li>
-                <li className="y">
-                  y: <span className="data"></span>
-                </li>
-                <li className="angle">
-                  angle: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-          </ul>
-          <div className="dump"></div>
-        </div>
+      <div className="speed-container">
+        <span>Speed</span>
+        <Knob
+          value={speedFactor}
+          step={0.01}
+          min={0}
+          max={2}
+          onChange={(e) => setSpeedFactor(e.value)}
+        />
+        <span>Rotation</span>
+        <Knob
+          value={rotateFactor}
+          step={1}
+          min={0}
+          max={60}
+          onChange={(e) => setRotateFactor(e.value)}
+        />
       </div>
-
-      <div className="right-debug-container">
-        <div id="debug2">
-          <ul>
-            <li className="position">
-              position:
-              <ul>
-                <li className="x">
-                  x: <span className="data"></span>
-                </li>
-                <li className="y">
-                  y: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-            <li className="force">
-              force: <span className="data"></span>
-            </li>
-            <li className="pressure">
-              pressure: <span className="data"></span>
-            </li>
-            <li className="distance">
-              distance: <span className="data"></span>
-            </li>
-            <li className="angle">
-              angle:
-              <ul>
-                <li className="radian">
-                  radian: <span className="data"></span>
-                </li>
-                <li className="degree">
-                  degree: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-            <li className="direction">
-              direction:
-              <ul>
-                <li className="x">
-                  x: <span className="data"></span>
-                </li>
-                <li className="y">
-                  y: <span className="data"></span>
-                </li>
-                <li className="angle">
-                  angle: <span className="data"></span>
-                </li>
-              </ul>
-            </li>
-          </ul>
-
-          <div className="dump"></div>
-        </div>
-      </div>
+      <div id="left-joystick"></div>
+      <div id="right-joystick"></div>
     </div>
   );
 };
