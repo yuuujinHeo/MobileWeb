@@ -92,11 +92,11 @@ const Map: React.FC = () => {
     sceneRef.current,
     rendererRef.current,
     cameraRef.current,
-    controlRef.current,
-    mobileURL
+    controlRef.current
   ]);
 
-  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+  // const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+ 
     async function setURL(){
         if(mobileURL == ''){
             const currentURL = window.location.href;
@@ -114,7 +114,9 @@ const Map: React.FC = () => {
   // Get data from lidar
   const getCloud = async () => {
     try {
-      const resp = await axios.get(url + "/map/cloud/2024_06_14_19_06_41_443");
+
+      console.log("mobileURL : ",mobileURL);
+      const resp = await axios.get(mobileURL + "/map/cloud/2024_06_14_19_06_41_443");
       //const resp = await axios.get(mobileURL + "/map/cloud/test");
       return resp.data;
     } catch (e) {
