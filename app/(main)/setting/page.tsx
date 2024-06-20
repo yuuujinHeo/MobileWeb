@@ -156,17 +156,6 @@ const Setting: React.FC = () => {
                 dispatch(setMotor(response.data.motor));
                 dispatch(setMapping(response.data.mapping));
                 dispatch(setObs(response.data.obs));
-                // setSettingState({
-                //     robot:response.data.robot,
-                //     debug:response.data.debug,
-                //     loc:response.data.loc,
-                //     control:response.data.control,
-                //     annotation:response.data.annotation,
-                //     default:response.data.default,
-                //     motor:response.data.motor,
-                //     mapping:response.data.mapping,
-                //     obs:response.data.obs
-                // });
                 formik_robot.handleReset(response.data.robot);
                 formik_debug.handleReset(response.data.debug);
                 formik_loc.handleReset(response.data.loc);
@@ -185,17 +174,6 @@ const Setting: React.FC = () => {
                 dispatch(setMotor(data.motor));
                 dispatch(setMapping(data.mapping));
                 dispatch(setObs(data.obs));
-                // setSettingState({
-                //     robot:data.robot,
-                //     debug:data.debug,
-                //     loc:data.loc,
-                //     control:data.control,
-                //     annotation:data.annotation,
-                //     default:data.default,
-                //     motor:data.motor,
-                //     mapping:data.mapping,
-                //     obs:data.obs
-                // })
                 formik_robot.handleReset(data.robot);
                 formik_debug.handleReset(data.debug);
                 formik_loc.handleReset(data.loc);

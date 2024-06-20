@@ -70,22 +70,38 @@ const Update: React.FC = () =>{
     const [waitingSLAMNAV2, setWaitingSLAMNAV2] = useState(false);
     const dispatch = useDispatch<AppDispatch>();
     const monitorURL = useSelector((state:RootState) => selectMonitor(state));
+    const [type, setType] = useState('');
     const settingState = useSelector((state:RootState) => selectSetting(state));
     
     const [mobileURL, setMobileURL] = useState('');
 
     useEffect(()=>{
+        console.log("useEffect");
         setURL();
-        console.log(monitorURL);
     },[])
 
     useEffect(()=>{
-        console.log("useEffect : ",mobileURL);
         if(mobileURL != ''){
+            getType();
+        }
+    },[mobileURL])
+
+    useEffect(()=>{
+        if(type != ''){
             readVersion();
             readUpdate();
         }
-    },[mobileURL])
+    },[type])
+
+    async function getType(){
+        try{
+            const response = await axios.get(mobileURL+'/setting');
+            console.log("set Type : ",response.data.robot.PLATFORM_TYPE)
+            setType(response.data.robot.PLATFORM_TYPE);
+        }catch(err){
+            console.error(err);
+        }
+    }
 
 
     async function setURL(){
@@ -560,7 +576,7 @@ const Update: React.FC = () =>{
             <RollbackDialog/>
             <Toast ref={toast_main}></Toast>
             <Toolbar start={<Button label="새로고침" icon="pi pi-refresh" onClick={refresh} style={{ marginRight: '.5em' }} severity="secondary"/>} end={<Button label="업로드" onClick={() => setDisplayUpload(true)} icon="pi pi-upload" style={{ width: '10rem' }}></Button>}></Toolbar>
-            {settingState.robot.PLATFORM_TYPE == "AMR" &&
+            {type== "AMR" &&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
                     <h3>SLAMNAV2</h3>
@@ -590,10 +606,13 @@ const Update: React.FC = () =>{
                     </div> 
                 <Button onClick={() => update("SLAMNAV2",newVersionSLAMNAV2.version)}>Update</Button>
                 <Button style={{marginLeft:10}} onClick={() => {setProgramRollback('SLAMNAV2');setDisplayRollback(true)}}>Rollback</Button>
+                <Button style={{marginLeft:10}} disabled={waitingSLAMNAV2} onClick={() =>{startProgram("SLAMNAV2")}}>Start</Button>
+                <Button style={{marginLeft:10}} disabled={waitingSLAMNAV2} onClick={() => stopProgram("SLAMNAV2")}>Stop</Button>
+                <Button style={{marginLeft:10}} disabled={waitingSLAMNAV2} onClick={() => restartProgram("SLAMNAV2")}>ReStart</Button> 
                 </div>
             </Panel>
             }
-            {settingState.robot.PLATFORM_TYPE != "AMR" &&
+            {(type != "AMR" && type != '') &&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
                     <h3>MAIN_MOBILE</h3>

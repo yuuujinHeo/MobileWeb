@@ -112,6 +112,7 @@ const Map: React.FC = () => {
         console.log("->", currentURL + ":11334");
         setMobileURL(currentURL + ":11334");
       }
+
     }
   }
 
