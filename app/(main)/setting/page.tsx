@@ -14,12 +14,12 @@ import { TabView, TabPanel } from 'primereact/tabview';
 import { ContextMenu } from 'primereact/contextmenu';
 import { Toast } from 'primereact/toast';
 import { BlockUI } from 'primereact/blockui';
-import {store,AppDispatch, RootState} from '../../../store/store';
 import {SettingState, PresetSetting, ROBOT_TYPE,_robot, _preset, _debug, _loc, _control, _annotation, _default, _motor, _mapping, _obs} from '../../../interface/settings';
 import './style.scss';
 import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
-import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs } from '@/store/settingSlice';
+import {store,AppDispatch, RootState} from '../../../store/store';
+import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 
 
 const Setting: React.FC = () => {
@@ -120,7 +120,6 @@ const Setting: React.FC = () => {
     },[])
 
     useEffect(()=>{
-        console.log("useEffect : ",mobileURL);
         if(mobileURL != ''){
             default_setting();
         }
@@ -130,14 +129,12 @@ const Setting: React.FC = () => {
         if(mobileURL == ''){
             const currentURL = window.location.href;
             var mURL;
-            console.log(currentURL);
             if(currentURL.startsWith('http')){
                 mURL = currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334";
             }else{
                 mURL = currentURL+":11334";
             }
             setMobileURL(mURL);
-            // setMobileURL(mURL);
             console.log("url :",mURL,mobileURL);
             return mURL;
         }
@@ -309,13 +306,13 @@ const Setting: React.FC = () => {
     });
     const formik_loc = useFormik({
         initialValues:{
-            LOC_CHECK_DIST:         settingState?.loc.LOC_CHECK_DIST,
-            LOC_CHECK_IE:           settingState?.loc.LOC_CHECK_IE,
-            LOC_CHECK_IR:           settingState?.loc.LOC_CHECK_IR,
-            LOC_FUSION_RATIO:       settingState?.loc.LOC_FUSION_RATIO,
-            LOC_ICP_COST_THRESHOLD: settingState?.loc.LOC_ICP_COST_THRESHOLD,
-            LOC_ICP_ERROR_THRESHOLD:settingState?.loc.LOC_ICP_ERROR_THRESHOLD,
-            LOC_ICP_MAX_FEATURE_NUM:settingState?.loc.LOC_ICP_MAX_FEATURE_NUM
+            LOC_CHECK_DIST:         settingState.loc.LOC_CHECK_DIST,
+            LOC_CHECK_IE:           settingState.loc.LOC_CHECK_IE,
+            LOC_CHECK_IR:           settingState.loc.LOC_CHECK_IR,
+            LOC_FUSION_RATIO:       settingState.loc.LOC_FUSION_RATIO,
+            LOC_ICP_COST_THRESHOLD: settingState.loc.LOC_ICP_COST_THRESHOLD,
+            LOC_ICP_ERROR_THRESHOLD:settingState.loc.LOC_ICP_ERROR_THRESHOLD,
+            LOC_ICP_MAX_FEATURE_NUM:settingState.loc.LOC_ICP_MAX_FEATURE_NUM
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -376,6 +373,7 @@ const Setting: React.FC = () => {
             ROBOT_SIZE_MIN_X:settingState?.default.ROBOT_SIZE_MIN_X,
             ROBOT_SIZE_MIN_Y:settingState?.default.ROBOT_SIZE_MIN_Y,
             ROBOT_SIZE_MIN_Z:settingState?.default.ROBOT_SIZE_MIN_Z,
+            ROBOT_RADIUS: settingState.default.ROBOT_RADIUS,
             ROBOT_WHEEL_BASE:settingState?.default.ROBOT_WHEEL_BASE,
             ROBOT_WHEEL_RADIUS:settingState?.default.ROBOT_WHEEL_RADIUS,
             LIDAR_MAX_RANGE:settingState?.default.LIDAR_MAX_RANGE,
@@ -401,6 +399,7 @@ const Setting: React.FC = () => {
                 ROBOT_SIZE_MIN_X:"",
                 ROBOT_SIZE_MIN_Y:"",
                 ROBOT_SIZE_MIN_Z:"",
+                ROBOT_RADIUS:"",
                 ROBOT_WHEEL_BASE:"",
                 ROBOT_WHEEL_RADIUS:"",
                 LIDAR_MAX_RANGE:"",
@@ -733,7 +732,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -745,7 +744,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                         </div>
@@ -759,7 +758,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -771,7 +770,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                         </div>
@@ -785,7 +784,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -797,7 +796,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                         </div>
@@ -811,7 +810,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -823,7 +822,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                         </div>
@@ -837,7 +836,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_preset.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                         </div>
@@ -892,7 +891,7 @@ const Setting: React.FC = () => {
                                 <InputNumber
                                     name="SIM_MODE"
                                     showButtons
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                     step={1}
                                     onValueChange={formik_debug.handleChange}
                                     value={formik_debug.values.SIM_MODE}
@@ -908,34 +907,37 @@ const Setting: React.FC = () => {
                                 <p><span style={{fontSize:18,fontWeight: 700}}>0번 모터</span>
                                 <span style={{display:formik_motor.values.MOTOR_ID_L!==formik_motor.initialValues.MOTOR_ID_L?"inline":"none", color:"red"}}>    (수정됨)</span></p>
                                 <SelectButton
-                                    id="here"
                                     value={formik_motor.values.MOTOR_ID_L}
                                     onChange={(e) =>{
-                                        if(e.value == 0){
-                                            formik_motor.setFieldValue("MOTOR_ID_L", 0);
-                                            formik_motor.setFieldValue("MOTOR_ID_R", 1);
-                                        }else{
-                                            formik_motor.setFieldValue("MOTOR_ID_L", 1);
-                                            formik_motor.setFieldValue("MOTOR_ID_R", 0);
-                                        }                            
+                                        if(e.value){
+                                            if(e.value == '0'){
+                                                formik_motor.setFieldValue("MOTOR_ID_L", "0");
+                                                formik_motor.setFieldValue("MOTOR_ID_R", "1");
+                                            }else{
+                                                formik_motor.setFieldValue("MOTOR_ID_L", "1");
+                                                formik_motor.setFieldValue("MOTOR_ID_R", "0");
+                                            }                            
+                                        }
                                     }}
-                                    options={[{value:0,name:"LEFT"},{value:1,name:"RIGHT"}]}
+                                    options={[{value:'0',name:"LEFT"},{value:'1',name:"RIGHT"}]}
                                     optionLabel="name"
                                 />
                                 <p style={{marginTop:15}}><span style={{fontSize:18,fontWeight: 700}}>1번 모터</span>
                                 <span style={{display:formik_motor.values.MOTOR_ID_R!==formik_motor.initialValues.MOTOR_ID_R?"inline":"none", color:"red"}}>    (수정됨)</span></p>
                                 <SelectButton
-                                    value={formik_motor.values.MOTOR_ID_R==0?0:1}
+                                    value={formik_motor.values.MOTOR_ID_R=="0"?"0":"1"}
                                     onChange={(e) =>{
-                                        if(e.value == 0){
-                                            formik_motor.setFieldValue("MOTOR_ID_L", 1);
-                                            formik_motor.setFieldValue("MOTOR_ID_R", 0);
-                                        }else{
-                                            formik_motor.setFieldValue("MOTOR_ID_L", 0);
-                                            formik_motor.setFieldValue("MOTOR_ID_R", 1);
-                                        }                   
+                                        if(e.value){
+                                            if(e.value == '0'){
+                                                formik_motor.setFieldValue("MOTOR_ID_L", "1");
+                                                formik_motor.setFieldValue("MOTOR_ID_R", "0");
+                                            }else{
+                                                formik_motor.setFieldValue("MOTOR_ID_L", "0");
+                                                formik_motor.setFieldValue("MOTOR_ID_R", "1");
+                                            }                            
+                                        }
                                     }}
-                                    options={[{value:0,name:"LEFT"},{value:1,name:"RIGHT"}]}
+                                    options={[{value:"0",name:"LEFT"},{value:"1",name:"RIGHT"}]}
                                     optionLabel="name"
                                 />
                                 <p style={{marginTop:15}}><span style={{fontSize:18,fontWeight: 700}}>모터 방향</span>
@@ -943,13 +945,13 @@ const Setting: React.FC = () => {
                                 <SelectButton
                                     value={formik_motor.values.MOTOR_DIR}
                                     onChange={(e) =>{
-                                        if(e.value == -1){
-                                            formik_motor.setFieldValue("MOTOR_DIR", -1);
-                                        }else{
-                                            formik_motor.setFieldValue("MOTOR_DIR", 1);
+                                        if(e.value == "-1"){
+                                            formik_motor.setFieldValue("MOTOR_DIR", "-1");
+                                        }else if(e.value == "1"){
+                                            formik_motor.setFieldValue("MOTOR_DIR", "1");
                                         }                   
                                     }}
-                                    options={[{value:-1,name:"-1 방향"},{value:1,name:"+1 방향"}]}
+                                    options={[{value:"-1",name:"-1 방향"},{value:"1",name:"+1 방향"}]}
                                     optionLabel="name"
                                 />
                                 <p style={{marginTop:15}}><span style={{fontSize:18,fontWeight: 700}}>모터 기어비</span>
@@ -959,7 +961,7 @@ const Setting: React.FC = () => {
                                     value={formik_motor.values.MOTOR_GEAR_RATIO}
                                     onValueChange={formik_motor.handleChange}
                                     showButtons
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div className="card">
@@ -974,7 +976,7 @@ const Setting: React.FC = () => {
                                             showButtons
                                             step={0.1}
                                             max={3.0}
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                     <div className="col-12 mb-2 lg:col-4 lg:mb-0">
@@ -986,7 +988,7 @@ const Setting: React.FC = () => {
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
                                             step={0.1}
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                 </div>
@@ -1002,7 +1004,7 @@ const Setting: React.FC = () => {
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
                                             step={0.1}
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                     <div className="col-12 mb-2 lg:col-4 lg:mb-0">
@@ -1014,7 +1016,7 @@ const Setting: React.FC = () => {
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
                                             step={0.1}
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                 </div>
@@ -1029,7 +1031,7 @@ const Setting: React.FC = () => {
                                             value={formik_motor.values.MOTOR_GAIN_KP}
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                     <div className="col-12 mb-2 lg:col-4 lg:mb-0">
@@ -1040,7 +1042,7 @@ const Setting: React.FC = () => {
                                             value={formik_motor.values.MOTOR_GAIN_KI}
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                     <div className="col-12 mb-2 lg:col-4 lg:mb-0">
@@ -1051,7 +1053,7 @@ const Setting: React.FC = () => {
                                             value={formik_motor.values.MOTOR_GAIN_KD}
                                             onValueChange={formik_motor.handleChange}
                                             showButtons
-                                            mode="decimal"
+                                            maxFractionDigits={3}
                                         ></InputNumber>
                                     </div>
                                 </div>
@@ -1074,7 +1076,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1086,7 +1088,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1098,7 +1100,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1110,7 +1112,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1122,7 +1124,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1134,7 +1136,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1146,7 +1148,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_loc.handleChange}
                                     showButtons
                                     step={1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             </div>
@@ -1162,7 +1164,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1174,7 +1176,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1186,7 +1188,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1198,7 +1200,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1210,7 +1212,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1222,7 +1224,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1234,7 +1236,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1246,7 +1248,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1258,7 +1260,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1270,7 +1272,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={0.01}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1282,7 +1284,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_mapping.handleChange}
                                     showButtons
                                     step={1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             </div>
@@ -1296,7 +1298,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_annotation.handleChange}
                                 showButtons
                                 step={0.1}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </Panel>
                     </div>
@@ -1317,7 +1319,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_control.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1329,7 +1331,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_control.handleChange}
                                     showButtons
                                     step={0.01}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             <div> 
@@ -1341,7 +1343,7 @@ const Setting: React.FC = () => {
                                     onValueChange={formik_control.handleChange}
                                     showButtons
                                     step={0.1}
-                                    mode="decimal"
+                                    maxFractionDigits={3}
                                 ></InputNumber>
                             </div>
                             </div>
@@ -1357,7 +1359,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.1}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         <div> 
@@ -1369,7 +1371,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.01}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         <div> 
@@ -1381,7 +1383,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.01}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         <div> 
@@ -1393,7 +1395,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.1}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         <div> 
@@ -1405,7 +1407,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.1}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         <div> 
@@ -1417,7 +1419,7 @@ const Setting: React.FC = () => {
                                 onValueChange={formik_obs.handleChange}
                                 showButtons
                                 step={0.1}
-                                mode="decimal"
+                                maxFractionDigits={3}
                             ></InputNumber>
                         </div>
                         </div>
@@ -1437,7 +1439,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1449,7 +1451,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1461,7 +1463,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                             </div>
@@ -1477,7 +1479,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1489,7 +1491,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1501,13 +1503,25 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                             </div>
                         </Panel>
-                        <Panel header = "휠 사이즈">
+                        <Panel header = "기타 사이즈">
                             <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                                <div>
+                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>로봇 반지름</span>
+                                    <span style={{display:formik_default.values.ROBOT_RADIUS!==formik_default.initialValues.ROBOT_RADIUS?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                    <InputNumber
+                                        name = "ROBOT_RADIUS"
+                                        value={formik_default.values.ROBOT_RADIUS}
+                                        onValueChange={formik_default.handleChange}
+                                        showButtons
+                                        step={0.1}
+                                        maxFractionDigits={3}
+                                    ></InputNumber>
+                                </div>
                                 <div>
                                     <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>휠 베이스 사이즈</span>
                                     <span style={{display:formik_default.values.ROBOT_WHEEL_BASE!==formik_default.initialValues.ROBOT_WHEEL_BASE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
@@ -1517,7 +1531,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1529,7 +1543,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                             </div>
@@ -1545,7 +1559,7 @@ const Setting: React.FC = () => {
                                         onValueChange={formik_default.handleChange}
                                         showButtons
                                         step={0.1}
-                                        mode="decimal"
+                                        maxFractionDigits={3}
                                     ></InputNumber>
                                 </div>
                                 <div>
@@ -1560,7 +1574,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1572,7 +1586,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1584,7 +1598,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1596,7 +1610,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1608,7 +1622,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1620,7 +1634,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                     </div>
@@ -1637,7 +1651,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1649,7 +1663,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1661,7 +1675,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={0.01}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1673,7 +1687,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1685,7 +1699,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                         <div>
@@ -1697,7 +1711,7 @@ const Setting: React.FC = () => {
                                                 onValueChange={formik_default.handleChange}
                                                 showButtons
                                                 step={1}
-                                                mode="decimal"
+                                                maxFractionDigits={3}
                                             ></InputNumber>
                                         </div>
                                     </div>

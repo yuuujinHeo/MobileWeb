@@ -100,7 +100,7 @@ const Map: React.FC = () => {
   async function setURL() {
     if (mobileURL == "") {
       const currentURL = window.location.href;
-      console.log(currentURL);
+      // console.log(currentURL);
       if (currentURL.startsWith("http")) {
         console.log(
           currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
@@ -109,7 +109,7 @@ const Map: React.FC = () => {
           currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
         );
       } else {
-        console.log("->", currentURL + ":11334");
+        // console.log("->", currentURL + ":11334");
         setMobileURL(currentURL + ":11334");
       }
 

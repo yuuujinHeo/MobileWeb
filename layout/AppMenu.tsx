@@ -18,7 +18,7 @@ const AppMenu = () => {
         {
             label: 'Viewer',
             items: [
-                { label: 'State', icon: 'pi pi-fw pi-eye', to: '/blocks', badge: 'NEW' },
+                { label: 'State', icon: 'pi pi-fw pi-eye', to: '/state', badge: 'NEW' },
                 { label: 'Map', icon: 'pi pi-fw pi-map', to: '/map', badge: 'NEW' }
             ]
         },

@@ -50,9 +50,9 @@ export interface DefaultSetting{
     LIDAR_TF_F_RZ:number;
 }
 export interface MotorSetting{
-    MOTOR_ID_L:number;
-    MOTOR_ID_R:number;
-    MOTOR_DIR:number;
+    MOTOR_ID_L:string;
+    MOTOR_ID_R:string;
+    MOTOR_DIR:string;
     MOTOR_GEAR_RATIO:number;
     MOTOR_LIMIT_V:number;
     MOTOR_LIMIT_V_ACC:number;

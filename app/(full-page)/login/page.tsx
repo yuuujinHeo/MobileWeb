@@ -10,36 +10,49 @@ import { InputText } from 'primereact/inputtext';
 import axios from 'axios';
 import { classNames } from 'primereact/utils';
 import {userContext} from '../../../interface/user'
+import { useDispatch, useSelector } from 'react-redux';
+import {store,AppDispatch, RootState} from '../../../store/store';
+import { selectUser, setUser } from '@/store/userSlice';
+
+
 
 const LoginPage = () => {
+    const dispatch = useDispatch<AppDispatch>();
+    const userState = useSelector((state:RootState) => selectUser(state));   
     const [user_id, setUser_id] = useState('');
     const [user_passwd, setUser_passwd] = useState('');
     const [checked, setChecked] = useState(false);
     const { layoutConfig } = useContext(LayoutContext);
-    const {state,setState} = useContext(userContext);
+    // const {state,setState} = useContext(userContext);
 
     const router = useRouter();
     const containerClassName = classNames('surface-ground flex align-items-center justify-content-center min-h-screen min-w-screen overflow-hidden', { 'p-input-filled': layoutConfig.inputStyle === 'filled' });
 
     const postLogin = async() =>{
-        console.log("postLogin, ",state)
+        console.log("postLogin, ",userState)
         try{
           const response = await axios.post('http://192.168.1.88:11335/login',{
             user_id,user_passwd
           });
-          setState((prevState) =>({...prevState,
+          dispatch(setUser({
             user_id:response.data.user_id,
             user_name:response.data.user_name,
             permission:response.data.permission,
             token:response.data.token
           }));
+        //   setState((prevState) =>({...prevState,
+        //     user_id:response.data.user_id,
+        //     user_name:response.data.user_name,
+        //     permission:response.data.permission,
+        //     token:response.data.token
+        //   }));
         }catch(error){
             setUser_passwd('');
         }
       }
 
       useEffect(() =>{
-        if(state.token != ""){
+        if(userState.token != ""){
             router.push('/')
             console.log("pass to /")
         }

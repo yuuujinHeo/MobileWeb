@@ -51,9 +51,9 @@ export interface DefaultSetting{
     LIDAR_TF_F_RZ:number;
 }
 export interface MotorSetting{
-    MOTOR_ID_L:number;
-    MOTOR_ID_R:number;
-    MOTOR_DIR:number;
+    MOTOR_ID_L:string;
+    MOTOR_ID_R:string;
+    MOTOR_DIR:string;
     MOTOR_GEAR_RATIO:number;
     MOTOR_LIMIT_V:number;
     MOTOR_LIMIT_V_ACC:number;
@@ -161,9 +161,9 @@ const settingSlice = createSlice({
         LIDAR_TF_F_RZ:0
     },
     motor:{
-        MOTOR_ID_L:0,
-        MOTOR_ID_R:0,
-        MOTOR_DIR:0,
+        MOTOR_ID_L:'',
+        MOTOR_ID_R:'',
+        MOTOR_DIR:'0',
         MOTOR_GEAR_RATIO:0,
         MOTOR_LIMIT_V:0,
         MOTOR_LIMIT_V_ACC:0,
