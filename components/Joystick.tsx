@@ -136,7 +136,10 @@ const Joystick = () => {
       const { vx } = calculateVelocity(data);
       leftValue.vx = vx;
     });
-    leftJoyManager.on("end", clearLeftInterval);
+    leftJoyManager.on("end", (evt) => {
+      sendJogRequest(0, 0, 0);
+      clearLeftInterval();
+    });
 
     rightJoyManager.on("start", startRightInterval);
     rightJoyManager.on("move", (evt, data) => {
