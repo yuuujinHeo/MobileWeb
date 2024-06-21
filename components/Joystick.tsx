@@ -24,16 +24,18 @@ const Joystick = () => {
       const leftJoyManager = nipplejs.create({
         zone: leftJoy,
         color: "blue",
+        size: 200,
         mode: "static",
-        position: { left: "15%", top: "70%" },
+        position: { left: "15%", top: "55%" },
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
         zone: rightJoy,
         color: "red",
+        size: 200,
         mode: "static",
-        position: { left: "85%", top: "70%" },
+        position: { left: "85%", top: "55%" },
         lockX: true,
       });
 

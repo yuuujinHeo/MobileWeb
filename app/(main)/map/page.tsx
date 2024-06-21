@@ -216,9 +216,14 @@ const Map: React.FC = () => {
         <Joystick></Joystick>
       </Sidebar>
       <Button
-        icon="pi pi-arrow-right"
         onClick={() => setVisible(true)}
-      ></Button>
+        rounded
+        raised
+        text
+        aria-label="Filter"
+      >
+        <img alt="joystick" src="/joystick_24dp.svg" />
+      </Button>
     </main>
   );
 };
