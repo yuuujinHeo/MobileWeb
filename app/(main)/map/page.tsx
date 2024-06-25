@@ -205,7 +205,7 @@ const Map: React.FC = () => {
   };
 
   return (
-    <main>
+    <div className="map">
       <canvas className="canvas" ref={canvasRef} />
       <Sidebar
         visible={visible}
@@ -224,7 +224,7 @@ const Map: React.FC = () => {
       >
         <img alt="joystick" src="/joystick_24dp.svg" />
       </Button>
-    </main>
+    </div>
   );
 };
 

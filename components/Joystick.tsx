@@ -10,6 +10,21 @@ import "./style.scss";
 
 const INTERVAL_TIME = 100;
 
+// TEMP
+const getJoystickSize = () => {
+  if (!window) return;
+  if (window.matchMedia("(max-width: 600px").matches) {
+    // Mobile
+    return { joySize: 100 };
+  } else if (window.matchMedia("(max-width: 1024px").matches) {
+    // Tablet
+    return { joySize: 120 };
+  } else {
+    // Desktop
+    return { joySize: 200 };
+  }
+};
+
 const Joystick = () => {
   const [speedFactor, setSpeedFactor] = useState<number>(0.5);
   const [rotateFactor, setRotateFactor] = useState<number>(20);
@@ -21,21 +36,23 @@ const Joystick = () => {
       const leftJoy = document.getElementById("left-joystick");
       const rightJoy = document.getElementById("right-joystick");
 
+      const { joySize } = getJoystickSize();
+
       const leftJoyManager = nipplejs.create({
         zone: leftJoy,
         color: "blue",
-        size: 200,
+        size: joySize,
         mode: "static",
-        position: { left: "15%", top: "55%" },
+        position: { left: "50%", top: "50%" },
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
         zone: rightJoy,
         color: "red",
-        size: 200,
+        size: joySize,
         mode: "static",
-        position: { left: "85%", top: "55%" },
+        position: { left: "50%", top: "50%" },
         lockX: true,
       });
 
@@ -149,27 +166,29 @@ const Joystick = () => {
 
   return (
     <div id="joystick-container">
-      <div className="speed-container">
-        <span>Speed</span>
-        <Knob
-          value={speedFactor}
-          step={0.01}
-          min={0}
-          max={2}
-          onChange={(e) => setSpeedFactor(e.value)}
-        />
-      </div>
-      <div className="rotation-container">
-        <span>Rotation</span>
-        <Knob
-          value={rotateFactor}
-          step={1}
-          min={0}
-          max={60}
-          onChange={(e) => setRotateFactor(e.value)}
-        />
-      </div>
       <div id="left-joystick"></div>
+      <div className="control-parameter-container">
+        <div className="speed-container">
+          <span>Speed</span>
+          <Knob
+            value={speedFactor}
+            step={0.01}
+            min={0}
+            max={2}
+            onChange={(e) => setSpeedFactor(e.value)}
+          />
+        </div>
+        <div className="rotation-container">
+          <span>Rotation</span>
+          <Knob
+            value={rotateFactor}
+            step={1}
+            min={0}
+            max={60}
+            onChange={(e) => setRotateFactor(e.value)}
+          />
+        </div>
+      </div>
       <div id="right-joystick"></div>
     </div>
   );
