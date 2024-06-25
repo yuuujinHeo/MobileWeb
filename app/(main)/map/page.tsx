@@ -205,7 +205,7 @@ const Map: React.FC = () => {
   };
 
   return (
-    <main>
+    <div className="map">
       <canvas className="canvas" ref={canvasRef} />
       <Sidebar
         visible={visible}
@@ -216,10 +216,15 @@ const Map: React.FC = () => {
         <Joystick></Joystick>
       </Sidebar>
       <Button
-        icon="pi pi-arrow-right"
         onClick={() => setVisible(true)}
-      ></Button>
-    </main>
+        rounded
+        raised
+        text
+        aria-label="Filter"
+      >
+        <img alt="joystick" src="/joystick_24dp.svg" />
+      </Button>
+    </div>
   );
 };
 
