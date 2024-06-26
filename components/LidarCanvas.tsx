@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 
 // three
 import * as THREE from "three";
@@ -9,6 +11,9 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import axios from "axios";
 
 const LidarCanvas = () => {
+  const canvas = useSelector((state: RootState) => state.canvas);
+  const { action } = useSelector((state: RootState) => state.canvas);
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const sceneRef = useRef<THREE.Scene | null>(null);
@@ -17,6 +22,16 @@ const LidarCanvas = () => {
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const [mobileURL, setMobileURL] = useState("");
+
+  useEffect(() => {
+    switch (action.command) {
+      case "DRAW_CLOUD":
+        drawCloud();
+        break;
+      default:
+        break;
+    }
+  }, [action]);
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -97,7 +112,7 @@ const LidarCanvas = () => {
   // Draw the points cloud
   useEffect(() => {
     if (isInitializedRef) {
-      drawCloud();
+      // drawCloud();
       initRobot();
     }
   }, [isInitializedRef, mobileURL]);
