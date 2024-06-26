@@ -6,8 +6,6 @@ import nipplejs from "nipplejs";
 // prime
 import { Knob } from "primereact/knob";
 
-import "./style.scss";
-
 const INTERVAL_TIME = 100;
 
 // TEMP

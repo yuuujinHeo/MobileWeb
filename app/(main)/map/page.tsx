@@ -19,23 +19,22 @@ const Map: React.FC = () => {
   return (
     <div className="map">
       <LidarCanvas />
+      <Button
+        label="Mapping"
+        severity="secondary"
+        onClick={() => setVisible(true)}
+      ></Button>
       <Sidebar
         visible={visible}
-        position="bottom"
+        fullScreen
         onHide={() => setVisible(false)}
         className="joystick-slide"
       >
-        <Joystick></Joystick>
+        <div id="mapping-container">
+          <LidarCanvas />
+          <Joystick></Joystick>
+        </div>
       </Sidebar>
-      <Button
-        onClick={() => setVisible(true)}
-        rounded
-        raised
-        text
-        aria-label="Filter"
-      >
-        <img alt="joystick" src="/joystick_24dp.svg" />
-      </Button>
     </div>
   );
 };

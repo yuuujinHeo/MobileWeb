@@ -15,6 +15,7 @@ const LidarCanvas = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
+  const isInitializedRef = useRef<boolean>(false);
   const [mobileURL, setMobileURL] = useState("");
 
   // 3D Scene setting when the component is mounted
@@ -23,6 +24,7 @@ const LidarCanvas = () => {
 
     if (!canvasRef.current) return;
 
+    // scene
     const scene = new THREE.Scene();
 
     const color = new THREE.Color(0xffffff);
@@ -51,6 +53,12 @@ const LidarCanvas = () => {
     );
     rendererRef.current = renderer;
 
+    const animate = () => {
+      rendererRef.current.render(sceneRef.current, cameraRef.current);
+    };
+
+    rendererRef.current.setAnimationLoop(animate);
+
     // control
     const control = new MapControls(camera, renderer.domElement);
     controlRef.current = control;
@@ -75,6 +83,8 @@ const LidarCanvas = () => {
       );
     };
 
+    isInitializedRef.current = true;
+
     // resize handling
     window.addEventListener("resize", onWindowResize);
 
@@ -86,14 +96,25 @@ const LidarCanvas = () => {
 
   // Draw the points cloud
   useEffect(() => {
-    drawCloud();
-  }, [
-    sceneRef.current,
-    rendererRef.current,
-    cameraRef.current,
-    controlRef.current,
-    mobileURL,
-  ]);
+    if (isInitializedRef) {
+      drawCloud();
+      initRobot();
+    }
+  }, [isInitializedRef, mobileURL]);
+
+  const initRobot = () => {
+    if (!isInitializedRef.current) return;
+
+    // Parameters are width, height and depth.
+    const geometry = new THREE.BoxGeometry(3, 1, 1.5);
+    const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
+    const robot = new THREE.Mesh(geometry, material);
+
+    // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
+    const axesHelper = new THREE.AxesHelper(4);
+    robot.add(axesHelper);
+    sceneRef.current.add(robot);
+  };
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
   async function setURL() {
@@ -129,14 +150,7 @@ const LidarCanvas = () => {
   };
 
   const drawCloud = async () => {
-    if (
-      !canvasRef.current ||
-      !sceneRef.current ||
-      !rendererRef.current ||
-      !cameraRef.current ||
-      !controlRef.current
-    )
-      return;
+    if (!isInitializedRef.current) return;
 
     const cloud = await getCloud();
 
@@ -179,18 +193,6 @@ const LidarCanvas = () => {
       points.rotation.x = -(Math.PI / 2);
 
       sceneRef.current.add(points);
-
-      const animate = () => {
-        if (
-          rendererRef.current !== null &&
-          sceneRef.current !== null &&
-          cameraRef.current !== null
-        ) {
-          rendererRef.current.render(sceneRef.current, cameraRef.current);
-        }
-      };
-
-      rendererRef.current.setAnimationLoop(animate);
     }
   };
 
