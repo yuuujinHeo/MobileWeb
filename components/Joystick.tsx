@@ -1,105 +1,110 @@
 "use client";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import nipplejs from "nipplejs";
 
 // prime
 import { Knob } from "primereact/knob";
 
-import "./style.scss";
-
 const INTERVAL_TIME = 100;
+
+// TEMP
+const getJoystickSize = () => {
+  if (!window) return;
+  if (window.matchMedia("(max-width: 600px").matches) {
+    // Mobile
+    return { joySize: 100 };
+  } else if (window.matchMedia("(max-width: 1024px").matches) {
+    // Tablet
+    return { joySize: 120 };
+  } else {
+    // Desktop
+    return { joySize: 200 };
+  }
+};
 
 const Joystick = () => {
   const [speedFactor, setSpeedFactor] = useState<number>(0.5);
   const [rotateFactor, setRotateFactor] = useState<number>(20);
-  const speedFactorRef = useRef(speedFactor);
-  const rotateFactorRef = useRef(rotateFactor);
+  const leftJoyManagerRef = useRef(null);
+  const rightJoyManagerRef = useRef(null);
 
   useEffect(() => {
-    speedFactorRef.current = speedFactor;
-  }, [speedFactor]);
+    const createJoystick = () => {
+      const leftJoy = document.getElementById("left-joystick");
+      const rightJoy = document.getElementById("right-joystick");
 
-  useEffect(() => {
-    rotateFactorRef.current = rotateFactor;
-  }, [rotateFactor]);
+      const { joySize } = getJoystickSize();
 
-  const createJoystick = useCallback(() => {
-    const leftJoy = document.getElementById("left-joystick");
-    const rightJoy = document.getElementById("right-joystick");
+      const leftJoyManager = nipplejs.create({
+        zone: leftJoy,
+        color: "blue",
+        size: joySize,
+        mode: "static",
+        position: { left: "50%", top: "50%" },
+        lockY: true,
+      });
 
-    const leftJoyManager = nipplejs.create({
-      zone: leftJoy,
-      color: "blue",
-      mode: "static",
-      position: { left: "33%", top: "50%" },
-      lockY: true,
-    });
+      const rightJoyManager = nipplejs.create({
+        zone: rightJoy,
+        color: "red",
+        size: joySize,
+        mode: "static",
+        position: { left: "50%", top: "50%" },
+        lockX: true,
+      });
 
-    const rightJoyManager = nipplejs.create({
-      zone: rightJoy,
-      color: "red",
-      mode: "static",
-      position: { left: "66%", top: "50%" },
-      lockX: true,
-    });
-
-    return { leftJoyManager, rightJoyManager };
+      leftJoyManagerRef.current = leftJoyManager;
+      rightJoyManagerRef.current = rightJoyManager;
+    };
+    createJoystick();
   }, []);
 
-  const calculateVelocity = useCallback(
-    (data: Record<string, any>) => {
-      const vy = 0;
-      let vx: number, wz: number;
+  const calculateVelocity = (data: Record<string, any>) => {
+    const vy = 0;
+    let vx: number, wz: number;
 
-      if (data.vector.y > 0) {
-        vx = speedFactorRef.current * (data.distance / 50);
-      } else if (data.vector.y < 0) {
-        vx = -1 * speedFactorRef.current * (data.distance / 50);
-      } else {
-        vx = 0;
-      }
+    if (data.vector.y > 0) {
+      vx = speedFactor * (data.distance / 50);
+    } else if (data.vector.y < 0) {
+      vx = -1 * speedFactor * (data.distance / 50);
+    } else {
+      vx = 0;
+    }
 
-      if (data.vector.x > 0) {
-        wz = rotateFactorRef.current * (data.distance / 50);
-      } else if (data.vector.x < 0) {
-        wz = -1 * rotateFactorRef.current * (data.distance / 50);
-      } else {
-        wz = 0;
-      }
+    if (data.vector.x > 0) {
+      wz = rotateFactor * (data.distance / 50);
+    } else if (data.vector.x < 0) {
+      wz = -1 * rotateFactor * (data.distance / 50);
+    } else {
+      wz = 0;
+    }
 
-      return { vx, vy, wz };
-    },
-    [speedFactorRef, rotateFactorRef]
-  );
+    return { vx, vy, wz };
+  };
 
-  const sendJogRequest = useCallback(
-    async (vx: number, vy: number, wz: number) => {
-      try {
-        const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+  const sendJogRequest = async (vx: number, vy: number, wz: number) => {
+    try {
+      const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-        const currentTime = new Date()
-          .toISOString()
-          .replace("T", " ")
-          .replace("Z", "");
+      const currentTime = new Date()
+        .toISOString()
+        .replace("T", " ")
+        .replace("Z", "");
 
-        await axios.post(url + "/jog/manual", {
-          command: "move",
-          vx: vx,
-          vy: vy,
-          wz: wz,
-          time: currentTime,
-        });
-      } catch (error) {
-        console.error("Error sending jog request:", error);
-      }
-    },
-    []
-  );
+      await axios.post(url + "/jog/manual", {
+        command: "move",
+        vx: vx,
+        vy: vy,
+        wz: wz,
+        time: currentTime,
+      });
+    } catch (error) {
+      console.error("Error sending jog request:", error);
+    }
+  };
 
   useEffect(() => {
-    const { leftJoyManager, rightJoyManager } = createJoystick();
-
     let leftInterval: ReturnType<typeof setInterval> | null = null;
     let rightInterval: ReturnType<typeof setInterval> | null = null;
     let leftValue = { vx: 0 };
@@ -119,6 +124,7 @@ const Joystick = () => {
 
     const clearLeftInterval = () => {
       if (leftInterval) {
+        sendJogRequest(0, 0, 0);
         clearInterval(leftInterval);
         leftInterval = null;
       }
@@ -126,60 +132,61 @@ const Joystick = () => {
 
     const clearRightInterval = () => {
       if (rightInterval) {
+        sendJogRequest(0, 0, 0);
         clearInterval(rightInterval);
         rightInterval = null;
       }
     };
 
-    leftJoyManager.on("start", startLeftInterval);
-    leftJoyManager.on("move", (evt, data) => {
+    leftJoyManagerRef.current.on("start", startLeftInterval);
+    leftJoyManagerRef.current.on("move", (evt, data) => {
       const { vx } = calculateVelocity(data);
       leftValue.vx = vx;
     });
-    leftJoyManager.on("end", (evt) => {
-      sendJogRequest(0, 0, 0);
+    leftJoyManagerRef.current.on("end", (evt) => {
       clearLeftInterval();
     });
 
-    rightJoyManager.on("start", startRightInterval);
-    rightJoyManager.on("move", (evt, data) => {
+    rightJoyManagerRef.current.on("start", startRightInterval);
+    rightJoyManagerRef.current.on("move", (evt, data) => {
       const { wz } = calculateVelocity(data);
       rightValue.wz = wz;
     });
-    rightJoyManager.on("end", (evt) => {
-      sendJogRequest(0, 0, 0);
+    rightJoyManagerRef.current.on("end", (evt) => {
       clearRightInterval();
     });
 
     return () => {
-      leftJoyManager.destroy();
-      rightJoyManager.destroy();
       clearLeftInterval();
       clearRightInterval();
     };
-  }, [calculateVelocity, sendJogRequest, createJoystick]);
+  }, [speedFactor, rotateFactor]);
 
   return (
     <div id="joystick-container">
-      <div className="speed-container">
-        <span>Speed</span>
-        <Knob
-          value={speedFactor}
-          step={0.01}
-          min={0}
-          max={2}
-          onChange={(e) => setSpeedFactor(e.value)}
-        />
-        <span>Rotation</span>
-        <Knob
-          value={rotateFactor}
-          step={1}
-          min={0}
-          max={60}
-          onChange={(e) => setRotateFactor(e.value)}
-        />
-      </div>
       <div id="left-joystick"></div>
+      <div className="control-parameter-container">
+        <div className="speed-container">
+          <span>Speed</span>
+          <Knob
+            value={speedFactor}
+            step={0.01}
+            min={0}
+            max={2}
+            onChange={(e) => setSpeedFactor(e.value)}
+          />
+        </div>
+        <div className="rotation-container">
+          <span>Rotation</span>
+          <Knob
+            value={rotateFactor}
+            step={1}
+            min={0}
+            max={60}
+            onChange={(e) => setRotateFactor(e.value)}
+          />
+        </div>
+      </div>
       <div id="right-joystick"></div>
     </div>
   );
