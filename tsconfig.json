@@ -23,19 +23,32 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
+      ],
+      "@/lib/*": [
+        "lib/*"
+      ],
+      "@/store/*": [
+        "store/*"
+      ],
+      "@/interface/*": [
+        "interface/*"
       ]
     },
-    "strict": false
+    "strict": false,
+    "strictNullChecks": true
   },
   "include": [
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    "app/(main)/blocks/page.js"
+    "app/(main)/blocks/page.js",
+    "store/modules/user.js",
+    "store/modules/index.js"
   ],
   "exclude": [
     "node_modules"

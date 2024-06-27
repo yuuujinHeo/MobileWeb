@@ -27,7 +27,6 @@ import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/stor
 import axios from 'axios';
 import '../setting/style.scss';
 import {store,AppDispatch, RootState} from '../../../store/store';
-import { increment } from '@/store/counterSlice';
 import { useRouter } from 'next/navigation';
 import { current } from '@reduxjs/toolkit';
 

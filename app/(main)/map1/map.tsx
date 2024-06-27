@@ -12,41 +12,23 @@ import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 // etc
 import "../map/style.scss";
-import { WebSocketContext } from './websocketprovider';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector } from "react-redux";
+import { io } from "socket.io-client";
 import {store,AppDispatch, RootState} from '../../../store/store';
-import { selectCloud, setCloud } from '@/store/mappingSlice';
-
-// export const getServerSideProps = async (context) => {
-//     // const st = store();
-  
-//     // 서버에서 데이터를 가져옵니다.
-//     const res = await fetch('https://api.example.com/cloud');
-//     const data = await res.json();
-  
-//     // Redux 상태를 설정합니다.
-//     // st.dispatch(setCloud(data));
-  
-//     return {
-//       props: {
-//         // initialReduxState: st.getState(),
-//       },
-//     };
-//   };
+import { GetStaticProps, GetStaticPropsContext, GetStaticPropsResult } from 'next';
+ 
 
 const Mapping: React.FC = () => {
-  // state
-  const dispatch = useDispatch<AppDispatch>();
-  const Cloud = useSelector((state:RootState) => selectCloud(state));   
   const [visible, setVisible] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const socketRef = useRef<any>();
 
   const sceneRef = useRef<THREE.Scene | null>(null);
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
-  const ws = useContext(WebSocketContext);
+  var Cloud:String[][]=[];
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -113,33 +95,31 @@ const Mapping: React.FC = () => {
     };
   }, []);
 
-  // Draw the points cloud
-  useEffect(() => {
-    drawCloud();
-  }, [
-    sceneRef.current,
-    rendererRef.current,
-    cameraRef.current,
-    controlRef.current,
-  ]);
-
-  useEffect(()=>{
-    console.log("cloud");
-    // drawCloud();
-  },[Cloud])
-
   setInterval(()=>{
     drawCloud();
   },1000);
 
-  useEffect(()=>{
+  useEffect(() => {
+    fetch('/api/socket').finally(() => {
+        socketRef.current = io();
 
-  })
+        socketRef.current.on("connect", () => {
+            console.log(socketRef.current.id);
+        });
 
+        socketRef.current.on("mapping", (data) => {
+          // console.log("get mapping", data);
+          Cloud = data;
+        });
+
+        return () => {
+            socketRef.current.disconnect();
+        };
+    });    
+  }, []);
 
 
   const drawCloud = async () => {
-    console.log("drawCloud");
     if (
       !canvasRef.current ||
       !sceneRef.current ||
@@ -148,7 +128,7 @@ const Mapping: React.FC = () => {
       !controlRef.current
     )
       return;
-      console.log("??",Cloud);
+      // console.log("??",Cloud);
 
     // const cloud = await getCloud();
 

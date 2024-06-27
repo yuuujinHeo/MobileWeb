@@ -10,12 +10,20 @@ import {GlobalUserProvider} from '../interface/user'
 import { store } from '@/store/store';
 import { useEffect } from 'react';
 
+import { TestProvider} from '../store/context/TestContext'
+
 interface RootLayoutProps {
     children: React.ReactNode;
 }
 
 export default function RootLayout({ children }: RootLayoutProps) {
-
+    // const store = wrapper.useWrappedStore({}).store;
+    // useEffect(() => {
+    //     if (typeof window !== 'undefined') {
+    //         const store = wrapper.useWrappedStore({}).store;
+    //         // 클라이언트 사이드에서 실행할 코드
+    //     }
+    // }, []);
     return (
         <html lang="en" suppressHydrationWarning>
             <head>
