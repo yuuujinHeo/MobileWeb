@@ -3,7 +3,7 @@ import { configureStore } from '@reduxjs/toolkit';
 import { useMemo } from 'react';
 import { createWrapper } from "next-redux-wrapper";
 import networkReducer from './networkSlice';
-import userReducer from './userSlice';
+// import userReducer from './userSlice';
 import settingReducer from './settingSlice';
 import statusSlice from './statusSlice';
 import canvasReducer from "./canvasSlice";
@@ -12,7 +12,7 @@ export const store = configureStore({
   reducer: {
     network: networkReducer,
     setting: settingReducer,
-    user:userReducer,
+    // user:userReducer,
     status: statusSlice,
     canvas: canvasReducer
   }

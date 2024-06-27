@@ -100,6 +100,7 @@ const Mapping: React.FC = () => {
   },1000);
 
   useEffect(() => {
+    console.log("use");
     fetch('/api/socket').finally(() => {
         socketRef.current = io();
 
@@ -113,6 +114,7 @@ const Mapping: React.FC = () => {
         });
 
         return () => {
+            console.log("discon");
             socketRef.current.disconnect();
         };
     });    
