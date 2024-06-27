@@ -10,7 +10,7 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 
 import axios from "axios";
 
-const LidarCanvas = () => {
+const LidarCanvas = ({ className }) => {
   const canvas = useSelector((state: RootState) => state.canvas);
   const { action } = useSelector((state: RootState) => state.canvas);
 
@@ -211,7 +211,7 @@ const LidarCanvas = () => {
     }
   };
 
-  return <canvas className="canvas" ref={canvasRef} />;
+  return <canvas className={className} ref={canvasRef} />;
 };
 
 export default LidarCanvas;
