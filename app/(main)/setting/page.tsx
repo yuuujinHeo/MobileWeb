@@ -26,90 +26,6 @@ const Setting: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
     const [mobileURL, setMobileURL] = useState('');
-    // const [settingState, setSettingState] = useState<SettingState>({
-    //     robot:{
-    //         PLATFORM_NAME:'',
-    //         PLATFORM_TYPE:''
-    //     },
-    //     debug:{
-    //         SIM_MODE:0
-    //     },
-    //     loc:{
-    //         LOC_CHECK_DIST:0,
-    //         LOC_CHECK_IE:0,
-    //         LOC_CHECK_IR:0,
-    //         LOC_FUSION_RATIO:0,
-    //         LOC_ICP_COST_THRESHOLD:0,
-    //         LOC_ICP_ERROR_THRESHOLD:0,
-    //         LOC_ICP_MAX_FEATURE_NUM:0
-    //     },
-    //     control:{
-    //         DRIVE_EXTENDED_CONTROL_TIME:0,
-    //         DRIVE_GOAL_D:0,
-    //         DRIVE_GOAL_TH:0
-    //     },
-    //     annotation:{
-    //         ANNOT_QA_STEP:0
-    //     },
-    //     default:{
-    //         ROBOT_SIZE_MAX_X:0,
-    //         ROBOT_SIZE_MAX_Y:0,
-    //         ROBOT_SIZE_MAX_Z:0,
-    //         ROBOT_SIZE_MIN_X:0,
-    //         ROBOT_SIZE_MIN_Y:0,
-    //         ROBOT_SIZE_MIN_Z:0,
-    //         ROBOT_RADIUS:0,
-    //         ROBOT_WHEEL_BASE:0,
-    //         ROBOT_WHEEL_RADIUS:0,
-    //         LIDAR_MAX_RANGE:0,
-    //         LIDAR_TF_B_X:0,
-    //         LIDAR_TF_B_Y:0,
-    //         LIDAR_TF_B_Z:0,
-    //         LIDAR_TF_B_RX:0,
-    //         LIDAR_TF_B_RY:0,
-    //         LIDAR_TF_B_RZ:0,
-    //         LIDAR_TF_F_X:0,
-    //         LIDAR_TF_F_Y:0,
-    //         LIDAR_TF_F_Z:0,
-    //         LIDAR_TF_F_RX:0,
-    //         LIDAR_TF_F_RY:0,
-    //         LIDAR_TF_F_RZ:0
-    //     },
-    //     motor:{
-    //         MOTOR_ID_L:0,
-    //         MOTOR_ID_R:0,
-    //         MOTOR_DIR:0,
-    //         MOTOR_GEAR_RATIO:0,
-    //         MOTOR_LIMIT_V:0,
-    //         MOTOR_LIMIT_V_ACC:0,
-    //         MOTOR_LIMIT_W:0,
-    //         MOTOR_LIMIT_W_ACC:0,
-    //         MOTOR_GAIN_KP:0,
-    //         MOTOR_GAIN_KI:0,
-    //         MOTOR_GAIN_KD:0
-    //     },
-    //     mapping:{
-    //         SLAM_ICP_COST_THRESHOLD:0,
-    //         SLAM_ICP_DO_ACCUM_NUM:0,
-    //         SLAM_ICP_DO_ERASE_GAP:0,
-    //         SLAM_ICP_ERROR_THRESHOLD:0,
-    //         SLAM_ICP_MAX_FEATURE_NUM:0,
-    //         SLAM_ICP_VIEW_THRESHOLD:0,
-    //         SLAM_KFRM_LC_TRY_DIST:0,
-    //         SLAM_KFRM_LC_TRY_OVERLAP:0,
-    //         SLAM_KFRM_UPDATE_NUM:0,
-    //         SLAM_VOXEL_SIZE:0,
-    //         SLAM_WINDOW_SIZE:0
-    //     },
-    //     obs:{
-    //         OBS_AVOID_DIST:0,
-    //         OBS_MAP_GRID_SIZE:0,
-    //         OBS_MAP_MARGIN:0,
-    //         OBS_MAP_RANGE:0,
-    //         OBS_SIZE_THRESHOLD:0,
-    //         OBS_TARGET_DIST:0
-    //     }
-    // });
 
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
@@ -517,7 +433,7 @@ const Setting: React.FC = () => {
             console.log("SAVE : ",data);
         }
     });
-
+    
 
     const loadPresetList = async() =>{
         try{

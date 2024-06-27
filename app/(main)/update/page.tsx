@@ -103,7 +103,6 @@ const Update: React.FC = () =>{
         }
     }
 
-
     async function setURL(){
         if(mobileURL == ''){
             const currentURL = window.location.href;

@@ -39,11 +39,13 @@ import { start } from 'repl';
 import { useDispatch, useSelector } from 'react-redux';
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { selectUser, setUser } from '@/store/userSlice';
+import { selectStatus, setStatus } from '@/store/statusSlice';
 
 
 const State: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
     const userState = useSelector((state:RootState) => selectUser(state));    
+    const Status = useSelector((state:RootState) =>selectStatus(state));
     const [mobileURL, setMobileURL] = useState('');
     const toast_main = useRef('');
 
@@ -61,8 +63,82 @@ const State: React.FC = () =>{
         }
     },[])
 
+    useEffect(() =>{
+        if(mobileURL != ''){
+            getStatus();
+        }
+    },[mobileURL])
+
+    useEffect(() =>{
+        console.log("Status:",Status);
+    },[Status])
+
+    
+    function getBit(number, bitPosition) {
+        return (number & (1 << bitPosition)) !== 0 ? 1 : 0;
+    }
+    
+    function getBits(number) {
+        let bits = [];
+        // for (let i = 7; i >= 0; i--) { // 8비트 숫자이므로 7부터 0까지 반복
+        for (let i = 0; i <8; i++) { // 8비트 숫자이므로 7부터 0까지 반복
+            // console.log(i,bits);
+            bits.push(getBit(number, i));
+        }
+        return bits;
+    }
+    async function getStatus(){
+        const response = await axios.get(mobileURL+"/status");
+
+        // const temp = response.data.motor[0].status;
+        // console.log(temp, getBits(16))
+        console.log(getBits(response.data.motor[0].status)[2]);
+        dispatch(setStatus({
+            condition:response.data.condition,
+            pose:response.data.pose,
+            vel:response.data.vel,
+            power:response.data.power,
+            state:response.data.state,
+            time: response.data.time,
+            motor0:{
+                connection:response.data.motor[0].connection,
+                temperature:response.data.motor[0].temperature,
+                status:{
+                    running:getBits(response.data.motor[0].status)[0]?true:false,
+                    mode:getBits(response.data.motor[0].status)[1]?true:false,
+                    jam:getBits(response.data.motor[0].status)[2]?true:false,
+                    current:getBits(response.data.motor[0].status)[3]?true:false,
+                    big:getBits(response.data.motor[0].status)[4]?true:false,
+                    input:getBits(response.data.motor[0].status)[5]?true:false,
+                    position:getBits(response.data.motor[0].status)[6]?true:false,
+                    collision:getBits(response.data.motor[0].status)[7]?true:false
+                }
+            },
+            motor1:{
+                connection:response.data.motor[1].connection,
+                temperature:response.data.motor[1].temperature,
+                status:{
+                    running:getBits(response.data.motor[1].status)[0]?true:false,
+                    mode:getBits(response.data.motor[1].status)[1]?true:false,
+                    jam:getBits(response.data.motor[1].status)[2]?true:false,
+                    current:getBits(response.data.motor[1].status)[3]?true:false,
+                    big:getBits(response.data.motor[1].status)[4]?true:false,
+                    input:getBits(response.data.motor[1].status)[5]?true:false,
+                    position:getBits(response.data.motor[1].status)[6]?true:false,
+                    collision:getBits(response.data.motor[1].status)[7]?true:false
+                }
+            }
+        }));
+    }
     return(
         <main>
+        <div className='card'>
+            <div className='card'>
+                <p>State</p>
+                <ToggleButton checked={Status.motor0.connection} readOnly onLabel="Connected" offLabel="Disconnected" > </ToggleButton>
+
+            </div>
+        </div>
         </main>
     );
 }

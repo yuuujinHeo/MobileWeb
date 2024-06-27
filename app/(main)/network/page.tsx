@@ -233,8 +233,7 @@ const Network:React.FC = () =>{
         }
 
     }
-    async function reScan(){
-        
+    async function reScan(){        
         try{
             const response = await axios.get(mobileURL+'/network/wifi/scan');
             console.log(response.data);

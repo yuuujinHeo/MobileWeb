@@ -1,7 +1,8 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useContext, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 
+// import { GetServerSideProps, GetServerSideProps } from "next";
 // prime
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
@@ -10,13 +11,33 @@ import { Button } from "primereact/button";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 // etc
-import "./style.scss";
-import axios from "axios";
+import "../map/style.scss";
+import { WebSocketContext } from './websocketprovider';
+import { useDispatch, useSelector } from 'react-redux';
+import {store,AppDispatch, RootState} from '../../../store/store';
+import { selectCloud, setCloud } from '@/store/mappingSlice';
 
-const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
+// export const getServerSideProps = async (context) => {
+//     // const st = store();
+  
+//     // 서버에서 데이터를 가져옵니다.
+//     const res = await fetch('https://api.example.com/cloud');
+//     const data = await res.json();
+  
+//     // Redux 상태를 설정합니다.
+//     // st.dispatch(setCloud(data));
+  
+//     return {
+//       props: {
+//         // initialReduxState: st.getState(),
+//       },
+//     };
+//   };
 
-const Map: React.FC = () => {
+const Mapping: React.FC = () => {
   // state
+  const dispatch = useDispatch<AppDispatch>();
+  const Cloud = useSelector((state:RootState) => selectCloud(state));   
   const [visible, setVisible] = useState<boolean>(false);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -25,12 +46,10 @@ const Map: React.FC = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
-  const [mobileURL, setMobileURL] = useState("");
+  const ws = useContext(WebSocketContext);
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
-    setURL();
-
     if (!canvasRef.current) return;
 
     const scene = new THREE.Scene();
@@ -102,44 +121,25 @@ const Map: React.FC = () => {
     rendererRef.current,
     cameraRef.current,
     controlRef.current,
-    mobileURL,
   ]);
 
-  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-  async function setURL() {
-    if (mobileURL == "") {
-      const currentURL = window.location.href;
-      // console.log(currentURL);
-      if (currentURL.startsWith("http")) {
-        console.log(
-          currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-        );
-        setMobileURL(
-          currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-        );
-      } else {
-        // console.log("->", currentURL + ":11334");
-        setMobileURL(currentURL + ":11334");
-      }
-    }
-  }
+  useEffect(()=>{
+    console.log("cloud");
+    // drawCloud();
+  },[Cloud])
 
-  // Get data from lidar
-  const getCloud = async () => {
-    try {
-      const resp = await axios.get(url + "/map/cloud/2024_06_14_19_06_41_443");
-      console.log(resp.data);
-      // const resp = await axios.get(mobileURL + "/map/cloud/test");
-      return resp.data;
-    } catch (e) {
-      console.error(
-        "An error Occured while getting cloud data. The error is:",
-        e
-      );
-    }
-  };
+  setInterval(()=>{
+    drawCloud();
+  },1000);
+
+  useEffect(()=>{
+
+  })
+
+
 
   const drawCloud = async () => {
+    console.log("drawCloud");
     if (
       !canvasRef.current ||
       !sceneRef.current ||
@@ -148,10 +148,11 @@ const Map: React.FC = () => {
       !controlRef.current
     )
       return;
+      console.log("??",Cloud);
 
-    const cloud = await getCloud();
+    // const cloud = await getCloud();
 
-    if (cloud) {
+    if (Cloud) {
       const geo = new THREE.BufferGeometry();
 
       const positions: number[] = [];
@@ -159,7 +160,7 @@ const Map: React.FC = () => {
 
       const color = new THREE.Color();
 
-      cloud.forEach((arr: string[]) => {
+      Cloud.forEach((arr: string[]) => {
         // set positions
         const parsedArr = arr.slice(0, 3).map(parseFloat);
         positions.push(...parsedArr);
@@ -208,20 +209,8 @@ const Map: React.FC = () => {
   return (
     <main>
       <canvas className="canvas" ref={canvasRef} />
-      <Sidebar
-        visible={visible}
-        position="bottom"
-        onHide={() => setVisible(false)}
-        className="joystick-slide"
-      >
-        <Joystick></Joystick>
-      </Sidebar>
-      <Button
-        icon="pi pi-arrow-right"
-        onClick={() => setVisible(true)}
-      ></Button>
     </main>
   );
 };
 
-export default Map;
+export default Mapping;
