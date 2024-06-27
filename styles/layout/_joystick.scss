@@ -1,12 +1,15 @@
-#joystick-container {
-  position: absolute;
-  top: 80%;
-  left: 50%;
-  transform: translate(-50%, -10%);
+// TEMP
+#mapping-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
 
+#joystick-container {
   z-index: 999;
-  opacity: 0.5;
+  opacity: 0.4;
   width: 100%;
+  height: 30vh;
   display: flex;
   justify-content: space-between;
   background: #e0e0e0;
@@ -22,14 +25,25 @@
     height: 200px;
     position: relative;
   }
+}
 
-  .control-paramter-container {
-    // TODO
-    .speed-container,
-    .rotation-container {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
+#control-parameter-container {
+  width: 25vw;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-evenly;
+  #speed-container,
+  #rotation-container {
+    overflow: hidden;
+    touch-action: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 }
+
+// @media (min-width: 1025px) {
+//   #joystick-container {
+//     height: 40vh;
+//   }
+// }

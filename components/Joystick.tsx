@@ -11,15 +11,17 @@ const INTERVAL_TIME = 100;
 // TEMP
 const getJoystickSize = () => {
   if (!window) return;
-  if (window.matchMedia("(max-width: 600px").matches) {
+  if (window.matchMedia("(max-width: 576px").matches) {
     // Mobile
-    return { joySize: 100 };
-  } else if (window.matchMedia("(max-width: 1024px").matches) {
+    return { joySize: 80 };
+  } else if (window.matchMedia("(max-width: 768px").matches) {
     // Tablet
+    return { joySize: 100 };
+  } else if (window.matchMedia("(max-width: 992px").matches) {
+    // Notebook
     return { joySize: 120 };
   } else {
-    // Desktop
-    return { joySize: 200 };
+    return { joySize: 150 };
   }
 };
 
@@ -165,8 +167,8 @@ const Joystick = () => {
   return (
     <div id="joystick-container">
       <div id="left-joystick"></div>
-      <div className="control-parameter-container">
-        <div className="speed-container">
+      <div id="control-parameter-container">
+        <div id="speed-container">
           <span>Speed</span>
           <Knob
             value={speedFactor}
@@ -176,7 +178,7 @@ const Joystick = () => {
             onChange={(e) => setSpeedFactor(e.value)}
           />
         </div>
-        <div className="rotation-container">
+        <div id="rotation-container">
           <span>Rotation</span>
           <Knob
             value={rotateFactor}

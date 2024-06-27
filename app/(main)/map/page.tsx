@@ -23,7 +23,7 @@ const Map: React.FC = () => {
 
   return (
     <div className="map">
-      <LidarCanvas />
+      <LidarCanvas className="canvas" />
       <Button
         label="Mapping"
         severity="secondary"
@@ -44,7 +44,7 @@ const Map: React.FC = () => {
       >
         <div id="mapping-container">
           <UtilityPanel />
-          <LidarCanvas />
+          <LidarCanvas className="canvas-overlay" />
           <Joystick />
         </div>
       </Sidebar>
