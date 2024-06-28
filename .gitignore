@@ -54,3 +54,5 @@ thumb
 sketch
 
 # End of https://www.toptal.com/developers/gitignore/api/react,nextjs
+
+package-lock.json
