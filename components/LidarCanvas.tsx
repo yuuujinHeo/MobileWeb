@@ -8,6 +8,7 @@ import { RootState } from "@/store/store";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 
+import { io } from "socket.io-client";
 import axios from "axios";
 
 const LidarCanvas = ({ className }) => {
@@ -15,18 +16,22 @@ const LidarCanvas = ({ className }) => {
   const { action } = useSelector((state: RootState) => state.canvas);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const socketRef = useRef<any>();
 
-  const sceneRef = useRef<THREE.Scene | null>(null);
+  const sceneRef = useRef<THREE.Scene>();
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const [mobileURL, setMobileURL] = useState("");
 
+  const lidarPoints = useRef<number>();
+  const mappingPoints = useRef<number>();
+
   useEffect(() => {
     switch (action.command) {
       case "DRAW_CLOUD":
-        drawCloud();
+        // drawCloud();
         break;
       default:
         break;
@@ -69,7 +74,7 @@ const LidarCanvas = ({ className }) => {
     rendererRef.current = renderer;
 
     const animate = () => {
-      if(sceneRef.current && cameraRef.current){
+      if (sceneRef.current && cameraRef.current) {
         rendererRef.current?.render(sceneRef.current, cameraRef.current);
       }
     };
@@ -111,7 +116,35 @@ const LidarCanvas = ({ className }) => {
     };
   }, []);
 
-  // Draw the points cloud
+  useEffect(() => {
+    const connectSocket = () => {
+      if (!socketRef.current) {
+        fetch("/api/socket").finally(() => {
+          socketRef.current = io();
+
+          socketRef.current.on("connect", () => {
+            console.log("Socket connected ", socketRef.current.id);
+          });
+
+          socketRef.current.on("mapping", (data) => {
+            console.log("get mapping");
+            drawCloud(data);
+          });
+          socketRef.current.on("lidar", (data: string[][]) => {
+            console.log("get lidar");
+            drawLidar(data);
+          });
+        });
+      }
+    };
+    connectSocket();
+
+    return () => {
+      console.log("Socket disconnect ", socketRef.current.id);
+      socketRef.current.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     if (isInitializedRef) {
       // drawCloud();
@@ -126,6 +159,8 @@ const LidarCanvas = ({ className }) => {
     const geometry = new THREE.BoxGeometry(3, 1, 1.5);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
+
+    robot.rotateX(Math.PI / -2);
 
     // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
     const axesHelper = new THREE.AxesHelper(4);
@@ -166,11 +201,68 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  const drawCloud = async () => {
+  const drawLidar = (data: string[][]) => {
+    // Is it necessary?
     if (!isInitializedRef.current) return;
 
-    const cloud = await getCloud();
+    if (lidarPoints.current) {
+      const lidarPointsObj = sceneRef.current?.getObjectById(
+        lidarPoints.current
+      );
+      if (lidarPointsObj) {
+        sceneRef.current?.remove(lidarPointsObj);
+      }
+    }
 
+    const geo = new THREE.BufferGeometry();
+
+    const positions: number[] = [];
+    const colors: number[] = [];
+
+    const color = new THREE.Color();
+
+    data.forEach((arr: string[]) => {
+      // set positions
+      const parsedArr = arr.slice(0, 3).map(parseFloat);
+      positions.push(...parsedArr);
+
+      color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
+      colors.push(color.r, color.g, color.b);
+    });
+
+    geo.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(positions, 3)
+    );
+    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+    geo.computeBoundingSphere();
+
+    const material = new THREE.PointsMaterial({
+      size: 0.3,
+      vertexColors: true,
+    });
+
+    const points = new THREE.Points(geo, material);
+    lidarPoints.current = points.id;
+
+    points.rotation.x = -(Math.PI / 2);
+
+    sceneRef.current?.add(points);
+  };
+
+  const drawCloud = async (cloud: string[][]) => {
+    if (!isInitializedRef.current) return;
+
+    // reset
+    if (mappingPoints.current) {
+      const mappingPointsObj = sceneRef.current?.getObjectById(
+        mappingPoints.current
+      );
+      if (mappingPointsObj) {
+        sceneRef.current?.remove(mappingPointsObj);
+      }
+    }
     if (cloud) {
       const geo = new THREE.BufferGeometry();
 
@@ -184,11 +276,7 @@ const LidarCanvas = ({ className }) => {
         const parsedArr = arr.slice(0, 3).map(parseFloat);
         positions.push(...parsedArr);
 
-        if (colors.length) {
-          color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
-        } else {
-          color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
-        }
+        color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
 
         colors.push(color.r, color.g, color.b);
       });
@@ -207,6 +295,8 @@ const LidarCanvas = ({ className }) => {
       });
 
       const points = new THREE.Points(geo, material);
+      mappingPoints.current = points.id;
+
       points.rotation.x = -(Math.PI / 2);
 
       sceneRef.current?.add(points);
