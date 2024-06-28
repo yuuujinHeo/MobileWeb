@@ -6,7 +6,7 @@ interface UserState {
     user_id:string;
     user_name:string;
     token:string;
-    permission:string[];    
+    permission:[];    
 }
 const defaultUser = {
     user_id:"temp",
@@ -25,7 +25,10 @@ const userSlice = createSlice({
     },
   reducers: {
     setUser(state,action: PayloadAction<UserState>){
-        state = action.payload;
+        state.user_id = action.payload.user_id;
+        state.user_name = action.payload.user_name;
+        state.token = action.payload.token;
+        state.permission = action.payload.permission;
     },
     setUserPermission(state,action: PayloadAction<[]>){
         state.permission = action.payload;

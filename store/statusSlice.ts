@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { RootState } from './store'
 
-interface StatusState {
+export interface StatusState {
     pose:{
         x: number,
         y: number,
@@ -60,10 +60,7 @@ interface StatusState {
     time:string
 }
 
-
-const statusSlice = createSlice({
-  name: 'status',
-  initialState:{
+export const initState = {
     pose:{
         x: 0,
         y: 0,
@@ -120,11 +117,15 @@ const statusSlice = createSlice({
         localization: "none"
     },
     time:''
-  },
+  }
+
+const statusSlice = createSlice({
+  name: 'status',
+  initialState:initState,
   reducers: {
     setStatus(state, action:PayloadAction<StatusState>){
         state = action.payload;
-        console.log("setStatus",action.payload,state);
+        console.log("setStatus",state);
     }
   },
 });

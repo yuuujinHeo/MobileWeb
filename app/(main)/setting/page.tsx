@@ -21,10 +21,14 @@ import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/stor
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 
+import { selectStatus, setStatus } from '@/store/statusSlice';
+import { selectState, setState } from '@/store/stateSlice';
 
 const Setting: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
+    const Status = useSelector((state:RootState) => selectStatus(state));
+    const State = useSelector((state:RootState) => selectState(state));
     const [mobileURL, setMobileURL] = useState('');
 
     const [visiblePreset, setVisiblePreset] = useState(false);
@@ -38,8 +42,10 @@ const Setting: React.FC = () => {
     useEffect(()=>{
         if(mobileURL != ''){
             default_setting();
+            getState();
         }
     },[mobileURL])
+
 
     async function setURL(){
         if(mobileURL == ''){
@@ -55,7 +61,61 @@ const Setting: React.FC = () => {
             return mURL;
         }
     }
-    
+
+    const getState = async() =>{
+        console.log("getState");
+        // const response = await axios.get("http://10.108.1.40:11334/status");
+
+        // console.log(response.data.time);
+        // dispatch(setState(response.data.time))
+        dispatch(setState({time:'ff'}));
+        setInterval(()=>{
+            console.log(State);
+        },3000)
+    }
+    // async function getStatus(){
+        const getStatus = async() =>{
+            const response = await axios.get("http://10.108.1.40:11334/status");
+            // const response = await axios.get(mobileURL+"/status");
+            dispatch(setStatus({
+                condition:response.data.condition,
+                pose:response.data.pose,
+                vel:response.data.vel,
+                power:response.data.power,
+                state:response.data.state,
+                time: response.data.time,
+                motor0:{
+                    connection:response.data.motor[0].connection,
+                    temperature:response.data.motor[0].temperature,
+                    status:{
+                        running:false,
+                        mode:false,
+                        jam:false,
+                        current:false,
+                        big:false,
+                        input:false,
+                        position:false,
+                        collision:false
+                    }
+                },
+                motor1:{
+                    connection:response.data.motor[1].connection,
+                    temperature:response.data.motor[1].temperature,
+                    status:{
+                        running:false,
+                        mode:false,
+                        jam:false,
+                        current:false,
+                        big:false,
+                        input:false,
+                        position:false,
+                        collision:false
+                    }
+                }
+            }));
+        }
+
+
     const default_setting = async(data:SettingState | undefined=undefined) =>{
         try{
             if(data == undefined){
