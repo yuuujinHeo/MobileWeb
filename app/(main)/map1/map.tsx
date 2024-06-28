@@ -113,6 +113,11 @@ const Mapping: React.FC = () => {
           Cloud = data;
         });
 
+        socketRef.current.on("lidar", (data) => {
+          // console.log("get mapping", data);
+          // Cloud = data;
+        });
+
         return () => {
             console.log("discon");
             socketRef.current.disconnect();
