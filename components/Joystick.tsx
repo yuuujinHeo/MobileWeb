@@ -41,6 +41,9 @@ const Joystick = () => {
   const leftControlRef = useRef(false);
   const rightControlRef = useRef(false);
 
+  let leftStartPosition = {x:0, y:0};
+  let rightStartPosition = {x:0, y:0};
+
   useEffect(() => {
     const createJoystick = () => {
       const leftJoy = document.getElementById("left-joystick") as
@@ -55,18 +58,20 @@ const Joystick = () => {
       const leftJoyManager = nipplejs.create({
         zone: leftJoy,
         color: "blue",
-        size: joySize,
-        mode: "static",
-        position: { left: "50%", top: "50%" },
+        // size: joySize,
+        mode: "dynamic",
+        dynamicPage: true,
+        // position: { left: "50%", top: "50%" },
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
         zone: rightJoy,
         color: "red",
-        size: joySize,
-        mode: "static",
-        position: { left: "50%", top: "50%" },
+        // size: joySize,
+        mode: "dynamic",
+        dynamicPage: true,
+        // position: { left: "50%", top: "50%" },
         lockX: true,
       });
 
@@ -170,8 +175,13 @@ const Joystick = () => {
     };
 
     if (leftJoyManagerRef.current && rightJoyManagerRef.current) {
-      leftJoyManagerRef.current.on("start", startLeftInterval);
-      // leftJoyManagerRef.current.on("start", startLeftInterval);
+      leftJoyManagerRef.current.on("start", (evt,data) =>{
+        leftStartPosition = {
+          x: data.position.x,
+          y: data.position.y
+        }
+        startLeftInterval();
+      });
       leftJoyManagerRef.current.on("move", (evt, data) => {
         const { vx } = calculateVelocity(data);
         leftValueRef.current.vx = vx;
@@ -180,8 +190,13 @@ const Joystick = () => {
         clearLeftInterval();
       });
 
-      rightJoyManagerRef.current.on("start", startRightInterval);
-      // rightJoyManagerRef.current.on("start", startRightInterval);
+      rightJoyManagerRef.current.on("start", (evt,data) =>{
+        rightStartPosition = {
+          x: data.position.x,
+          y: data.position.y
+        }
+        startRightInterval();
+      });
       rightJoyManagerRef.current.on("move", (evt, data) => {
         const { wz } = calculateVelocity(data);
         rightValueRef.current.wz = -wz;
