@@ -23,6 +23,7 @@ const LidarCanvas = ({ className }) => {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
+  const robotModel = useRef<THREE.Object3D>();
   const [mobileURL, setMobileURL] = useState("");
 
   const lidarPoints = useRef<number>();
@@ -59,7 +60,7 @@ const LidarCanvas = ({ className }) => {
       1000
     );
     cameraRef.current = camera;
-    camera.position.set(0, 45, 0);
+    camera.position.set(0, 25, 0);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -131,8 +132,12 @@ const LidarCanvas = ({ className }) => {
             drawCloud(data);
           });
           socketRef.current.on("lidar", (data: string[][]) => {
-            console.log("get lidar");
             drawLidar(data);
+          });
+
+          socketRef.current.on("status", (data) => {
+            const res = JSON.parse(data);
+            driveRobot(res.pose);
           });
         });
       }
@@ -146,26 +151,44 @@ const LidarCanvas = ({ className }) => {
   }, []);
 
   useEffect(() => {
-    if (isInitializedRef) {
+    if (isInitializedRef.current) {
       // drawCloud();
       initRobot();
     }
-  }, [isInitializedRef, mobileURL]);
+  }, [isInitializedRef]);
 
-  const initRobot = () => {
+  const initRobot = async () => {
     if (!isInitializedRef.current) return;
+    if (!sceneRef.current) return;
 
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(3, 1, 1.5);
+    const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
+    robotModel.current = robot;
 
     robot.rotateX(Math.PI / -2);
+
+    // TEMP
+    // This mesh indicate center of the scene
+    // const centerGeo = new THREE.OctahedronGeometry(0.1, 0);
+    // const centerMaterial = new THREE.MeshBasicMaterial();
+    // const center = new THREE.Mesh(centerGeo, centerMaterial);
+    // sceneRef.current.add(center);
 
     // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
     const axesHelper = new THREE.AxesHelper(4);
     robot.add(axesHelper);
-    sceneRef.current?.add(robot);
+
+    // get Robot position
+    const resp = await axios.get(url + "/status");
+    const position = resp.data.pose;
+
+    robot.position.set(position.x, position.y, 0);
+    const radian = position.rz * (Math.PI / 180);
+    robot.rotation.z = radian;
+
+    sceneRef.current.add(robot);
   };
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
@@ -186,6 +209,14 @@ const LidarCanvas = ({ className }) => {
       }
     }
   }
+
+  const driveRobot = (data) => {
+    if (!robotModel.current) return;
+    robotModel.current.position.set(data.x, data.y, 0);
+
+    const radian = data.rz * (Math.PI / 180);
+    robotModel.current.rotation.z = radian;
+  };
 
   // Get data from lidar
   const getCloud = async () => {
@@ -239,7 +270,7 @@ const LidarCanvas = ({ className }) => {
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.3,
+      size: 0.1,
       vertexColors: true,
     });
 
@@ -290,7 +321,7 @@ const LidarCanvas = ({ className }) => {
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
-        size: 0.3,
+        size: 0.1,
         vertexColors: true,
       });
 
