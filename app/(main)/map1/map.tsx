@@ -251,7 +251,7 @@ const Mapping: React.FC = () => {
 
   return (
     <main>
-      <canvas className="canvas" ref={canvasRef} />
+      <canvas className="map" ref={canvasRef} />
     </main>
   );
 };
