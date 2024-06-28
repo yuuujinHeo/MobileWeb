@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useContext, useState, useRef } from "react";
+import React, { useEffect, useContext,  useState, useRef } from "react"
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // import { GetServerSideProps, GetServerSideProps } from "next";
@@ -28,8 +29,13 @@ const Mapping: React.FC = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
-  var Cloud:String[][]=[];
-  var Lidar:String[][]=[];
+  const router = useRouter();
+
+  // var Cloud:String[][]=[];
+  // var Lidar:String[][]=[];
+
+  const [Lidar, setLidar] = useState<String[][]>();
+  const [Cloud, setCloud] = useState<String[][]>();
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -98,34 +104,34 @@ const Mapping: React.FC = () => {
 
   setInterval(()=>{
     drawCloud();
-  },1000);
+  });
 
-  useEffect(() => {
-    console.log("use");
+  useEffect(() =>{
     fetch('/api/socket').finally(() => {
         socketRef.current = io();
 
         socketRef.current.on("connect", () => {
-            console.log(socketRef.current.id);
+            console.log("Socket connected ",socketRef.current.id);
         });
 
         socketRef.current.on("mapping", (data) => {
-          // console.log("get mapping", data);
-          Cloud = data;
+          console.log("get mapping");
+          // Cloud = data;
+          setCloud(data);
         });
 
         socketRef.current.on("lidar", (data) => {
           console.log("get lidar");
-          Lidar = data;
+          // Lidar = data;
+          setLidar(data);
         });
 
-        return () => {
-            console.log("discon");
-            socketRef.current.disconnect();
-        };
-    });    
-  }, []);
-
+    }); 
+    return () => {
+        console.log("Socket disconnect ",socketRef.current.id);
+        socketRef.current.disconnect();
+    };
+  });
 
   const drawCloud = async () => {
     if (

@@ -10,8 +10,6 @@ import {GlobalUserProvider} from '../interface/user'
 import { store } from '@/store/store';
 import { useEffect } from 'react';
 
-import { TestProvider} from '../store/context/TestContext'
-
 interface RootLayoutProps {
     children: React.ReactNode;
 }
