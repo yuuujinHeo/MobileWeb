@@ -214,7 +214,7 @@ const Joystick = () => {
 
   return (
     <div id="joystick-container">
-      <div id="left-joystick"></div>
+      <div id="left-joystick">touch</div>
       <div id="control-parameter-container">
         <div id="speed-container">
           <span>Speed</span>
@@ -237,7 +237,7 @@ const Joystick = () => {
           />
         </div>
       </div>
-      <div id="right-joystick"></div>
+      <div id="right-joystick">touch</div>
     </div>
   );
 };

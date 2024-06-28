@@ -21,10 +21,14 @@
 
   #left-joystick,
   #right-joystick {
-    width:200px;
+    width: 30%;
     height: 100%;
-    // background: #929292;
+    background: #ffffff;
+    opacity: 0.5;
     // position: relative;
+    align-items: center;
+    justify-content: center;
+    display: flex;
   }
 }
 

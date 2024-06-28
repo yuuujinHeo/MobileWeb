@@ -83,7 +83,7 @@ const State: React.FC = () =>{
         // for (let i = 7; i >= 0; i--) { // 8비트 숫자이므로 7부터 0까지 반복
         for (let i = 0; i <8; i++) { // 8비트 숫자이므로 7부터 0까지 반복
             // console.log(i,bits);
-            bits.push(getBit(number, i));
+            // bits.push(getBit(number, i));
         }
         return bits;
     }
@@ -135,6 +135,7 @@ const State: React.FC = () =>{
         <div className='card'>
             <div className='card'>
                 <p>State</p>
+                <ToggleButton></ToggleButton>
                 <ToggleButton checked={Status.motor0.connection} readOnly onLabel="Connected" offLabel="Disconnected" > </ToggleButton>
 
             </div>
