@@ -184,7 +184,7 @@ const Joystick = () => {
       // rightJoyManagerRef.current.on("start", startRightInterval);
       rightJoyManagerRef.current.on("move", (evt, data) => {
         const { wz } = calculateVelocity(data);
-        rightValueRef.current.wz = -wz;
+        rightValueRef.current.wz = wz;
       });
       rightJoyManagerRef.current.on("end", (evt) => {
         clearRightInterval();
