@@ -45,7 +45,7 @@ const UtilityPanel = () => {
   ];
 
   const showToast = (severity: Severity, summary: string, detail: string) => {
-    toast.current.show({
+    toast.current?.show({
       severity: severity,
       summary: summary,
       detail: detail,
