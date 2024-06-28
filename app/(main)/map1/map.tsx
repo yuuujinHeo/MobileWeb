@@ -107,31 +107,32 @@ const Mapping: React.FC = () => {
   });
 
   useEffect(() =>{
-    fetch('/api/socket').finally(() => {
-        socketRef.current = io();
-
-        socketRef.current.on("connect", () => {
-            console.log("Socket connected ",socketRef.current.id);
-        });
-
-        socketRef.current.on("mapping", (data) => {
-          console.log("get mapping");
-          // Cloud = data;
-          setCloud(data);
-        });
-
-        socketRef.current.on("lidar", (data) => {
-          console.log("get lidar");
-          // Lidar = data;
-          setLidar(data);
-        });
-
-    }); 
-    return () => {
-        console.log("Socket disconnect ",socketRef.current.id);
-        socketRef.current.disconnect();
-    };
-  });
+    if(!socketRef.current){
+      fetch('/api/socket').finally(() => {
+          socketRef.current = io();
+  
+          socketRef.current.on("connect", () => {
+              console.log("Socket connected ",socketRef.current.id);
+          });
+  
+          socketRef.current.on("mapping", (data) => {
+            console.log("get mapping");
+            // Cloud = data;
+            setCloud(data);
+          });
+  
+          socketRef.current.on("lidar", (data) => {
+            console.log("get lidar");
+            // Lidar = data;
+            setLidar(data);
+          });
+      }); 
+      return () => {
+          console.log("Socket disconnect ",socketRef.current.id);
+          socketRef.current.disconnect();
+      };
+    }
+  },[]);
 
   const drawCloud = async () => {
     if (

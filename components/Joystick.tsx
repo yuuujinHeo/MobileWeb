@@ -32,7 +32,7 @@ const Joystick = () => {
   const rightJoyManagerRef = useRef(null);
 
   useEffect(() => {
-    const createJoystick = () => {
+    const createJoystick = async() => {
       const leftJoy = document.getElementById("left-joystick");
       const rightJoy = document.getElementById("right-joystick");
 
