@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useContext,  useState, useRef } from "react"
+import React, { useEffect, useContext, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
@@ -15,9 +15,12 @@ import { MapControls } from "three/examples/jsm/controls/MapControls";
 import "../map/style.scss";
 import { useDispatch, useSelector } from "react-redux";
 import { io } from "socket.io-client";
-import {store,AppDispatch, RootState} from '../../../store/store';
-import { GetStaticProps, GetStaticPropsContext, GetStaticPropsResult } from 'next';
- 
+import { store, AppDispatch, RootState } from "../../../store/store";
+import {
+  GetStaticProps,
+  GetStaticPropsContext,
+  GetStaticPropsResult,
+} from "next";
 
 const Mapping: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
@@ -99,37 +102,37 @@ const Mapping: React.FC = () => {
     };
   }, []);
 
-  useEffect(()=>{
+  useEffect(() => {
     drawCloud();
-  },[Cloud,Lidar]);
+  }, [Cloud, Lidar]);
 
-  useEffect(() =>{
-    if(!socketRef.current){
-      fetch('/api/socket').finally(() => {
-          socketRef.current = io();
-  
-          socketRef.current.on("connect", () => {
-              console.log("Socket connected ",socketRef.current.id);
-          });
-  
-          socketRef.current.on("mapping", (data) => {
-            console.log("get mapping");
-            // Cloud = data;
-            setCloud(data);
-          });
-  
-          socketRef.current.on("lidar", (data) => {
-            console.log("get lidar");
-            // Lidar = data;
-            setLidar(data);
-          });
-      }); 
+  useEffect(() => {
+    if (!socketRef.current) {
+      fetch("/api/socket").finally(() => {
+        socketRef.current = io();
+
+        socketRef.current.on("connect", () => {
+          console.log("Socket connected ", socketRef.current.id);
+        });
+
+        socketRef.current.on("mapping", (data) => {
+          console.log("get mapping");
+          // Cloud = data;
+          setCloud(data);
+        });
+
+        socketRef.current.on("lidar", (data) => {
+          console.log("get lidar");
+          // Lidar = data;
+          setLidar(data);
+        });
+      });
       return () => {
-          console.log("Socket disconnect ",socketRef.current.id);
-          socketRef.current.disconnect();
+        console.log("Socket disconnect ", socketRef.current.id);
+        socketRef.current.disconnect();
       };
     }
-  },[]);
+  }, []);
 
   const drawCloud = async () => {
     if (
@@ -140,7 +143,7 @@ const Mapping: React.FC = () => {
       !controlRef.current
     )
       return;
-      // console.log("??",Cloud);
+    // console.log("??",Cloud);
 
     // const cloud = await getCloud();
 
@@ -250,8 +253,6 @@ const Mapping: React.FC = () => {
 
       rendererRef.current.setAnimationLoop(animate);
     }
-
-
   };
 
   return (
