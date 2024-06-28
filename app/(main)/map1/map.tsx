@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useContext, useState, useRef } from "react";
+import React, { useEffect, useContext,  useState, useRef } from "react"
+import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // import { GetServerSideProps, GetServerSideProps } from "next";
@@ -28,7 +29,10 @@ const Mapping: React.FC = () => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
-  var Cloud:String[][]=[];
+  const router = useRouter();
+
+  const [Lidar, setLidar] = useState<String[][]>();
+  const [Cloud, setCloud] = useState<String[][]>();
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -95,31 +99,37 @@ const Mapping: React.FC = () => {
     };
   }, []);
 
-  setInterval(()=>{
+  useEffect(()=>{
     drawCloud();
-  },1000);
+  },[Cloud,Lidar]);
 
-  useEffect(() => {
-    console.log("use");
-    fetch('/api/socket').finally(() => {
-        socketRef.current = io();
-
-        socketRef.current.on("connect", () => {
-            console.log(socketRef.current.id);
-        });
-
-        socketRef.current.on("mapping", (data) => {
-          // console.log("get mapping", data);
-          Cloud = data;
-        });
-
-        return () => {
-            console.log("discon");
-            socketRef.current.disconnect();
-        };
-    });    
-  }, []);
-
+  useEffect(() =>{
+    if(!socketRef.current){
+      fetch('/api/socket').finally(() => {
+          socketRef.current = io();
+  
+          socketRef.current.on("connect", () => {
+              console.log("Socket connected ",socketRef.current.id);
+          });
+  
+          socketRef.current.on("mapping", (data) => {
+            console.log("get mapping");
+            // Cloud = data;
+            setCloud(data);
+          });
+  
+          socketRef.current.on("lidar", (data) => {
+            console.log("get lidar");
+            // Lidar = data;
+            setLidar(data);
+          });
+      }); 
+      return () => {
+          console.log("Socket disconnect ",socketRef.current.id);
+          socketRef.current.disconnect();
+      };
+    }
+  },[]);
 
   const drawCloud = async () => {
     if (
@@ -134,6 +144,7 @@ const Mapping: React.FC = () => {
 
     // const cloud = await getCloud();
 
+    console.log("drawCloud");
     if (Cloud) {
       const geo = new THREE.BufferGeometry();
 
@@ -186,11 +197,66 @@ const Mapping: React.FC = () => {
 
       rendererRef.current.setAnimationLoop(animate);
     }
+
+    if (Lidar) {
+      const geo = new THREE.BufferGeometry();
+
+      const positions: number[] = [];
+      const colors: number[] = [];
+
+      const color = new THREE.Color();
+
+      Lidar.forEach((arr: string[]) => {
+        // set positions
+        const parsedArr = arr.slice(0, 3).map(parseFloat);
+        positions.push(...parsedArr);
+
+        if (colors.length) {
+          color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
+        } else {
+          color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
+        }
+
+        colors.push(color.r, color.g, color.b);
+      });
+
+      geo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+      geo.computeBoundingSphere();
+
+      const material = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+      });
+
+      const points = new THREE.Points(geo, material);
+      points.rotation.x = -(Math.PI / 2);
+
+      sceneRef.current.add(points);
+
+      const animate = () => {
+        if (
+          rendererRef.current !== null &&
+          sceneRef.current !== null &&
+          cameraRef.current !== null
+        ) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      };
+
+      rendererRef.current.setAnimationLoop(animate);
+    }
+
+
   };
 
   return (
     <main>
-      <canvas className="canvas" ref={canvasRef} />
+      <canvas className="map" ref={canvasRef} />
     </main>
   );
 };

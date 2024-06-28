@@ -13,6 +13,9 @@ function ioHandler(req: NextApiRequest, res: NextApiResponse) {
             socket.on('mapping', (data:string[][]) =>{
                 io2.emit("mapping",data);
             });
+            socket.on('lidar', (data:string[][]) =>{
+                io2.emit("lidar",data);
+            });
         });
 
         io2.on('connection', socket => {

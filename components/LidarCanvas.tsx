@@ -69,7 +69,9 @@ const LidarCanvas = ({ className }) => {
     rendererRef.current = renderer;
 
     const animate = () => {
-      rendererRef.current.render(sceneRef.current, cameraRef.current);
+      if(sceneRef.current && cameraRef.current){
+        rendererRef.current?.render(sceneRef.current, cameraRef.current);
+      }
     };
 
     rendererRef.current.setAnimationLoop(animate);
@@ -128,7 +130,7 @@ const LidarCanvas = ({ className }) => {
     // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
     const axesHelper = new THREE.AxesHelper(4);
     robot.add(axesHelper);
-    sceneRef.current.add(robot);
+    sceneRef.current?.add(robot);
   };
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
@@ -207,7 +209,7 @@ const LidarCanvas = ({ className }) => {
       const points = new THREE.Points(geo, material);
       points.rotation.x = -(Math.PI / 2);
 
-      sceneRef.current.add(points);
+      sceneRef.current?.add(points);
     }
   };
 
