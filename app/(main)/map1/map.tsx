@@ -115,7 +115,7 @@ const Mapping: React.FC = () => {
         });
 
         socketRef.current.on("lidar", (data) => {
-          // console.log("get mapping", data);
+          console.log("get lidar");
           Lidar = data;
         });
 
