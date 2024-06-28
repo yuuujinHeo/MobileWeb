@@ -28,6 +28,7 @@ const LidarCanvas = ({ className }) => {
 
   const lidarPoints = useRef<number>();
   const mappingPoints = useRef<number>();
+  let robotPose:{x:number, y:number, rz:number} = {x:0, y:0, rz:0};
 
   useEffect(() => {
     switch (action.command) {
@@ -137,7 +138,10 @@ const LidarCanvas = ({ className }) => {
 
           socketRef.current.on("status", (data) => {
             const res = JSON.parse(data);
-            driveRobot(res.pose);
+            console.log(res.pose);
+            robotPose = {x:parseFloat(res.pose.x), y: parseFloat(res.pose.y), rz:parseFloat(res.pose.rz)*Math.PI/180}
+            // robotPose = {res.pose.x, res.po}
+            driveRobot(robotPose);
           });
         });
       }
@@ -214,8 +218,11 @@ const LidarCanvas = ({ className }) => {
     if (!robotModel.current) return;
     robotModel.current.position.set(data.x, data.y, 0);
 
-    const radian = data.rz * (Math.PI / 180);
-    robotModel.current.rotation.z = radian;
+    // const radian = data.rz * (Math.PI / 180);
+    robotModel.current.rotation.z = data.rz;
+
+
+    console.log(robotModel.current.position.x, robotModel.current.position.y);
   };
 
   // Get data from lidar
@@ -231,6 +238,24 @@ const LidarCanvas = ({ className }) => {
       );
     }
   };
+
+  function transformLidarPoints(point) {
+
+    // if(point[0])
+    const xL = point[0];
+    const yL = point[1];
+
+    // 회전 변환
+    const xLPrime = xL * Math.cos(robotPose.rz) - yL * Math.sin(robotPose.rz);
+    const yLPrime = xL * Math.sin(robotPose.rz) + yL * Math.cos(robotPose.rz);
+
+    // 평행 이동
+    const xM = robotPose.x + xLPrime;
+    const yM = (robotPose.y + yLPrime);
+
+    return [xM, yM, point[2]];
+}
+
 
   const drawLidar = (data: string[][]) => {
     // Is it necessary?
@@ -248,6 +273,7 @@ const LidarCanvas = ({ className }) => {
     const geo = new THREE.BufferGeometry();
 
     const positions: number[] = [];
+    const positions2: number[] = [];
     const colors: number[] = [];
 
     const color = new THREE.Color();
@@ -255,7 +281,17 @@ const LidarCanvas = ({ className }) => {
     data.forEach((arr: string[]) => {
       // set positions
       const parsedArr = arr.slice(0, 3).map(parseFloat);
-      positions.push(...parsedArr);
+
+      const newparsedArr = transformLidarPoints(parsedArr);
+
+
+      positions.push(...newparsedArr);
+
+
+
+
+
+
 
       color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
       colors.push(color.r, color.g, color.b);
