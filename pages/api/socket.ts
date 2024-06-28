@@ -16,8 +16,8 @@ function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       socket.on("lidar", (data: string[][]) => {
         io2.emit("lidar", data);
       });
-      socket.on("status", (data1: JSON) => {
-        io2.emit("status", data1);
+      socket.on("status", (data: JSON) => {
+        io2.emit("status", data);
       });
     });
 
