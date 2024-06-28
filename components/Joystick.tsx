@@ -31,6 +31,12 @@ const Joystick = () => {
   const leftJoyManagerRef = useRef<JoystickManager | null>(null);
   const rightJoyManagerRef = useRef<JoystickManager | null>(null);
 
+  // for joystick
+  const leftIntervalRef = useRef<number | null>(null);
+  const rightIntervalRef = useRef<number | null>(null);
+  const leftValueRef = useRef({ vx: 0 });
+  const rightValueRef = useRef({ wz: 0 });
+
   useEffect(() => {
     const createJoystick = () => {
       const leftJoy = document.getElementById("left-joystick") as
@@ -69,20 +75,21 @@ const Joystick = () => {
 
   const calculateVelocity = (data: Record<string, any>) => {
     const vy = 0;
+    const maxDistance = data.instance.options.size / 2;
     let vx: number, wz: number;
 
     if (data.vector.y > 0) {
-      vx = speedFactor * (data.distance / 50);
+      vx = speedFactor * (data.distance / maxDistance);
     } else if (data.vector.y < 0) {
-      vx = -1 * speedFactor * (data.distance / 50);
+      vx = -1 * speedFactor * (data.distance / maxDistance);
     } else {
       vx = 0;
     }
 
     if (data.vector.x > 0) {
-      wz = rotateFactor * (data.distance / 50);
+      wz = rotateFactor * (data.distance / maxDistance);
     } else if (data.vector.x < 0) {
-      wz = -1 * rotateFactor * (data.distance / 50);
+      wz = -1 * rotateFactor * (data.distance / maxDistance);
     } else {
       wz = 0;
     }
@@ -112,40 +119,37 @@ const Joystick = () => {
   };
 
   useEffect(() => {
-    let leftInterval: ReturnType<typeof setInterval> | null = null;
-    let rightInterval: ReturnType<typeof setInterval> | null = null;
-    let leftValue = { vx: 0 };
-    let rightValue = { wz: 0 };
-
     const startLeftInterval = () => {
-      if (leftInterval === null) {
-        leftInterval = setInterval(() => {
-          sendJogRequest(leftValue.vx, 0, 0);
+      if (leftIntervalRef.current === null) {
+        leftIntervalRef.current = window.setInterval(() => {
+          sendJogRequest(leftValueRef.current.vx, 0, 0);
         }, INTERVAL_TIME);
       }
     };
 
     const startRightInterval = () => {
-      if (rightInterval === null) {
-        rightInterval = setInterval(() => {
-          sendJogRequest(0, 0, rightValue.wz);
+      if (rightIntervalRef.current === null) {
+        rightIntervalRef.current = window.setInterval(() => {
+          sendJogRequest(0, 0, rightValueRef.current.wz);
         }, INTERVAL_TIME);
       }
     };
 
     const clearLeftInterval = () => {
-      if (leftInterval) {
+      if (leftIntervalRef.current) {
         sendJogRequest(0, 0, 0);
-        clearInterval(leftInterval);
-        leftInterval = null;
+        clearInterval(leftIntervalRef.current);
+        leftIntervalRef.current = null;
+        leftValueRef.current.vx = 0;
       }
     };
 
     const clearRightInterval = () => {
-      if (rightInterval) {
+      if (rightIntervalRef.current) {
         sendJogRequest(0, 0, 0);
-        clearInterval(rightInterval);
-        rightInterval = null;
+        clearInterval(rightIntervalRef.current);
+        rightIntervalRef.current = null;
+        rightValueRef.current.wz = 0;
       }
     };
 
@@ -153,7 +157,7 @@ const Joystick = () => {
       leftJoyManagerRef.current.on("start", startLeftInterval);
       leftJoyManagerRef.current.on("move", (evt, data) => {
         const { vx } = calculateVelocity(data);
-        leftValue.vx = vx;
+        leftValueRef.current.vx = vx;
       });
       leftJoyManagerRef.current.on("end", (evt) => {
         clearLeftInterval();
@@ -162,7 +166,7 @@ const Joystick = () => {
       rightJoyManagerRef.current.on("start", startRightInterval);
       rightJoyManagerRef.current.on("move", (evt, data) => {
         const { wz } = calculateVelocity(data);
-        rightValue.wz = wz;
+        rightValueRef.current.wz = wz;
       });
       rightJoyManagerRef.current.on("end", (evt) => {
         clearRightInterval();
