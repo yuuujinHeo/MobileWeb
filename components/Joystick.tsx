@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
-import nipplejs from "nipplejs";
+import nipplejs, { JoystickManager } from "nipplejs";
 
 // prime
 import { Knob } from "primereact/knob";
@@ -10,7 +10,7 @@ const INTERVAL_TIME = 100;
 
 // TEMP
 const getJoystickSize = () => {
-  if (!window) return;
+  if (!window) return { joySize: 100 };
   if (window.matchMedia("(max-width: 576px").matches) {
     // Mobile
     return { joySize: 80 };
@@ -28,13 +28,17 @@ const getJoystickSize = () => {
 const Joystick = () => {
   const [speedFactor, setSpeedFactor] = useState<number>(0.5);
   const [rotateFactor, setRotateFactor] = useState<number>(20);
-  const leftJoyManagerRef = useRef(null);
-  const rightJoyManagerRef = useRef(null);
+  const leftJoyManagerRef = useRef<JoystickManager | null>(null);
+  const rightJoyManagerRef = useRef<JoystickManager | null>(null);
 
   useEffect(() => {
-    const createJoystick = async() => {
-      const leftJoy = document.getElementById("left-joystick");
-      const rightJoy = document.getElementById("right-joystick");
+    const createJoystick = () => {
+      const leftJoy = document.getElementById("left-joystick") as
+        | HTMLElement
+        | undefined;
+      const rightJoy = document.getElementById("right-joystick") as
+        | HTMLElement
+        | undefined;
 
       const { joySize } = getJoystickSize();
 
@@ -59,6 +63,7 @@ const Joystick = () => {
       leftJoyManagerRef.current = leftJoyManager;
       rightJoyManagerRef.current = rightJoyManager;
     };
+
     createJoystick();
   }, []);
 
@@ -113,15 +118,19 @@ const Joystick = () => {
     let rightValue = { wz: 0 };
 
     const startLeftInterval = () => {
-      leftInterval = setInterval(() => {
-        sendJogRequest(leftValue.vx, 0, 0);
-      }, INTERVAL_TIME);
+      if (leftInterval === null) {
+        leftInterval = setInterval(() => {
+          sendJogRequest(leftValue.vx, 0, 0);
+        }, INTERVAL_TIME);
+      }
     };
 
     const startRightInterval = () => {
-      rightInterval = setInterval(() => {
-        sendJogRequest(0, 0, rightValue.wz);
-      }, INTERVAL_TIME);
+      if (rightInterval === null) {
+        rightInterval = setInterval(() => {
+          sendJogRequest(0, 0, rightValue.wz);
+        }, INTERVAL_TIME);
+      }
     };
 
     const clearLeftInterval = () => {
@@ -140,23 +149,25 @@ const Joystick = () => {
       }
     };
 
-    leftJoyManagerRef.current.on("start", startLeftInterval);
-    leftJoyManagerRef.current.on("move", (evt, data) => {
-      const { vx } = calculateVelocity(data);
-      leftValue.vx = vx;
-    });
-    leftJoyManagerRef.current.on("end", (evt) => {
-      clearLeftInterval();
-    });
+    if (leftJoyManagerRef.current && rightJoyManagerRef.current) {
+      leftJoyManagerRef.current.on("start", startLeftInterval);
+      leftJoyManagerRef.current.on("move", (evt, data) => {
+        const { vx } = calculateVelocity(data);
+        leftValue.vx = vx;
+      });
+      leftJoyManagerRef.current.on("end", (evt) => {
+        clearLeftInterval();
+      });
 
-    rightJoyManagerRef.current.on("start", startRightInterval);
-    rightJoyManagerRef.current.on("move", (evt, data) => {
-      const { wz } = calculateVelocity(data);
-      rightValue.wz = wz;
-    });
-    rightJoyManagerRef.current.on("end", (evt) => {
-      clearRightInterval();
-    });
+      rightJoyManagerRef.current.on("start", startRightInterval);
+      rightJoyManagerRef.current.on("move", (evt, data) => {
+        const { wz } = calculateVelocity(data);
+        rightValue.wz = wz;
+      });
+      rightJoyManagerRef.current.on("end", (evt) => {
+        clearRightInterval();
+      });
+    }
 
     return () => {
       clearLeftInterval();
