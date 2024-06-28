@@ -29,6 +29,7 @@ const Mapping: React.FC = () => {
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
   var Cloud:String[][]=[];
+  var Lidar:String[][]=[];
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -115,7 +116,7 @@ const Mapping: React.FC = () => {
 
         socketRef.current.on("lidar", (data) => {
           // console.log("get mapping", data);
-          // Cloud = data;
+          Lidar = data;
         });
 
         return () => {
@@ -191,6 +192,61 @@ const Mapping: React.FC = () => {
 
       rendererRef.current.setAnimationLoop(animate);
     }
+
+    if (Lidar) {
+      const geo = new THREE.BufferGeometry();
+
+      const positions: number[] = [];
+      const colors: number[] = [];
+
+      const color = new THREE.Color();
+
+      Lidar.forEach((arr: string[]) => {
+        // set positions
+        const parsedArr = arr.slice(0, 3).map(parseFloat);
+        positions.push(...parsedArr);
+
+        if (colors.length) {
+          color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
+        } else {
+          color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
+        }
+
+        colors.push(color.r, color.g, color.b);
+      });
+
+      geo.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(positions, 3)
+      );
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+
+      geo.computeBoundingSphere();
+
+      const material = new THREE.PointsMaterial({
+        size: 0.3,
+        vertexColors: true,
+      });
+
+      const points = new THREE.Points(geo, material);
+      points.rotation.x = -(Math.PI / 2);
+
+      sceneRef.current.add(points);
+
+      const animate = () => {
+        if (
+          rendererRef.current !== null &&
+          sceneRef.current !== null &&
+          cameraRef.current !== null
+        ) {
+          rendererRef.current.render(sceneRef.current, cameraRef.current);
+        }
+      };
+
+      rendererRef.current.setAnimationLoop(animate);
+    }
+
+
   };
 
   return (
