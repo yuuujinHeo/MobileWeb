@@ -31,9 +31,6 @@ const Mapping: React.FC = () => {
   const controlRef = useRef<MapControls | null>(null);
   const router = useRouter();
 
-  // var Cloud:String[][]=[];
-  // var Lidar:String[][]=[];
-
   const [Lidar, setLidar] = useState<String[][]>();
   const [Cloud, setCloud] = useState<String[][]>();
 
@@ -102,9 +99,9 @@ const Mapping: React.FC = () => {
     };
   }, []);
 
-  setInterval(()=>{
+  useEffect(()=>{
     drawCloud();
-  });
+  },[Cloud,Lidar]);
 
   useEffect(() =>{
     if(!socketRef.current){
@@ -147,6 +144,7 @@ const Mapping: React.FC = () => {
 
     // const cloud = await getCloud();
 
+    console.log("drawCloud");
     if (Cloud) {
       const geo = new THREE.BufferGeometry();
 
