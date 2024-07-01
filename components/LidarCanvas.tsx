@@ -166,7 +166,7 @@ const LidarCanvas = ({ className }) => {
     if (!sceneRef.current) return;
 
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
+    const geometry = new THREE.BoxGeometry(0.3,0.3,0.3);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
     robotModel.current = robot;
