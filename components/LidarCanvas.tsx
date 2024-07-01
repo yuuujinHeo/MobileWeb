@@ -27,13 +27,26 @@ const LidarCanvas = ({ className }) => {
   const [mobileURL, setMobileURL] = useState("");
 
   const lidarPoints = useRef<number>();
-  // const mappingPoints = useRef<number>();
+  const mappingPointsArr = useRef<number[]>([]);
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
 
   useEffect(() => {
     switch (action.command) {
       case "DRAW_CLOUD":
         // drawCloud();
+        break;
+      case "MAPPING_START":
+        if (className === "canvas-overlay" && socketRef.current) {
+          socketRef.current.on("mapping", (data) => {
+            drawCloud(data);
+          });
+        }
+        break;
+      case "MAPPING_STOP":
+        if (socketRef.current) {
+          socketRef.current.off("mapping");
+        }
+        eraseCloud();
         break;
       default:
         break;
@@ -42,8 +55,6 @@ const LidarCanvas = ({ className }) => {
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
-    setURL();
-
     if (!canvasRef.current) return;
 
     // scene
@@ -90,8 +101,8 @@ const LidarCanvas = ({ className }) => {
 
     control.screenSpacePanning = false;
 
-    control.minDistance = 10;
-    control.maxDistance = 100;
+    control.minDistance = 5;
+    control.maxDistance = 30;
 
     control.maxPolarAngle = Math.PI / 2;
 
@@ -129,27 +140,21 @@ const LidarCanvas = ({ className }) => {
             console.log("Socket connected ", socketRef.current.id);
           });
 
-          socketRef.current.on("mapping", (data) => {
-            console.log("get mapping");
-            drawCloud(data);
-          });
-
           socketRef.current.on("lidar", (data) => {
-            console.log("lidar:",data.pose);
-            // robotPose = {x:parseFloat(data.pose.x), y: parseFloat(data.pose.y), rz:parseFloat(data.pose.rz)*Math.PI/180}
-            // driveRobot(robotPose);
-            drawLidar(data.data,{x:parseFloat(data.pose.x), y: parseFloat(data.pose.y), rz:parseFloat(data.pose.rz)*Math.PI/180});
+            drawLidar(data.data, {
+              x: parseFloat(data.pose.x),
+              y: parseFloat(data.pose.y),
+              rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
+            });
           });
 
           socketRef.current.on("status", (data) => {
             const res = JSON.parse(data);
-            console.log(res.pose);
             robotPose = {
               x: parseFloat(res.pose.x),
               y: parseFloat(res.pose.y),
               rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
             };
-            // robotPose = {res.pose.x, res.po}
             driveRobot(robotPose);
           });
         });
@@ -174,11 +179,11 @@ const LidarCanvas = ({ className }) => {
     if (!isInitializedRef.current) return;
     if (!sceneRef.current) return;
 
-    var originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
-    var originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
-    var originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
+    const originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
+    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
+    const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
-    var axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
+    const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
     axesHelperOrin.rotateX(-Math.PI / 2);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
@@ -199,18 +204,22 @@ const LidarCanvas = ({ className }) => {
     // sceneRef.current.add(center);
 
     // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
-    const axesHelper = new THREE.AxesHelper(4);
+    const axesHelper = new THREE.AxesHelper(2);
     robot.add(axesHelper);
 
     // get Robot position
-    const resp = await axios.get(url + "/status");
-    const position = resp.data.pose;
+    try {
+      const resp = await axios.get(url + "/status");
+      const position = resp.data.pose;
 
-    robot.position.set(position.x, position.y, 0);
-    const radian = position.rz * (Math.PI / 180);
-    robot.rotation.z = radian;
+      robot.position.set(position.x, position.y, 0);
+      const radian = position.rz * (Math.PI / 180);
+      robot.rotation.z = radian;
 
-    sceneRef.current.add(robot);
+      sceneRef.current.add(robot);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
@@ -239,7 +248,6 @@ const LidarCanvas = ({ className }) => {
 
     // const radian = data.rz * (Math.PI / 180);
     robotModel.current.rotation.z = data.rz;
-    console.log(robotModel.current.position.x, robotModel.current.position.y);
   };
 
   // Get data from lidar
@@ -256,7 +264,7 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  function transformLidarPoints(point,pose) {
+  function transformLidarPoints(point, pose) {
     // if(point[0])
     const xL = point[0];
     const yL = point[1];
@@ -272,7 +280,10 @@ const LidarCanvas = ({ className }) => {
     return [xM, yM, point[2]];
   }
 
-  const drawLidar = (data: string[][], pose:{ x: number; y: number; rz: number }) => {
+  const drawLidar = (
+    data: string[][],
+    pose: { x: number; y: number; rz: number }
+  ) => {
     // Is it necessary?
     if (!isInitializedRef.current) return;
 
@@ -288,33 +299,26 @@ const LidarCanvas = ({ className }) => {
     const geo = new THREE.BufferGeometry();
 
     const positions: number[] = [];
-    const positions2: number[] = [];
-    const colors: number[] = [];
-
-    const color = new THREE.Color();
 
     data.forEach((arr: string[]) => {
       // set positions
       const parsedArr = arr.slice(0, 3).map(parseFloat);
 
-      const newparsedArr = transformLidarPoints(parsedArr,pose);
+      const newparsedArr = transformLidarPoints(parsedArr, pose);
 
       positions.push(...newparsedArr);
-      color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
-      colors.push(color.r, color.g, color.b);
     });
 
     geo.setAttribute(
       "position",
       new THREE.Float32BufferAttribute(positions, 3)
     );
-    geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
       size: 0.05,
-      vertexColors: true,
+      color: 0xff0000,
     });
 
     const points = new THREE.Points(geo, material);
@@ -332,39 +336,50 @@ const LidarCanvas = ({ className }) => {
       const geo = new THREE.BufferGeometry();
 
       const positions: number[] = [];
-      const colors: number[] = [];
-
-      const color = new THREE.Color();
+      // const colors: number[] = [];
+      //
+      // const color = new THREE.Color();
 
       cloud.forEach((arr: string[]) => {
         // set positions
         const parsedArr = arr.slice(0, 3).map(parseFloat);
+
         positions.push(...parsedArr);
 
-        color.setRGB(0, 1, 0, THREE.SRGBColorSpace);
-
-        colors.push(color.r, color.g, color.b);
+        // color.setRGB(0, 0.7, 0, THREE.SRGBColorSpace);
+        // colors.push(color.r, color.g, color.b);
       });
 
       geo.setAttribute(
         "position",
         new THREE.Float32BufferAttribute(positions, 3)
       );
-      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      // geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
         size: 0.07,
-        vertexColors: true,
+        color: 0x00be00,
       });
 
       const points = new THREE.Points(geo, material);
 
       points.rotation.x = -(Math.PI / 2);
 
+      mappingPointsArr.current.push(points.id);
+
       sceneRef.current?.add(points);
     }
+  };
+
+  const eraseCloud = () => {
+    if (!mappingPointsArr.current || !sceneRef.current) return;
+    for (const i of mappingPointsArr.current) {
+      const points = sceneRef.current.getObjectById(i);
+      if (points) sceneRef.current.remove(points);
+    }
+    mappingPointsArr.current = [];
   };
 
   return <canvas className={className} ref={canvasRef} />;
