@@ -27,7 +27,7 @@ const LidarCanvas = ({ className }) => {
   const [mobileURL, setMobileURL] = useState("");
 
   const lidarPoints = useRef<number>();
-  // const mappingPoints = useRef<number>();
+  const mappingPointsArr = useRef<number[]>([]);
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
 
   useEffect(() => {
@@ -46,6 +46,7 @@ const LidarCanvas = ({ className }) => {
         if (socketRef.current) {
           socketRef.current.off("mapping");
         }
+        eraseCloud();
         break;
       default:
         break;
@@ -366,8 +367,19 @@ const LidarCanvas = ({ className }) => {
 
       points.rotation.x = -(Math.PI / 2);
 
+      mappingPointsArr.current.push(points.id);
+
       sceneRef.current?.add(points);
     }
+  };
+
+  const eraseCloud = () => {
+    if (!mappingPointsArr.current || !sceneRef.current) return;
+    for (const i of mappingPointsArr.current) {
+      const points = sceneRef.current.getObjectById(i);
+      if (points) sceneRef.current.remove(points);
+    }
+    mappingPointsArr.current = [];
   };
 
   return <canvas className={className} ref={canvasRef} />;
