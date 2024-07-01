@@ -27,8 +27,8 @@ const LidarCanvas = ({ className }) => {
   const [mobileURL, setMobileURL] = useState("");
 
   const lidarPoints = useRef<number>();
-  const mappingPoints = useRef<number>();
-  let robotPose:{x:number, y:number, rz:number} = {x:0, y:0, rz:0};
+  // const mappingPoints = useRef<number>();
+  let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
 
   useEffect(() => {
     switch (action.command) {
@@ -61,7 +61,7 @@ const LidarCanvas = ({ className }) => {
       1000
     );
     cameraRef.current = camera;
-    camera.up.set(0,1,0);
+    camera.up.set(0, 1, 0);
     camera.position.set(0, 25, 0);
 
     // renderer
@@ -144,7 +144,11 @@ const LidarCanvas = ({ className }) => {
           socketRef.current.on("status", (data) => {
             const res = JSON.parse(data);
             console.log(res.pose);
-            robotPose = {x:parseFloat(res.pose.x), y: parseFloat(res.pose.y), rz:parseFloat(res.pose.rz)*Math.PI/180}
+            robotPose = {
+              x: parseFloat(res.pose.x),
+              y: parseFloat(res.pose.y),
+              rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
+            };
             // robotPose = {res.pose.x, res.po}
             driveRobot(robotPose);
           });
@@ -170,24 +174,22 @@ const LidarCanvas = ({ className }) => {
     if (!isInitializedRef.current) return;
     if (!sceneRef.current) return;
 
-
     var originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
     var originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
     var originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
     var axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    axesHelperOrin.rotateX(-Math.PI/2)
+    axesHelperOrin.rotateX(-Math.PI / 2);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(0.41,0.285,0.22);
+    const geometry = new THREE.BoxGeometry(0.41, 0.285, 0.22);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
     robotModel.current = robot;
 
-    robot.rotateX(-Math.PI/2)
-
+    robot.rotateX(-Math.PI / 2);
 
     // TEMP
     // This mesh indicate center of the scene
@@ -238,11 +240,7 @@ const LidarCanvas = ({ className }) => {
     // const radian = data.rz * (Math.PI / 180);
     robotModel.current.rotation.z = data.rz;
     console.log(robotModel.current.position.x, robotModel.current.position.y);
-
-
   };
-
-
 
   // Get data from lidar
   const getCloud = async () => {
@@ -258,7 +256,6 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-
   function transformLidarPoints(point) {
     // if(point[0])
     const xL = point[0];
@@ -270,10 +267,10 @@ const LidarCanvas = ({ className }) => {
 
     // 평행 이동
     const xM = robotPose.x + xLPrime;
-    const yM = (robotPose.y + yLPrime);
+    const yM = robotPose.y + yLPrime;
 
     return [xM, yM, point[2]];
-}
+  }
 
   const drawLidar = (data: string[][]) => {
     // Is it necessary?
@@ -331,15 +328,6 @@ const LidarCanvas = ({ className }) => {
   const drawCloud = async (cloud: string[][]) => {
     if (!isInitializedRef.current) return;
 
-    // reset
-    if (mappingPoints.current) {
-      const mappingPointsObj = sceneRef.current?.getObjectById(
-        mappingPoints.current
-      );
-      if (mappingPointsObj) {
-        sceneRef.current?.remove(mappingPointsObj);
-      }
-    }
     if (cloud) {
       const geo = new THREE.BufferGeometry();
 
@@ -372,7 +360,6 @@ const LidarCanvas = ({ className }) => {
       });
 
       const points = new THREE.Points(geo, material);
-      mappingPoints.current = points.id;
 
       points.rotation.x = -(Math.PI / 2);
 
