@@ -21,6 +21,7 @@ const canvasSlice = createSlice({
     },
     handleMapping(state, action: PayloadAction<commandData>) {
       state.action.command = action.payload.command;
+      state.action.timestamp = Date.now();
     },
   },
 });
