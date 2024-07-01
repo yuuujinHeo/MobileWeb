@@ -35,6 +35,18 @@ const LidarCanvas = ({ className }) => {
       case "DRAW_CLOUD":
         // drawCloud();
         break;
+      case "MAPPING_START":
+        if (className === "canvas-overlay" && socketRef.current) {
+          socketRef.current.on("mapping", (data) => {
+            drawCloud(data);
+          });
+        }
+        break;
+      case "MAPPING_STOP":
+        if (socketRef.current) {
+          socketRef.current.off("mapping");
+        }
+        break;
       default:
         break;
     }
@@ -88,8 +100,8 @@ const LidarCanvas = ({ className }) => {
 
     control.screenSpacePanning = false;
 
-    control.minDistance = 10;
-    control.maxDistance = 100;
+    control.minDistance = 5;
+    control.maxDistance = 30;
 
     control.maxPolarAngle = Math.PI / 2;
 
@@ -126,12 +138,6 @@ const LidarCanvas = ({ className }) => {
           socketRef.current.on("connect", () => {
             console.log("Socket connected ", socketRef.current.id);
           });
-
-          if (className === "canvas-overlay") {
-            socketRef.current.on("mapping", (data) => {
-              drawCloud(data);
-            });
-          }
 
           socketRef.current.on("lidar", (data) => {
             drawLidar(data.data, {

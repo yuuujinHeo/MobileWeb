@@ -33,7 +33,7 @@ const Map: React.FC = () => {
         label="Draw"
         severity="secondary"
         onClick={() => {
-          dispatch(drawCloud({ command: "DRAW_CLOUD", category: "noting" }));
+          dispatch(drawCloud({ command: "DRAW_CLOUD" }));
         }}
       ></Button>
       <Sidebar
@@ -53,3 +53,4 @@ const Map: React.FC = () => {
 };
 
 export default Map;
+
