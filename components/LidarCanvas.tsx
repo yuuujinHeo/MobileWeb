@@ -166,7 +166,7 @@ const LidarCanvas = ({ className }) => {
     if (!sceneRef.current) return;
 
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+    const geometry = new THREE.BoxGeometry(0.1, 0.1, 0.1);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
     robotModel.current = robot;
@@ -225,6 +225,8 @@ const LidarCanvas = ({ className }) => {
     console.log(robotModel.current.position.x, robotModel.current.position.y);
   };
 
+
+
   // Get data from lidar
   const getCloud = async () => {
     try {
@@ -239,8 +241,8 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  function transformLidarPoints(point) {
 
+  function transformLidarPoints(point) {
     // if(point[0])
     const xL = point[0];
     const yL = point[1];
@@ -255,7 +257,6 @@ const LidarCanvas = ({ className }) => {
 
     return [xM, yM, point[2]];
 }
-
 
   const drawLidar = (data: string[][]) => {
     // Is it necessary?
@@ -286,13 +287,6 @@ const LidarCanvas = ({ className }) => {
 
 
       positions.push(...newparsedArr);
-
-
-
-
-
-
-
       color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
       colors.push(color.r, color.g, color.b);
     });
@@ -306,7 +300,7 @@ const LidarCanvas = ({ className }) => {
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.1,
+      size: 0.02,
       vertexColors: true,
     });
 
@@ -357,7 +351,7 @@ const LidarCanvas = ({ className }) => {
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
-        size: 0.1,
+        size: 0.02,
         vertexColors: true,
       });
 
