@@ -216,13 +216,14 @@ const LidarCanvas = ({ className }) => {
 
   const driveRobot = (data) => {
     if (!robotModel.current) return;
-    robotModel.current.position.set(data.x, data.y, 0);
+    // robotModel.current.position.set(data.x, data.y, 0);
+    robotModel.current.position.set(data.x, 0, data.y);
 
     // const radian = data.rz * (Math.PI / 180);
     robotModel.current.rotation.z = data.rz;
-
-
     console.log(robotModel.current.position.x, robotModel.current.position.y);
+
+
   };
 
 
