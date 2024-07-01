@@ -133,8 +133,12 @@ const LidarCanvas = ({ className }) => {
             console.log("get mapping");
             drawCloud(data);
           });
-          socketRef.current.on("lidar", (data: string[][]) => {
-            drawLidar(data);
+
+          socketRef.current.on("lidar", (data) => {
+            const res = JSON.parse(data);
+            robotPose = {x:parseFloat(res.pose.x), y: parseFloat(res.pose.y), rz:parseFloat(res.pose.rz)*Math.PI/180}
+            driveRobot(robotPose);
+            drawLidar(res.data);
           });
 
           socketRef.current.on("status", (data) => {
@@ -297,7 +301,6 @@ const LidarCanvas = ({ className }) => {
       const parsedArr = arr.slice(0, 3).map(parseFloat);
 
       const newparsedArr = transformLidarPoints(parsedArr);
-
 
       positions.push(...newparsedArr);
       color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
