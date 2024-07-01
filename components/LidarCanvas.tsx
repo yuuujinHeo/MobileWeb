@@ -61,6 +61,7 @@ const LidarCanvas = ({ className }) => {
       1000
     );
     cameraRef.current = camera;
+    camera.up.set(0,1,0);
     camera.position.set(0, 25, 0);
 
     // renderer
@@ -165,13 +166,24 @@ const LidarCanvas = ({ className }) => {
     if (!isInitializedRef.current) return;
     if (!sceneRef.current) return;
 
+
+    var originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
+    var originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
+    var originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
+
+    var axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
+    axesHelperOrin.rotateX(-Math.PI/2)
+    sceneRef.current.add(axesHelperOrin); // scene에 추가
+    sceneRef.current.add(originPoint);
+
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(0.3,0.3,0.3);
+    const geometry = new THREE.BoxGeometry(0.41,0.285,0.22);
     const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
     const robot = new THREE.Mesh(geometry, material);
     robotModel.current = robot;
 
-    robot.rotateX(Math.PI / -2);
+    robot.rotateX(-Math.PI/2)
+
 
     // TEMP
     // This mesh indicate center of the scene
@@ -217,7 +229,7 @@ const LidarCanvas = ({ className }) => {
   const driveRobot = (data) => {
     if (!robotModel.current) return;
     // robotModel.current.position.set(data.x, data.y, 0);
-    robotModel.current.position.set(data.x, 0, data.y);
+    robotModel.current.position.set(data.x, 0, -data.y);
 
     // const radian = data.rz * (Math.PI / 180);
     robotModel.current.rotation.z = data.rz;
@@ -301,7 +313,7 @@ const LidarCanvas = ({ className }) => {
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.02,
+      size: 0.05,
       vertexColors: true,
     });
 
@@ -352,7 +364,7 @@ const LidarCanvas = ({ className }) => {
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
-        size: 0.02,
+        size: 0.07,
         vertexColors: true,
       });
 
