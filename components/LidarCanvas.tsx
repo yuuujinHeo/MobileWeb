@@ -32,10 +32,8 @@ const LidarCanvas = ({ className }) => {
 
   useEffect(() => {
     switch (action.command) {
-      case "DRAW_CLOUD":
-        // drawCloud();
-        break;
       case "MAPPING_START":
+        handleMappingStop();
         if (className === "canvas-overlay" && socketRef.current) {
           socketRef.current.on("mapping", (data) => {
             drawCloud(data);
@@ -43,10 +41,7 @@ const LidarCanvas = ({ className }) => {
         }
         break;
       case "MAPPING_STOP":
-        if (socketRef.current) {
-          socketRef.current.off("mapping");
-        }
-        eraseCloud();
+        handleMappingStop();
         break;
       default:
         break;
@@ -373,7 +368,12 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  const eraseCloud = () => {
+  const handleMappingStop = () => {
+    // clear socket
+    if (socketRef.current) {
+      socketRef.current.off("mapping");
+    }
+    // reset mapping points
     if (!mappingPointsArr.current || !sceneRef.current) return;
     for (const i of mappingPointsArr.current) {
       const points = sceneRef.current.getObjectById(i);
