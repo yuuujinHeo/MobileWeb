@@ -135,10 +135,10 @@ const LidarCanvas = ({ className }) => {
           });
 
           socketRef.current.on("lidar", (data) => {
-            const res = JSON.parse(data);
-            robotPose = {x:parseFloat(res.pose.x), y: parseFloat(res.pose.y), rz:parseFloat(res.pose.rz)*Math.PI/180}
-            driveRobot(robotPose);
-            drawLidar(res.data);
+            console.log("lidar:",data.pose);
+            // robotPose = {x:parseFloat(data.pose.x), y: parseFloat(data.pose.y), rz:parseFloat(data.pose.rz)*Math.PI/180}
+            // driveRobot(robotPose);
+            drawLidar(data.data,{x:parseFloat(data.pose.x), y: parseFloat(data.pose.y), rz:parseFloat(data.pose.rz)*Math.PI/180});
           });
 
           socketRef.current.on("status", (data) => {
@@ -256,23 +256,23 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  function transformLidarPoints(point) {
+  function transformLidarPoints(point,pose) {
     // if(point[0])
     const xL = point[0];
     const yL = point[1];
 
     // 회전 변환
-    const xLPrime = xL * Math.cos(robotPose.rz) - yL * Math.sin(robotPose.rz);
-    const yLPrime = xL * Math.sin(robotPose.rz) + yL * Math.cos(robotPose.rz);
+    const xLPrime = xL * Math.cos(pose.rz) - yL * Math.sin(pose.rz);
+    const yLPrime = xL * Math.sin(pose.rz) + yL * Math.cos(pose.rz);
 
     // 평행 이동
-    const xM = robotPose.x + xLPrime;
-    const yM = robotPose.y + yLPrime;
+    const xM = pose.x + xLPrime;
+    const yM = pose.y + yLPrime;
 
     return [xM, yM, point[2]];
   }
 
-  const drawLidar = (data: string[][]) => {
+  const drawLidar = (data: string[][], pose:{ x: number; y: number; rz: number }) => {
     // Is it necessary?
     if (!isInitializedRef.current) return;
 
@@ -297,7 +297,7 @@ const LidarCanvas = ({ className }) => {
       // set positions
       const parsedArr = arr.slice(0, 3).map(parseFloat);
 
-      const newparsedArr = transformLidarPoints(parsedArr);
+      const newparsedArr = transformLidarPoints(parsedArr,pose);
 
       positions.push(...newparsedArr);
       color.setRGB(1, 0, 0, THREE.SRGBColorSpace);
