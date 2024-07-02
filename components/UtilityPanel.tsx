@@ -1,7 +1,8 @@
 "use client";
 
 import { useRef, useState } from "react";
-// import { useDispatch } from "react-redux";
+import { useDispatch } from "react-redux";
+import { handleMapping } from "@/store/canvasSlice";
 
 import { Menu } from "primereact/menu";
 import { Toast } from "primereact/toast";
@@ -14,7 +15,7 @@ import axios from "axios";
 type Severity = "success" | "info" | "warn" | "error";
 
 const UtilityPanel = () => {
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const [filename, setFilename] = useState<string>("");
   const toast = useRef<Toast>(null);
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
@@ -26,6 +27,7 @@ const UtilityPanel = () => {
       icon: "pi pi-spinner",
       command: () => {
         getBuildResponse();
+        dispatch(handleMapping({ command: "MAPPING_START" }));
       },
     },
     {
@@ -33,6 +35,7 @@ const UtilityPanel = () => {
       icon: "pi pi-stop-circle",
       command: () => {
         getStopResponse();
+        dispatch(handleMapping({ command: "MAPPING_STOP" }));
       },
     },
     {
@@ -121,3 +124,4 @@ const UtilityPanel = () => {
 };
 
 export default UtilityPanel;
+
