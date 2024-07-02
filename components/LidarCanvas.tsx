@@ -12,8 +12,15 @@ import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
 import { io } from "socket.io-client";
 import axios from "axios";
 
-const LidarCanvas = ({ className }) => {
-  const canvas = useSelector((state: RootState) => state.canvas);
+interface LidarCanvasProps {
+  className: string;
+  selectedMapCloud?: string[][];
+}
+
+const LidarCanvas = ({
+  className: canvasType,
+  selectedMapCloud,
+}: LidarCanvasProps) => {
   const { action } = useSelector((state: RootState) => state.canvas);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -25,32 +32,60 @@ const LidarCanvas = ({ className }) => {
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
-  const [mobileURL, setMobileURL] = useState("");
+  // const [mobileURL, setMobileURL] = useState("");
+
+  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
 
+  // 3D Scene setting when the component is mounted
+  useEffect(() => {
+    init3DScene();
+    if (canvasType !== "canvas-overlay") {
+      initRobot();
+      connectSocket();
+    }
+    return () => {
+      window.removeEventListener("resize", onWindowResize);
+      rendererRef.current?.setAnimationLoop(null);
+
+      if (canvasType !== "canvas-overlay") {
+        console.log("Socket disconnect ", socketRef.current.id);
+        socketRef.current.disconnect();
+      }
+    };
+  }, []);
+
   useEffect(() => {
     switch (action.command) {
       case "MAPPING_START":
-        handleMappingStop();
-        if (className === "canvas-overlay" && socketRef.current) {
+        clearMappingPoints();
+        if (canvasType === "canvas-sidebar" && socketRef.current) {
           socketRef.current.on("mapping", (data) => {
             drawCloud(data);
           });
         }
         break;
       case "MAPPING_STOP":
-        handleMappingStop();
+        clearMappingPoints();
+        break;
+      case "DRAW_CLOUD":
         break;
       default:
         break;
     }
   }, [action]);
 
-  // 3D Scene setting when the component is mounted
   useEffect(() => {
+    if (canvasType === "canvas-overlay" && selectedMapCloud) {
+      clearMappingPoints();
+      drawCloud(selectedMapCloud);
+    }
+  }, [selectedMapCloud]);
+
+  const init3DScene = () => {
     if (!canvasRef.current) return;
 
     // scene
@@ -102,19 +137,6 @@ const LidarCanvas = ({ className }) => {
 
     control.maxPolarAngle = Math.PI / 2;
 
-    const onWindowResize = () => {
-      if (!canvasRef.current) return;
-      camera.aspect =
-        canvasRef.current.clientWidth / canvasRef.current.clientHeight;
-      camera.updateProjectionMatrix();
-      control.update();
-
-      renderer.setSize(
-        canvasRef.current.clientWidth,
-        canvasRef.current.clientHeight
-      );
-    };
-
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
@@ -122,60 +144,28 @@ const LidarCanvas = ({ className }) => {
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+  };
 
-    return () => {
-      window.removeEventListener("resize", onWindowResize);
-      renderer.setAnimationLoop(null);
-    };
-  }, []);
+  const onWindowResize = () => {
+    if (
+      !canvasRef.current ||
+      !cameraRef.current ||
+      !rendererRef.current ||
+      !controlRef.current
+    )
+      return;
+    cameraRef.current.aspect =
+      canvasRef.current.clientWidth / canvasRef.current.clientHeight;
+    cameraRef.current.updateProjectionMatrix();
+    controlRef.current.update();
 
-  useEffect(() => {
-    const connectSocket = () => {
-      if (!socketRef.current) {
-        fetch("/api/socket").finally(() => {
-          socketRef.current = io();
-
-          socketRef.current.on("connect", () => {
-            console.log("Socket connected ", socketRef.current.id);
-          });
-
-          socketRef.current.on("lidar", (data) => {
-            drawLidar(data.data, {
-              x: parseFloat(data.pose.x),
-              y: parseFloat(data.pose.y),
-              rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
-            });
-          });
-
-          socketRef.current.on("status", (data) => {
-            const res = JSON.parse(data);
-            robotPose = {
-              x: parseFloat(res.pose.x),
-              y: parseFloat(res.pose.y),
-              rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
-            };
-            driveRobot(robotPose);
-          });
-        });
-      }
-    };
-    connectSocket();
-
-    return () => {
-      console.log("Socket disconnect ", socketRef.current.id);
-      socketRef.current.disconnect();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (isInitializedRef.current) {
-      // drawCloud();
-      initRobot();
-    }
-  }, [isInitializedRef]);
+    rendererRef.current.setSize(
+      canvasRef.current.clientWidth,
+      canvasRef.current.clientHeight
+    );
+  };
 
   const initRobot = async () => {
-    if (!isInitializedRef.current) return;
     if (!sceneRef.current) return;
 
     const originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
@@ -187,7 +177,6 @@ const LidarCanvas = ({ className }) => {
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
-    // Parameters are width, height and depth.
     const loader = new ThreeMFLoader();
 
     loader.load("amr.3MF", function (group) {
@@ -224,49 +213,65 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-  async function setURL() {
-    if (mobileURL == "") {
-      const currentURL = window.location.href;
-      console.log(currentURL);
-      if (currentURL.startsWith("http")) {
-        console.log(
-          currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-        );
-        setMobileURL(
-          currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-        );
-      } else {
-        console.log("->", currentURL + ":11334");
-        setMobileURL(currentURL + ":11334");
-      }
+  const connectSocket = () => {
+    if (!socketRef.current) {
+      fetch("/api/socket").finally(() => {
+        socketRef.current = io();
+
+        socketRef.current.on("connect", () => {
+          console.log("Socket connected ", socketRef.current.id);
+        });
+
+        if (canvasType !== "canvas-overlay") {
+          socketRef.current.on("lidar", (data) => {
+            drawLidar(data.data, {
+              x: parseFloat(data.pose.x),
+              y: parseFloat(data.pose.y),
+              rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
+            });
+          });
+        }
+
+        socketRef.current.on("status", (data) => {
+          const res = JSON.parse(data);
+          robotPose = {
+            x: parseFloat(res.pose.x),
+            y: parseFloat(res.pose.y),
+            rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
+          };
+          driveRobot(robotPose);
+        });
+      });
     }
-  }
+  };
+
+  // const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+  // async function setURL() {
+  //   if (mobileURL == "") {
+  //     const currentURL = window.location.href;
+  //     console.log(currentURL);
+  //     if (currentURL.startsWith("http")) {
+  //       console.log(
+  //         currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
+  //       );
+  //       setMobileURL(
+  //         currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
+  //       );
+  //     } else {
+  //       console.log("->", currentURL + ":11334");
+  //       setMobileURL(currentURL + ":11334");
+  //     }
+  //   }
+  // }
 
   const driveRobot = (data) => {
     if (!robotModel.current) return;
-    // robotModel.current.position.set(data.x, data.y, 0);
     robotModel.current.position.set(data.x, 0, -data.y);
 
-    // const radian = data.rz * (Math.PI / 180);
     robotModel.current.rotation.z = data.rz;
   };
 
-  // Get data from lidar
-  const getCloud = async () => {
-    try {
-      const resp = await axios.get(url + "/map/cloud/2024_06_14_19_06_41_443");
-      // const resp = await axios.get(mobileURL + "/map/cloud/test");
-      return resp.data;
-    } catch (e) {
-      console.error(
-        "An error Occured while getting cloud data. The error is:",
-        e
-      );
-    }
-  };
-
-  function transformLidarPoints(point, pose) {
+  const transformLidarPoints = (point, pose) => {
     // if(point[0])
     const xL = point[0];
     const yL = point[1];
@@ -280,7 +285,7 @@ const LidarCanvas = ({ className }) => {
     const yM = pose.y + yLPrime;
 
     return [xM, yM, point[2]];
-  }
+  };
 
   const drawLidar = (
     data: string[][],
@@ -331,7 +336,7 @@ const LidarCanvas = ({ className }) => {
     sceneRef.current?.add(points);
   };
 
-  const drawCloud = async (cloud: string[][]) => {
+  const drawCloud = (cloud: string[][]) => {
     if (!isInitializedRef.current) return;
 
     if (cloud) {
@@ -375,7 +380,7 @@ const LidarCanvas = ({ className }) => {
     }
   };
 
-  const handleMappingStop = () => {
+  const clearMappingPoints = () => {
     // clear socket
     if (socketRef.current) {
       socketRef.current.off("mapping");
@@ -389,7 +394,7 @@ const LidarCanvas = ({ className }) => {
     mappingPointsArr.current = [];
   };
 
-  return <canvas className={className} ref={canvasRef} />;
+  return <canvas className={canvasType} ref={canvasRef} />;
 };
 
 export default LidarCanvas;
