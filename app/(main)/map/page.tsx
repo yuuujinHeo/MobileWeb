@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 // redux
 import { useDispatch } from "react-redux";
@@ -8,18 +8,75 @@ import { drawCloud } from "@/store/canvasSlice";
 // prime
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { Column } from "primereact/column";
+import { DataTable } from "primereact/datatable";
+
 import UtilityPanel from "@/components/UtilityPanel";
+
+import axios from "axios";
 
 import "./style.scss";
 
 // components
 import LidarCanvas from "@/components/LidarCanvas";
+
+interface ListData {
+  name: string;
+  modifiedDate: string;
+}
+
+interface MapData {
+  name: string;
+  modifiedDate: string;
+  list: ListData[];
+}
+
 const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const dispatch = useDispatch();
   // state
   const [visible, setVisible] = useState<boolean>(false);
+  const [mapList, setMapList] = useState([]);
+  const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
+  const [selectedMapCloud, setSelectedMapCloud] = useState();
+  const op = useRef<OverlayPanel>(null);
+  const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
+  useEffect(() => {
+    getMapList();
+  }, []);
+
+  useEffect(() => {
+    if (selectedMap) {
+      getMapCloud(selectedMap.name);
+    }
+  }, [selectedMap]);
+
+  const getMapList = async () => {
+    try {
+      const res = await axios.get(url + "/map/list");
+      setMapList(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getMapCloud = async (name: string) => {
+    try {
+      const res = await axios.get(url + `/map/cloud/${name}`);
+      setSelectedMapCloud(res.data);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleSelectMap = (e) => {
+    setSelectedMap(e.value as MapData);
+    // TODO Draw Preview
+    dispatch(drawCloud({ command: "DRAW_CLOUD" }));
+  };
 
   return (
     <div className="map">
@@ -30,12 +87,39 @@ const Map: React.FC = () => {
         onClick={() => setVisible(true)}
       ></Button>
       <Button
-        label="Draw"
+        label="Load"
         severity="secondary"
-        onClick={() => {
-          dispatch(drawCloud({ command: "DRAW_CLOUD" }));
+        onClick={(e) => {
+          if (op.current) op.current.toggle(e);
         }}
       ></Button>
+      <OverlayPanel ref={op} showCloseIcon>
+        <div className="flex ">
+          <DataTable
+            value={mapList}
+            stripedRows
+            paginator
+            rows={6}
+            selectionMode={"single"}
+            selection={selectedMap}
+            onSelectionChange={(e) => handleSelectMap(e)}
+          >
+            <Column field="name" header="Name" />
+            <Column field="modifiedDate" header="Modifed Date" />
+          </DataTable>
+          <div className="preview flex flex-column flex-wrap  align-items-center">
+            <div className="flex flex-wrap align-items-center justify-content-between gap-2">
+              <span className="text-xl text-900 font-bold">Preview</span>
+            </div>
+            <LidarCanvas
+              className="canvas-overlay"
+              selectedMapCloud={selectedMapCloud}
+            />
+          </div>
+        </div>
+      </OverlayPanel>
+
+      {/* Mapping */}
       <Sidebar
         visible={visible}
         fullScreen
@@ -44,7 +128,7 @@ const Map: React.FC = () => {
       >
         <div id="mapping-container">
           <UtilityPanel />
-          <LidarCanvas className="canvas-overlay" />
+          <LidarCanvas className="canvas-sidebar" />
           <Joystick />
         </div>
       </Sidebar>
@@ -53,4 +137,3 @@ const Map: React.FC = () => {
 };
 
 export default Map;
-
