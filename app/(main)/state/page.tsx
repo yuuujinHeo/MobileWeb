@@ -39,7 +39,7 @@ import {version, defaultVersion, newversion, defaultNewVersion,versions, default
 import { start } from 'repl';
 import { useDispatch, useSelector } from 'react-redux';
 import {store,AppDispatch, RootState} from '../../../store/store';
-import ChartTemp from '@/components/Chart'
+// import ChartTemp from '@/components/Chart'
 import { selectUser, setUser } from '@/store/userSlice';
 import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
 import { io } from "socket.io-client";
@@ -281,7 +281,7 @@ const State: React.FC = () =>{
                                 <label htmlFor="name3" className="font-bold col-12 mb-2 md:col-2 md:mb-0">
                                 Power(Total)
                                 </label>
-                                <ChartTemp cur={Status.power.power}></ChartTemp>
+                                {/* <ChartTemp cur={Status.power.power}></ChartTemp> */}
                                 <div className="col-12 md:col-10">
                                 <InputNumber value={Status.power.total_power} readOnly suffix="Wh"/>
                                 </div>
