@@ -7,6 +7,7 @@ import { RootState } from "@/store/store";
 // three
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
+import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
 
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -114,6 +115,9 @@ const LidarCanvas = ({ className }) => {
       );
     };
 
+    // Light
+    scene.add(new THREE.AmbientLight(0xffffff, 1.6));
+
     isInitializedRef.current = true;
 
     // resize handling
@@ -184,34 +188,37 @@ const LidarCanvas = ({ className }) => {
     sceneRef.current.add(originPoint);
 
     // Parameters are width, height and depth.
-    const geometry = new THREE.BoxGeometry(0.41, 0.285, 0.22);
-    const material = new THREE.MeshBasicMaterial({ color: 0xc661a8 });
-    const robot = new THREE.Mesh(geometry, material);
-    robotModel.current = robot;
+    const loader = new ThreeMFLoader();
 
-    robot.rotateX(-Math.PI / 2);
+    loader.load("amr.3MF", function (group) {
+      group.scale.set(0.0005, 0.0005, 0.0005);
+      group.rotateX(Math.PI / -2);
 
-    // TEMP
-    // This mesh indicate center of the scene
-    // const centerGeo = new THREE.OctahedronGeometry(0.1, 0);
-    // const centerMaterial = new THREE.MeshBasicMaterial();
-    // const center = new THREE.Mesh(centerGeo, centerMaterial);
-    // sceneRef.current.add(center);
+      group.traverse((obj) => {
+        if (obj instanceof THREE.Mesh) {
+          obj.material.color.set(new THREE.Color(0xc661a8));
+        }
+      });
 
-    // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
-    const axesHelper = new THREE.AxesHelper(2);
-    robot.add(axesHelper);
+      robotModel.current = group;
+
+      // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
+      const axesHelper = new THREE.AxesHelper(2);
+      robotModel.current.add(axesHelper);
+
+      sceneRef.current?.add(robotModel.current);
+    });
 
     // get Robot position
     try {
       const resp = await axios.get(url + "/status");
       const position = resp.data.pose;
 
-      robot.position.set(position.x, position.y, 0);
-      const radian = position.rz * (Math.PI / 180);
-      robot.rotation.z = radian;
-
-      sceneRef.current.add(robot);
+      if (robotModel.current) {
+        robotModel.current.position.set(position.x, position.y, 0);
+        const radian = position.rz * (Math.PI / 180);
+        robotModel.current.rotation.z = radian;
+      }
     } catch (e) {
       console.error(e);
     }
