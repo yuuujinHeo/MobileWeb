@@ -57,6 +57,7 @@ const UtilityPanel = () => {
     // dialog for save button
     const accept = async () => {
       try {
+        // await axios.get(url + `/mapping/save/33`);
         await axios.get(url + `/mapping/save/${filename}`);
 
         showToast("info", "Save", "Save succeed");

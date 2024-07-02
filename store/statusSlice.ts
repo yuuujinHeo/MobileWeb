@@ -17,7 +17,7 @@ export interface StatusState {
         inlier_ratio: number
     },
     motor0:{
-        connection: boolean,
+        connection: string,
         status: {
             running: boolean,
             mode: boolean,
@@ -31,7 +31,7 @@ export interface StatusState {
         temperature: number
     },
     motor1:{
-        connection: boolean,
+        connection: string,
         status: {
             running: boolean,
             mode: boolean,
@@ -45,16 +45,16 @@ export interface StatusState {
         temperature: number
     },
     power:{
-        battery_in: number,
-        battery_out: number,
-        battery_cur: number,
+        bat_in: number,
+        bat_out: number,
+        bat_current: number,
         power: number,
         total_power: number
     },
     state:{
-        power: boolean,
-        emo: boolean,
-        charge: boolean,
+        power: string,
+        emo: string,
+        charge: string,
         localization: string
     },
     time:string
@@ -76,7 +76,7 @@ export const initState = {
         inlier_ratio: 0
     },
     motor0:{
-        connection: false,
+        connection: 'false',
         status: {
             running: false,
             mode: false,
@@ -90,7 +90,7 @@ export const initState = {
         temperature: 0
     },
     motor1:{
-        connection: false,
+        connection: 'false',
         status: {
             running: false,
             mode: false,
@@ -104,16 +104,16 @@ export const initState = {
         temperature: 0
     },
     power:{
-        battery_in: 0,
-        battery_out: 0,
-        battery_cur: 0,
+        bat_in: 0,
+        bat_out: 0,
+        bat_current: 0,
         power: 0,
         total_power: 0
     },
     state:{
-        power: false,
-        emo: false,
-        charge: false,
+        power: 'false',
+        emo: 'false',
+        charge: 'false',
         localization: "none"
     },
     time:''
