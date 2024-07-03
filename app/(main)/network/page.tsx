@@ -29,6 +29,7 @@ import '../setting/style.scss';
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { useRouter } from 'next/navigation';
 import { current } from '@reduxjs/toolkit';
+import getURL from '../api/url'
 
 const Network:React.FC = () =>{
     const [curEthernet, setCurEthernet] = useState<NetworkInfo>();
@@ -182,19 +183,8 @@ const Network:React.FC = () =>{
         }
     }
 
-
     async function setURL(){
-        if(mobileURL == ''){
-            const currentURL = window.location.href;
-            console.log(currentURL);
-            if(currentURL.startsWith('http')){
-                console.log(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334")
-                setMobileURL(currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334");
-            }else{
-                console.log("->",currentURL+":11334")
-                setMobileURL(currentURL+":11334");
-            }
-        }
+        setMobileURL(await getURL());
     }
 
     function refresh(){

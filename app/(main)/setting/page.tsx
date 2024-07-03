@@ -20,9 +20,12 @@ import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
-
+import getURL from '../api/url';
 import { selectStatus, setStatus } from '@/store/statusSlice';
 import { selectState, setState } from '@/store/stateSlice';
+import { io } from "socket.io-client";
+import { transStatus } from '../api/to';
+import { TabMenu } from 'primereact/tabmenu';
 
 const Setting: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -31,90 +34,53 @@ const Setting: React.FC = () => {
     const State = useSelector((state:RootState) => selectState(state));
     const [mobileURL, setMobileURL] = useState('');
 
+    const [curCategory, setCurCategory] = useState(0);
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
     const toast = useRef<Toast | null>(null);
+    const socketRef = useRef<any>();
+    const itemsss = [
+        { label: 'Dashboard', icon: 'pi pi-home' },
+        { label: 'Transactions', icon: 'pi pi-chart-line' },
+        { label: 'Products', icon: 'pi pi-list' },
+        { label: 'Messages', icon: 'pi pi-inbox' }
+    ];
 
     useEffect(() =>{
         setURL();
     },[])
 
+    async function setURL(){
+        setMobileURL(await getURL());
+    }
+
     useEffect(()=>{
         if(mobileURL != ''){
             default_setting();
-            getState();
         }
     },[mobileURL])
 
+    useEffect(() => {
+        if (!socketRef.current) {
+          fetch("/api/socket").finally(() => {
+            socketRef.current = io();
+    
+            socketRef.current.on("connect", () => {
+              console.log("Socket connected ", socketRef.current.id);
+            });
+        
+            socketRef.current.on("status", async(data) => {
+                const json =JSON.parse(data);
+                setStatus(await transStatus(json));
+            });
 
-    async function setURL(){
-        if(mobileURL == ''){
-            const currentURL = window.location.href;
-            var mURL;
-            if(currentURL.startsWith('http')){
-                mURL = currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334";
-            }else{
-                mURL = currentURL+":11334";
-            }
-            setMobileURL(mURL);
-            console.log("url :",mURL,mobileURL);
-            return mURL;
-        }
-    }
-
-    const getState = async() =>{
-        console.log("getState");
-        // const response = await axios.get("http://10.108.1.40:11334/status");
-
-        // console.log(response.data.time);
-        // dispatch(setState(response.data.time))
-        dispatch(setState({time:'ff'}));
-        setInterval(()=>{
-            console.log(State);
-        },3000)
-    }
-    // async function getStatus(){
-        const getStatus = async() =>{
-            const response = await axios.get("http://10.108.1.40:11334/status");
-            // const response = await axios.get(mobileURL+"/status");
-            dispatch(setStatus({
-                condition:response.data.condition,
-                pose:response.data.pose,
-                vel:response.data.vel,
-                power:response.data.power,
-                state:response.data.state,
-                time: response.data.time,
-                motor0:{
-                    connection:response.data.motor[0].connection,
-                    temperature:response.data.motor[0].temperature,
-                    status:{
-                        running:false,
-                        mode:false,
-                        jam:false,
-                        current:false,
-                        big:false,
-                        input:false,
-                        position:false,
-                        collision:false
-                    }
-                },
-                motor1:{
-                    connection:response.data.motor[1].connection,
-                    temperature:response.data.motor[1].temperature,
-                    status:{
-                        running:false,
-                        mode:false,
-                        jam:false,
-                        current:false,
-                        big:false,
-                        input:false,
-                        position:false,
-                        collision:false
-                    }
-                }
-            }));
-        }
-
+          return () => {
+            console.log("Socket disconnect ", socketRef.current.id);
+            socketRef.current.disconnect();
+          };
+        });
+      }
+    }, []);
 
     const default_setting = async(data:SettingState | undefined=undefined) =>{
         try{
@@ -832,9 +798,44 @@ const Setting: React.FC = () => {
                 <Button label="초기화" icon="pi pi-refresh" style={{ marginRight: '.5em' }} severity="secondary" onClick={initForm}/>
                 <Button onClick={saveForm} label="Save" icon="pi pi-save" style={{ width: '10rem' }}></Button>
             </div>
-            <TabView>
-                <TabPanel header="로봇 기본 정보" leftIcon="pi pi-android mr-2 ml-2">
-                    <div className=" column" > 
+
+            <div className='card mt-3'>
+            <TabMenu model={[
+                { 
+                    label: '로봇 기본 정보', 
+                    icon: 'pi pi-android mr-2 ml-2', 
+                    command: () =>{
+                        setCurCategory(0);
+                    }
+                },
+                { 
+                    label: '매핑 / 정확도', 
+                    icon: 'pi pi-map mr-2 ml-2' ,
+                    command: () =>{
+                        setCurCategory(1);
+                    }
+                },
+                { 
+                    label: '주행 / 감지', 
+                    icon: 'pi pi-car mr-2 ml-2' ,
+                    command: () =>{
+                        setCurCategory(2);
+                    }
+                },
+                { 
+                    label: '로봇 특성', 
+                    icon: 'pi pi-cog mr-2 ml-2' ,
+                    command: () =>{
+                        setCurCategory(3);
+                    }
+                }
+            ]}/>
+            </div>
+
+
+            <div className='card mt-3'>
+                {curCategory==0 && 
+                    <div  className=" column" > 
                         <Panel header = "로봇 기본 정보" id="TabRobotBasic" > 
                             <p><span style={{fontSize:18,fontWeight: 700}}>플랫폼 이름</span>
                             <span style={{display:formik_robot.values.PLATFORM_NAME!==formik_robot.initialValues.PLATFORM_NAME?"inline":"none", color:"red"}}>    (수정됨)</span></p>
@@ -1036,250 +1037,253 @@ const Setting: React.FC = () => {
                             </div> 
                         </Panel>
                     </div>
-                </TabPanel>
-                <TabPanel header="매핑 / 정확도" leftIcon="pi pi-map mr-2 ml-2">
+                }
+
+                {curCategory==1 &&
                     <div className="column" > 
-                        <Panel header = "위치 정확도"  >
-                            <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                            <div> 
-                                <p style={{width: i_size}}>
-                                    <span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_DIST</span>
-                                    <span style={{display:formik_loc.values.LOC_CHECK_DIST!==formik_loc.initialValues.LOC_CHECK_DIST?"inline":"none", color:"red"}}>    (수정됨)</span>
-                                </p>
-                                <InputNumber
-                                    name = "LOC_CHECK_DIST"
-                                    value={formik_loc.values.LOC_CHECK_DIST}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_IE</span>
-                                <span style={{display:formik_loc.values.LOC_CHECK_IE!==formik_loc.initialValues.LOC_CHECK_IE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_CHECK_IE"
-                                    value={formik_loc.values.LOC_CHECK_IE}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_IR</span>
-                                <span style={{display:formik_loc.values.LOC_CHECK_IR!==formik_loc.initialValues.LOC_CHECK_IR?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_CHECK_IR"
-                                    value={formik_loc.values.LOC_CHECK_IR}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_FUSION_RATIO</span>
-                                <span style={{display:formik_loc.values.LOC_FUSION_RATIO!==formik_loc.initialValues.LOC_FUSION_RATIO?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_FUSION_RATIO"
-                                    value={formik_loc.values.LOC_FUSION_RATIO}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_COST_THRESHOLD</span>
-                                <span style={{display:formik_loc.values.LOC_ICP_COST_THRESHOLD!==formik_loc.initialValues.LOC_ICP_COST_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_ICP_COST_THRESHOLD"
-                                    value={formik_loc.values.LOC_ICP_COST_THRESHOLD}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_ERROR_THRESHOLD</span>
-                                <span style={{display:formik_loc.values.LOC_ICP_ERROR_THRESHOLD!==formik_loc.initialValues.LOC_ICP_ERROR_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_ICP_ERROR_THRESHOLD"
-                                    value={formik_loc.values.LOC_ICP_ERROR_THRESHOLD}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_MAX_FEATURE_NUM</span>
-                                <span style={{display:formik_loc.values.LOC_ICP_MAX_FEATURE_NUM!==formik_loc.initialValues.LOC_ICP_MAX_FEATURE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "LOC_ICP_MAX_FEATURE_NUM"
-                                    value={formik_loc.values.LOC_ICP_MAX_FEATURE_NUM}
-                                    onValueChange={formik_loc.handleChange}
-                                    showButtons
-                                    step={1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            </div>
-                        </Panel>
-                        <Panel header = "매핑"  >
-                            <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_COST_THRESHOLD</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_COST_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_COST_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_COST_THRESHOLD"
-                                    value={formik_mapping.values.SLAM_ICP_COST_THRESHOLD}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_DO_ACCUM_NUM</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_DO_ACCUM_NUM!==formik_mapping.initialValues.SLAM_ICP_DO_ACCUM_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_DO_ACCUM_NUM"
-                                    value={formik_mapping.values.SLAM_ICP_DO_ACCUM_NUM}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_DO_ERASE_GAP</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_DO_ERASE_GAP!==formik_mapping.initialValues.SLAM_ICP_DO_ERASE_GAP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_DO_ERASE_GAP"
-                                    value={formik_mapping.values.SLAM_ICP_DO_ERASE_GAP}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_ERROR_THRESHOLD</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_ERROR_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_ERROR_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_ERROR_THRESHOLD"
-                                    value={formik_mapping.values.SLAM_ICP_ERROR_THRESHOLD}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_MAX_FEATURE_NUM</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_MAX_FEATURE_NUM!==formik_mapping.initialValues.SLAM_ICP_MAX_FEATURE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_MAX_FEATURE_NUM"
-                                    value={formik_mapping.values.SLAM_ICP_MAX_FEATURE_NUM}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_VIEW_THRESHOLD</span>
-                                <span style={{display:formik_mapping.values.SLAM_ICP_VIEW_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_VIEW_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_ICP_VIEW_THRESHOLD"
-                                    value={formik_mapping.values.SLAM_ICP_VIEW_THRESHOLD}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_LC_TRY_DIST</span>
-                                <span style={{display:formik_mapping.values.SLAM_KFRM_LC_TRY_DIST!==formik_mapping.initialValues.SLAM_KFRM_LC_TRY_DIST?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_KFRM_LC_TRY_DIST"
-                                    value={formik_mapping.values.SLAM_KFRM_LC_TRY_DIST}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_LC_TRY_OVERLAP</span>
-                                <span style={{display:formik_mapping.values.SLAM_KFRM_LC_TRY_OVERLAP!==formik_mapping.initialValues.SLAM_KFRM_LC_TRY_OVERLAP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_KFRM_LC_TRY_OVERLAP"
-                                    value={formik_mapping.values.SLAM_KFRM_LC_TRY_OVERLAP}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_UPDATE_NUM</span>
-                                <span style={{display:formik_mapping.values.SLAM_KFRM_UPDATE_NUM!==formik_mapping.initialValues.SLAM_KFRM_UPDATE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_KFRM_UPDATE_NUM"
-                                    value={formik_mapping.values.SLAM_KFRM_UPDATE_NUM}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_VOXEL_SIZE</span>
-                                <span style={{display:formik_mapping.values.SLAM_VOXEL_SIZE!==formik_mapping.initialValues.SLAM_VOXEL_SIZE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_VOXEL_SIZE"
-                                    value={formik_mapping.values.SLAM_VOXEL_SIZE}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={0.01}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            <div> 
-                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_WINDOW_SIZE</span>
-                                <span style={{display:formik_mapping.values.SLAM_WINDOW_SIZE!==formik_mapping.initialValues.SLAM_WINDOW_SIZE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                <InputNumber
-                                    name = "SLAM_WINDOW_SIZE"
-                                    value={formik_mapping.values.SLAM_WINDOW_SIZE}
-                                    onValueChange={formik_mapping.handleChange}
-                                    showButtons
-                                    step={1}
-                                    maxFractionDigits={3}
-                                ></InputNumber>
-                            </div>
-                            </div>
-                        </Panel>
-                        <Panel header = "어노테이션"  >
-                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>ANNOT_QA_STEP</span>
-                            <span style={{display:formik_annotation.values.ANNOT_QA_STEP!==formik_annotation.initialValues.ANNOT_QA_STEP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                    <Panel header = "위치 정확도"  >
+                        <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                        <div> 
+                            <p style={{width: i_size}}>
+                                <span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_DIST</span>
+                                <span style={{display:formik_loc.values.LOC_CHECK_DIST!==formik_loc.initialValues.LOC_CHECK_DIST?"inline":"none", color:"red"}}>    (수정됨)</span>
+                            </p>
                             <InputNumber
-                                name = "ANNOT_QA_STEP"
-                                value={formik_annotation.values.ANNOT_QA_STEP}
-                                onValueChange={formik_annotation.handleChange}
+                                name = "LOC_CHECK_DIST"
+                                value={formik_loc.values.LOC_CHECK_DIST}
+                                onValueChange={formik_loc.handleChange}
                                 showButtons
                                 step={0.1}
                                 maxFractionDigits={3}
                             ></InputNumber>
-                        </Panel>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_IE</span>
+                            <span style={{display:formik_loc.values.LOC_CHECK_IE!==formik_loc.initialValues.LOC_CHECK_IE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_CHECK_IE"
+                                value={formik_loc.values.LOC_CHECK_IE}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_CHECK_IR</span>
+                            <span style={{display:formik_loc.values.LOC_CHECK_IR!==formik_loc.initialValues.LOC_CHECK_IR?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_CHECK_IR"
+                                value={formik_loc.values.LOC_CHECK_IR}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_FUSION_RATIO</span>
+                            <span style={{display:formik_loc.values.LOC_FUSION_RATIO!==formik_loc.initialValues.LOC_FUSION_RATIO?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_FUSION_RATIO"
+                                value={formik_loc.values.LOC_FUSION_RATIO}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_COST_THRESHOLD</span>
+                            <span style={{display:formik_loc.values.LOC_ICP_COST_THRESHOLD!==formik_loc.initialValues.LOC_ICP_COST_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_ICP_COST_THRESHOLD"
+                                value={formik_loc.values.LOC_ICP_COST_THRESHOLD}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_ERROR_THRESHOLD</span>
+                            <span style={{display:formik_loc.values.LOC_ICP_ERROR_THRESHOLD!==formik_loc.initialValues.LOC_ICP_ERROR_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_ICP_ERROR_THRESHOLD"
+                                value={formik_loc.values.LOC_ICP_ERROR_THRESHOLD}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>LOC_ICP_MAX_FEATURE_NUM</span>
+                            <span style={{display:formik_loc.values.LOC_ICP_MAX_FEATURE_NUM!==formik_loc.initialValues.LOC_ICP_MAX_FEATURE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "LOC_ICP_MAX_FEATURE_NUM"
+                                value={formik_loc.values.LOC_ICP_MAX_FEATURE_NUM}
+                                onValueChange={formik_loc.handleChange}
+                                showButtons
+                                step={1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        </div>
+                    </Panel>
+                    <Panel header = "매핑"  >
+                        <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_COST_THRESHOLD</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_COST_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_COST_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_COST_THRESHOLD"
+                                value={formik_mapping.values.SLAM_ICP_COST_THRESHOLD}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_DO_ACCUM_NUM</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_DO_ACCUM_NUM!==formik_mapping.initialValues.SLAM_ICP_DO_ACCUM_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_DO_ACCUM_NUM"
+                                value={formik_mapping.values.SLAM_ICP_DO_ACCUM_NUM}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_DO_ERASE_GAP</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_DO_ERASE_GAP!==formik_mapping.initialValues.SLAM_ICP_DO_ERASE_GAP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_DO_ERASE_GAP"
+                                value={formik_mapping.values.SLAM_ICP_DO_ERASE_GAP}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_ERROR_THRESHOLD</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_ERROR_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_ERROR_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_ERROR_THRESHOLD"
+                                value={formik_mapping.values.SLAM_ICP_ERROR_THRESHOLD}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_MAX_FEATURE_NUM</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_MAX_FEATURE_NUM!==formik_mapping.initialValues.SLAM_ICP_MAX_FEATURE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_MAX_FEATURE_NUM"
+                                value={formik_mapping.values.SLAM_ICP_MAX_FEATURE_NUM}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_ICP_VIEW_THRESHOLD</span>
+                            <span style={{display:formik_mapping.values.SLAM_ICP_VIEW_THRESHOLD!==formik_mapping.initialValues.SLAM_ICP_VIEW_THRESHOLD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_ICP_VIEW_THRESHOLD"
+                                value={formik_mapping.values.SLAM_ICP_VIEW_THRESHOLD}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_LC_TRY_DIST</span>
+                            <span style={{display:formik_mapping.values.SLAM_KFRM_LC_TRY_DIST!==formik_mapping.initialValues.SLAM_KFRM_LC_TRY_DIST?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_KFRM_LC_TRY_DIST"
+                                value={formik_mapping.values.SLAM_KFRM_LC_TRY_DIST}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_LC_TRY_OVERLAP</span>
+                            <span style={{display:formik_mapping.values.SLAM_KFRM_LC_TRY_OVERLAP!==formik_mapping.initialValues.SLAM_KFRM_LC_TRY_OVERLAP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_KFRM_LC_TRY_OVERLAP"
+                                value={formik_mapping.values.SLAM_KFRM_LC_TRY_OVERLAP}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_KFRM_UPDATE_NUM</span>
+                            <span style={{display:formik_mapping.values.SLAM_KFRM_UPDATE_NUM!==formik_mapping.initialValues.SLAM_KFRM_UPDATE_NUM?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_KFRM_UPDATE_NUM"
+                                value={formik_mapping.values.SLAM_KFRM_UPDATE_NUM}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_VOXEL_SIZE</span>
+                            <span style={{display:formik_mapping.values.SLAM_VOXEL_SIZE!==formik_mapping.initialValues.SLAM_VOXEL_SIZE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_VOXEL_SIZE"
+                                value={formik_mapping.values.SLAM_VOXEL_SIZE}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={0.01}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        <div> 
+                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>SLAM_WINDOW_SIZE</span>
+                            <span style={{display:formik_mapping.values.SLAM_WINDOW_SIZE!==formik_mapping.initialValues.SLAM_WINDOW_SIZE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                            <InputNumber
+                                name = "SLAM_WINDOW_SIZE"
+                                value={formik_mapping.values.SLAM_WINDOW_SIZE}
+                                onValueChange={formik_mapping.handleChange}
+                                showButtons
+                                step={1}
+                                maxFractionDigits={3}
+                            ></InputNumber>
+                        </div>
+                        </div>
+                    </Panel>
+                    <Panel header = "어노테이션"  >
+                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>ANNOT_QA_STEP</span>
+                        <span style={{display:formik_annotation.values.ANNOT_QA_STEP!==formik_annotation.initialValues.ANNOT_QA_STEP?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                        <InputNumber
+                            name = "ANNOT_QA_STEP"
+                            value={formik_annotation.values.ANNOT_QA_STEP}
+                            onValueChange={formik_annotation.handleChange}
+                            showButtons
+                            step={0.1}
+                            maxFractionDigits={3}
+                        ></InputNumber>
+                    </Panel>
                     </div>
-                </TabPanel>
-                <TabPanel header="주행 / 감지" leftIcon="pi pi-car mr-2 ml-2">
+                }
+
+
+                {curCategory==2 &&
                     <div className="column">
                     <Panel header = "주행 속도"  >
                         <Button onClick={() => openPresetPopup()}>프리셋 설정</Button>
@@ -1400,303 +1404,304 @@ const Setting: React.FC = () => {
                         </div>
                         </div>
                     </Panel>
-                    </div>
-                </TabPanel>
-                <TabPanel header="로봇 특성" leftIcon="pi pi-cog mr-2 ml-2">
+                    </div>          
+                }
+
+                {curCategory==3 &&
                     <div className="column" > 
-                        <Panel header = "로봇 최대 사이즈">
-                            <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MAX_X!==formik_default.initialValues.ROBOT_SIZE_MAX_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MAX_X"
-                                        value={formik_default.values.ROBOT_SIZE_MAX_X}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MAX_Y!==formik_default.initialValues.ROBOT_SIZE_MAX_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MAX_Y"
-                                        value={formik_default.values.ROBOT_SIZE_MAX_Y}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MAX_Z!==formik_default.initialValues.ROBOT_SIZE_MAX_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MAX_Z"
-                                        value={formik_default.values.ROBOT_SIZE_MAX_Z}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
+                    <Panel header = "로봇 최대 사이즈">
+                        <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MAX_X!==formik_default.initialValues.ROBOT_SIZE_MAX_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MAX_X"
+                                    value={formik_default.values.ROBOT_SIZE_MAX_X}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
                             </div>
-                        </Panel>
-                        <Panel header = "로봇 최소 사이즈">
-                            <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MIN_X!==formik_default.initialValues.ROBOT_SIZE_MIN_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MIN_X"
-                                        value={formik_default.values.ROBOT_SIZE_MIN_X}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MIN_Y!==formik_default.initialValues.ROBOT_SIZE_MIN_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MIN_Y"
-                                        value={formik_default.values.ROBOT_SIZE_MIN_Y}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
-                                    <span style={{display:formik_default.values.ROBOT_SIZE_MIN_Z!==formik_default.initialValues.ROBOT_SIZE_MIN_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_SIZE_MIN_Z"
-                                        value={formik_default.values.ROBOT_SIZE_MIN_Z}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MAX_Y!==formik_default.initialValues.ROBOT_SIZE_MAX_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MAX_Y"
+                                    value={formik_default.values.ROBOT_SIZE_MAX_Y}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
                             </div>
-                        </Panel>
-                        <Panel header = "기타 사이즈">
-                            <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>로봇 반지름</span>
-                                    <span style={{display:formik_default.values.ROBOT_RADIUS!==formik_default.initialValues.ROBOT_RADIUS?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_RADIUS"
-                                        value={formik_default.values.ROBOT_RADIUS}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>휠 베이스 사이즈</span>
-                                    <span style={{display:formik_default.values.ROBOT_WHEEL_BASE!==formik_default.initialValues.ROBOT_WHEEL_BASE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_WHEEL_BASE"
-                                        value={formik_default.values.ROBOT_WHEEL_BASE}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>휠 반지름</span>
-                                    <span style={{display:formik_default.values.ROBOT_WHEEL_RADIUS!==formik_default.initialValues.ROBOT_WHEEL_RADIUS?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "ROBOT_WHEEL_RADIUS"
-                                        value={formik_default.values.ROBOT_WHEEL_RADIUS}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MAX_Z!==formik_default.initialValues.ROBOT_SIZE_MAX_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MAX_Z"
+                                    value={formik_default.values.ROBOT_SIZE_MAX_Z}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
                             </div>
-                        </Panel>
-                        <Panel header = "라이다">
-                            <div className="column gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                <div>
-                                    <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>라이다 최대 거리</span>
-                                    <span style={{display:formik_default.values.LIDAR_MAX_RANGE!==formik_default.initialValues.LIDAR_MAX_RANGE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                    <InputNumber
-                                        name = "LIDAR_MAX_RANGE"
-                                        value={formik_default.values.LIDAR_MAX_RANGE}
-                                        onValueChange={formik_default.handleChange}
-                                        showButtons
-                                        step={0.1}
-                                        maxFractionDigits={3}
-                                    ></InputNumber>
-                                </div>
-                                <div>
-                                    <p><span style={{fontSize:18,fontWeight: 700}}>백 라이다 TF</span></p>
-                                    <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                        <div >
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_X!==formik_default.initialValues.LIDAR_TF_B_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_X"
-                                                value={formik_default.values.LIDAR_TF_B_X}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_Y!==formik_default.initialValues.LIDAR_TF_B_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_Y"
-                                                value={formik_default.values.LIDAR_TF_B_Y}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_Z!==formik_default.initialValues.LIDAR_TF_B_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_Z"
-                                                value={formik_default.values.LIDAR_TF_B_Z}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RX</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_RX!==formik_default.initialValues.LIDAR_TF_B_RX?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_RX"
-                                                value={formik_default.values.LIDAR_TF_B_RX}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RY</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_RY!==formik_default.initialValues.LIDAR_TF_B_RY?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_RY"
-                                                value={formik_default.values.LIDAR_TF_B_RY}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RZ</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_B_RZ!==formik_default.initialValues.LIDAR_TF_B_RZ?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_B_RZ"
-                                                value={formik_default.values.LIDAR_TF_B_RZ}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
+                        </div>
+                    </Panel>
+                    <Panel header = "로봇 최소 사이즈">
+                        <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MIN_X!==formik_default.initialValues.ROBOT_SIZE_MIN_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MIN_X"
+                                    value={formik_default.values.ROBOT_SIZE_MIN_X}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MIN_Y!==formik_default.initialValues.ROBOT_SIZE_MIN_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MIN_Y"
+                                    value={formik_default.values.ROBOT_SIZE_MIN_Y}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
+                                <span style={{display:formik_default.values.ROBOT_SIZE_MIN_Z!==formik_default.initialValues.ROBOT_SIZE_MIN_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_SIZE_MIN_Z"
+                                    value={formik_default.values.ROBOT_SIZE_MIN_Z}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                        </div>
+                    </Panel>
+                    <Panel header = "기타 사이즈">
+                        <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>로봇 반지름</span>
+                                <span style={{display:formik_default.values.ROBOT_RADIUS!==formik_default.initialValues.ROBOT_RADIUS?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_RADIUS"
+                                    value={formik_default.values.ROBOT_RADIUS}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>휠 베이스 사이즈</span>
+                                <span style={{display:formik_default.values.ROBOT_WHEEL_BASE!==formik_default.initialValues.ROBOT_WHEEL_BASE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_WHEEL_BASE"
+                                    value={formik_default.values.ROBOT_WHEEL_BASE}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>휠 반지름</span>
+                                <span style={{display:formik_default.values.ROBOT_WHEEL_RADIUS!==formik_default.initialValues.ROBOT_WHEEL_RADIUS?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "ROBOT_WHEEL_RADIUS"
+                                    value={formik_default.values.ROBOT_WHEEL_RADIUS}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                        </div>
+                    </Panel>
+                    <Panel header = "라이다">
+                        <div className="column gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                            <div>
+                                <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>라이다 최대 거리</span>
+                                <span style={{display:formik_default.values.LIDAR_MAX_RANGE!==formik_default.initialValues.LIDAR_MAX_RANGE?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                <InputNumber
+                                    name = "LIDAR_MAX_RANGE"
+                                    value={formik_default.values.LIDAR_MAX_RANGE}
+                                    onValueChange={formik_default.handleChange}
+                                    showButtons
+                                    step={0.1}
+                                    maxFractionDigits={3}
+                                ></InputNumber>
+                            </div>
+                            <div>
+                                <p><span style={{fontSize:18,fontWeight: 700}}>백 라이다 TF</span></p>
+                                <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                                    <div >
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_X!==formik_default.initialValues.LIDAR_TF_B_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_X"
+                                            value={formik_default.values.LIDAR_TF_B_X}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
                                     </div>
-                                </div>
-                                <div>
-                                    <p><span style={{fontSize:18,fontWeight: 700}}>프론트 라이다 TF</span></p>
-                                    <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_X!==formik_default.initialValues.LIDAR_TF_F_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_X"
-                                                value={formik_default.values.LIDAR_TF_F_X}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_Y!==formik_default.initialValues.LIDAR_TF_F_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_Y"
-                                                value={formik_default.values.LIDAR_TF_F_Y}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_Z!==formik_default.initialValues.LIDAR_TF_F_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_Z"
-                                                value={formik_default.values.LIDAR_TF_F_Z}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={0.01}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RX</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_RX!==formik_default.initialValues.LIDAR_TF_F_RX?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_RX"
-                                                value={formik_default.values.LIDAR_TF_F_RX}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RY</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_RY!==formik_default.initialValues.LIDAR_TF_F_RY?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_RY"
-                                                value={formik_default.values.LIDAR_TF_F_RY}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
-                                        <div>
-                                            <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RZ</span>
-                                            <span style={{display:formik_default.values.LIDAR_TF_F_RZ!==formik_default.initialValues.LIDAR_TF_F_RZ?"inline":"none", color:"red"}}>    (수정됨)</span></p>
-                                            <InputNumber
-                                                name = "LIDAR_TF_F_RZ"
-                                                value={formik_default.values.LIDAR_TF_F_RZ}
-                                                onValueChange={formik_default.handleChange}
-                                                showButtons
-                                                step={1}
-                                                maxFractionDigits={3}
-                                            ></InputNumber>
-                                        </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_Y!==formik_default.initialValues.LIDAR_TF_B_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_Y"
+                                            value={formik_default.values.LIDAR_TF_B_Y}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_Z!==formik_default.initialValues.LIDAR_TF_B_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_Z"
+                                            value={formik_default.values.LIDAR_TF_B_Z}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RX</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_RX!==formik_default.initialValues.LIDAR_TF_B_RX?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_RX"
+                                            value={formik_default.values.LIDAR_TF_B_RX}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RY</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_RY!==formik_default.initialValues.LIDAR_TF_B_RY?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_RY"
+                                            value={formik_default.values.LIDAR_TF_B_RY}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RZ</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_B_RZ!==formik_default.initialValues.LIDAR_TF_B_RZ?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_B_RZ"
+                                            value={formik_default.values.LIDAR_TF_B_RZ}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
                                     </div>
                                 </div>
                             </div>
-                        </Panel>
+                            <div>
+                                <p><span style={{fontSize:18,fontWeight: 700}}>프론트 라이다 TF</span></p>
+                                <div className="grid gap-5 mr-3 ml-3 mt-3 mb-3"> 
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>X</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_X!==formik_default.initialValues.LIDAR_TF_F_X?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_X"
+                                            value={formik_default.values.LIDAR_TF_F_X}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Y</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_Y!==formik_default.initialValues.LIDAR_TF_F_Y?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_Y"
+                                            value={formik_default.values.LIDAR_TF_F_Y}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>Z</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_Z!==formik_default.initialValues.LIDAR_TF_F_Z?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_Z"
+                                            value={formik_default.values.LIDAR_TF_F_Z}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={0.01}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RX</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_RX!==formik_default.initialValues.LIDAR_TF_F_RX?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_RX"
+                                            value={formik_default.values.LIDAR_TF_F_RX}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RY</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_RY!==formik_default.initialValues.LIDAR_TF_F_RY?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_RY"
+                                            value={formik_default.values.LIDAR_TF_F_RY}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                    <div>
+                                        <p style={{width: i_size}}><span style={{fontSize:18,fontWeight: 700}}>RZ</span>
+                                        <span style={{display:formik_default.values.LIDAR_TF_F_RZ!==formik_default.initialValues.LIDAR_TF_F_RZ?"inline":"none", color:"red"}}>    (수정됨)</span></p>
+                                        <InputNumber
+                                            name = "LIDAR_TF_F_RZ"
+                                            value={formik_default.values.LIDAR_TF_F_RZ}
+                                            onValueChange={formik_default.handleChange}
+                                            showButtons
+                                            step={1}
+                                            maxFractionDigits={3}
+                                        ></InputNumber>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </Panel>
                     </div>
-                </TabPanel>
-            </TabView>
+                }
+            </div>  
         </main>
     );
 }

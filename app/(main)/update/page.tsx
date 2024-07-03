@@ -40,7 +40,7 @@ import {userContext} from '../../../interface/user'
 import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
 import { start } from 'repl';
 import { selectSetting } from '@/store/settingSlice';
-
+import getURL from '../api/url';
 
 
 const Update: React.FC = () =>{
@@ -104,19 +104,8 @@ const Update: React.FC = () =>{
     }
 
     async function setURL(){
-        if(mobileURL == ''){
-            const currentURL = window.location.href;
-            var mURL = '';
-            if(currentURL.startsWith('http')){
-                mURL = currentURL.split(':')[0] + ':' + currentURL.split(':')[1]+":11334";
-            }else{
-                mURL = currentURL+":11334";
-            }
-            setMobileURL(mURL);
-            console.log("set mobileURL : ",mobileURL, mURL);
-        }
+        setMobileURL(await getURL());
     }
-
     const onFileUpload = () => {
         console.log("onupload");
         toast.current?.show({

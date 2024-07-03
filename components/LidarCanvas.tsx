@@ -245,25 +245,6 @@ const LidarCanvas = ({
     }
   };
 
-  // const url = process.env.NEXT_PUBLIC_WEB_API_URL;
-  // async function setURL() {
-  //   if (mobileURL == "") {
-  //     const currentURL = window.location.href;
-  //     console.log(currentURL);
-  //     if (currentURL.startsWith("http")) {
-  //       console.log(
-  //         currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-  //       );
-  //       setMobileURL(
-  //         currentURL.split(":")[0] + ":" + currentURL.split(":")[1] + ":11334"
-  //       );
-  //     } else {
-  //       console.log("->", currentURL + ":11334");
-  //       setMobileURL(currentURL + ":11334");
-  //     }
-  //   }
-  // }
-
   const driveRobot = (data) => {
     if (!robotModel.current) return;
     robotModel.current.position.set(data.x, 0, -data.y);
