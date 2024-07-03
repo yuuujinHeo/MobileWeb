@@ -11,10 +11,11 @@ import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
 
 import { io } from "socket.io-client";
 import axios from "axios";
+import { Postpone } from "next/dist/server/app-render/dynamic-rendering";
 
 interface LidarCanvasProps {
   className: string;
-  selectedMapCloud?: string[][];
+  selectedMapCloud?: string[][] | null;
 }
 
 const LidarCanvas = ({
@@ -61,10 +62,9 @@ const LidarCanvas = ({
   useEffect(() => {
     switch (action.command) {
       case "MAPPING_START":
-        clearMappingPoints();
         if (canvasType === "canvas-sidebar" && socketRef.current) {
           socketRef.current.on("mapping", (data) => {
-            drawCloud(data);
+            drawCloud("SIDEBAR", data);
           });
         }
         break;
@@ -72,18 +72,12 @@ const LidarCanvas = ({
         clearMappingPoints();
         break;
       case "DRAW_CLOUD":
+        if (selectedMapCloud) drawCloud(action.target, selectedMapCloud);
         break;
       default:
         break;
     }
   }, [action]);
-
-  useEffect(() => {
-    if (canvasType === "canvas-overlay" && selectedMapCloud) {
-      clearMappingPoints();
-      drawCloud(selectedMapCloud);
-    }
-  }, [selectedMapCloud]);
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
@@ -317,8 +311,13 @@ const LidarCanvas = ({
     sceneRef.current?.add(points);
   };
 
-  const drawCloud = (cloud: string[][]) => {
+  const drawCloud = (target: string, cloud: string[][]) => {
     if (!isInitializedRef.current) return;
+    if (canvasType !== target) return;
+
+    // Reset before draw
+    resetCamera();
+    clearMappingPoints();
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
@@ -373,6 +372,16 @@ const LidarCanvas = ({
       if (points) sceneRef.current.remove(points);
     }
     mappingPointsArr.current = [];
+  };
+
+  const resetCamera = () => {
+    if (!cameraRef.current || !controlRef.current) return;
+    cameraRef.current.up.set(0, 1, 0);
+    cameraRef.current.position.set(0, 25, 0);
+    cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
+    cameraRef.current.updateProjectionMatrix();
+    controlRef.current.target.set(0, 0, 0);
+    controlRef.current.update();
   };
 
   return <canvas className={canvasType} ref={canvasRef} />;
