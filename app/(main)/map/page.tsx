@@ -71,7 +71,9 @@ const Map: React.FC = () => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setSelectedMapCloud(res.data);
-      dispatch(drawCloud({ command: "DRAW_CLOUD", target: "canvas-overlay" }));
+      dispatch(
+        drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
+      );
     } catch (e) {
       console.error(e);
     }
@@ -82,7 +84,9 @@ const Map: React.FC = () => {
   };
 
   const handleLoadMap = () => {
-    dispatch(drawCloud({ command: "DRAW_CLOUD", target: "canvas" }));
+    dispatch(
+      drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
+    );
     if (op.current) {
       op.current.hide();
     }
