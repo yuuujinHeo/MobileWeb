@@ -14,6 +14,8 @@ import { DataTable } from "primereact/datatable";
 
 import UtilityPanel from "@/components/UtilityPanel";
 
+import { CANVAS_CLASSES } from "@/constants";
+
 import axios from "axios";
 
 import "./style.scss";
@@ -93,7 +95,10 @@ const Map: React.FC = () => {
 
   return (
     <div className="map">
-      <LidarCanvas className="canvas" selectedMapCloud={selectedMapCloud} />
+      <LidarCanvas
+        className={CANVAS_CLASSES.DEFAULT}
+        selectedMapCloud={selectedMapCloud}
+      />
       <Button
         label="Mapping"
         severity="secondary"
@@ -125,7 +130,7 @@ const Map: React.FC = () => {
               <span className="text-xl text-900 font-bold">Preview</span>
             </div>
             <LidarCanvas
-              className="canvas-overlay"
+              className={CANVAS_CLASSES.OVERLAY}
               selectedMapCloud={selectedMapCloud}
             />
             <Button
