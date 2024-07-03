@@ -40,7 +40,9 @@ const Map: React.FC = () => {
   const [visible, setVisible] = useState<boolean>(false);
   const [mapList, setMapList] = useState([]);
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
-  const [selectedMapCloud, setSelectedMapCloud] = useState();
+  const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
+    null
+  );
   const op = useRef<OverlayPanel>(null);
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -67,6 +69,7 @@ const Map: React.FC = () => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setSelectedMapCloud(res.data);
+      dispatch(drawCloud({ command: "DRAW_CLOUD", target: "canvas-overlay" }));
     } catch (e) {
       console.error(e);
     }
@@ -74,13 +77,23 @@ const Map: React.FC = () => {
 
   const handleSelectMap = (e) => {
     setSelectedMap(e.value as MapData);
-    // TODO Draw Preview
-    dispatch(drawCloud({ command: "DRAW_CLOUD" }));
+  };
+
+  const handleLoadMap = () => {
+    dispatch(drawCloud({ command: "DRAW_CLOUD", target: "canvas" }));
+    if (op.current) {
+      op.current.hide();
+    }
+  };
+
+  const handleOverlayHide = () => {
+    setSelectedMap(null);
+    setSelectedMapCloud(null);
   };
 
   return (
     <div className="map">
-      <LidarCanvas className="canvas" />
+      <LidarCanvas className="canvas" selectedMapCloud={selectedMapCloud} />
       <Button
         label="Mapping"
         severity="secondary"
@@ -93,7 +106,7 @@ const Map: React.FC = () => {
           if (op.current) op.current.toggle(e);
         }}
       ></Button>
-      <OverlayPanel ref={op} showCloseIcon>
+      <OverlayPanel ref={op} showCloseIcon onHide={handleOverlayHide}>
         <div className="flex ">
           <DataTable
             value={mapList}
@@ -114,6 +127,11 @@ const Map: React.FC = () => {
             <LidarCanvas
               className="canvas-overlay"
               selectedMapCloud={selectedMapCloud}
+            />
+            <Button
+              label="Load"
+              icon="pi pi-download"
+              onClick={handleLoadMap}
             />
           </div>
         </div>
