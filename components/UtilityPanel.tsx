@@ -27,7 +27,9 @@ const UtilityPanel = () => {
       icon: "pi pi-spinner",
       command: () => {
         getBuildResponse();
-        dispatch(handleMapping({ command: "MAPPING_START" }));
+        dispatch(
+          handleMapping({ command: "MAPPING_START", target: "canvas-sidebar" })
+        );
       },
     },
     {
@@ -35,7 +37,9 @@ const UtilityPanel = () => {
       icon: "pi pi-stop-circle",
       command: () => {
         getStopResponse();
-        dispatch(handleMapping({ command: "MAPPING_STOP" }));
+        dispatch(
+          handleMapping({ command: "MAPPING_STOP", target: "canvas-sidebar" })
+        );
       },
     },
     {
@@ -124,4 +128,3 @@ const UtilityPanel = () => {
 };
 
 export default UtilityPanel;
-
