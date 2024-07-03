@@ -11,6 +11,8 @@ import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
 
 import { io } from "socket.io-client";
 import axios from "axios";
+
+import { CANVAS_CLASSES } from "@/constants";
 import { Postpone } from "next/dist/server/app-render/dynamic-rendering";
 
 interface LidarCanvasProps {
@@ -18,10 +20,7 @@ interface LidarCanvasProps {
   selectedMapCloud?: string[][] | null;
 }
 
-const LidarCanvas = ({
-  className: canvasType,
-  selectedMapCloud,
-}: LidarCanvasProps) => {
+const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const { action } = useSelector((state: RootState) => state.canvas);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -44,7 +43,7 @@ const LidarCanvas = ({
   // 3D Scene setting when the component is mounted
   useEffect(() => {
     init3DScene();
-    if (canvasType !== "canvas-overlay") {
+    if (className !== CANVAS_CLASSES.OVERLAY) {
       initRobot();
       connectSocket();
     }
@@ -52,7 +51,7 @@ const LidarCanvas = ({
       window.removeEventListener("resize", onWindowResize);
       rendererRef.current?.setAnimationLoop(null);
 
-      if (canvasType !== "canvas-overlay") {
+      if (className !== CANVAS_CLASSES.OVERLAY) {
         console.log("Socket disconnect ", socketRef.current.id);
         socketRef.current.disconnect();
       }
@@ -62,7 +61,7 @@ const LidarCanvas = ({
   useEffect(() => {
     switch (action.command) {
       case "MAPPING_START":
-        if (canvasType === "canvas-sidebar" && socketRef.current) {
+        if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
           socketRef.current.on("mapping", (data) => {
             drawCloud("SIDEBAR", data);
           });
@@ -216,7 +215,7 @@ const LidarCanvas = ({
           console.log("Socket connected ", socketRef.current.id);
         });
 
-        if (canvasType !== "canvas-overlay") {
+        if (className !== CANVAS_CLASSES.OVERLAY) {
           socketRef.current.on("lidar", (data) => {
             drawLidar(data.data, {
               x: parseFloat(data.pose.x),
@@ -311,9 +310,9 @@ const LidarCanvas = ({
     sceneRef.current?.add(points);
   };
 
-  const drawCloud = (target: string, cloud: string[][]) => {
+  const drawCloud = (targetCanvas: string, cloud: string[][]) => {
     if (!isInitializedRef.current) return;
-    if (canvasType !== target) return;
+    if (className !== targetCanvas) return;
 
     // Reset before draw
     resetCamera();
@@ -384,7 +383,7 @@ const LidarCanvas = ({
     controlRef.current.update();
   };
 
-  return <canvas className={canvasType} ref={canvasRef} />;
+  return <canvas className={className} ref={canvasRef} />;
 };
 
 export default LidarCanvas;
