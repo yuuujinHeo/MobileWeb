@@ -8,9 +8,10 @@ import { drawCloud } from "@/store/canvasSlice";
 // prime
 import { Sidebar } from "primereact/sidebar";
 import { Button } from "primereact/button";
-import { OverlayPanel } from "primereact/overlaypanel";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
+import { Dialog } from "primereact/dialog";
+import { Tooltip } from "primereact/tooltip";
 
 import UtilityPanel from "@/components/UtilityPanel";
 
@@ -18,10 +19,9 @@ import { CANVAS_CLASSES } from "@/constants";
 
 import axios from "axios";
 
-import "./style.scss";
-
 // components
 import LidarCanvas from "@/components/LidarCanvas";
+import { SpeedDial } from "primereact/speeddial";
 
 interface ListData {
   name: string;
@@ -39,14 +39,31 @@ const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 const Map: React.FC = () => {
   const dispatch = useDispatch();
   // state
-  const [visible, setVisible] = useState<boolean>(false);
+  const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
+  const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
   const [mapList, setMapList] = useState([]);
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
   const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
     null
   );
-  const op = useRef<OverlayPanel>(null);
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
+  const dialItems = [
+    {
+      label: "Mapping",
+      icon: "pi pi-map",
+      command: () => {
+        setIsSidebarVisible(true);
+      },
+    },
+    {
+      label: "Load",
+      icon: "pi pi-upload",
+      command: () => {
+        setIsDialogVisible(true);
+      },
+    },
+  ];
 
   useEffect(() => {
     getMapList();
@@ -87,35 +104,40 @@ const Map: React.FC = () => {
     dispatch(
       drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
     );
-    if (op.current) {
-      op.current.hide();
-    }
+
+    setIsDialogVisible(false);
   };
 
-  const handleOverlayHide = () => {
+  const handleDialogHide = () => {
+    // reset
     setSelectedMap(null);
     setSelectedMapCloud(null);
   };
 
   return (
-    <div className="map">
+    <div id="map">
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
         selectedMapCloud={selectedMapCloud}
       />
-      <Button
-        label="Mapping"
-        severity="secondary"
-        onClick={() => setVisible(true)}
-      ></Button>
-      <Button
-        label="Load"
-        severity="secondary"
-        onClick={(e) => {
-          if (op.current) op.current.toggle(e);
-        }}
-      ></Button>
-      <OverlayPanel ref={op} showCloseIcon onHide={handleOverlayHide}>
+      <div style={{ position: "absolute" }}>
+        <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
+        <SpeedDial
+          model={dialItems}
+          direction="down"
+          className="speeddial-top-right"
+          showIcon="pi pi-bars"
+          hideIcon="pi pi-times"
+          style={{ left: 15, top: 15 }}
+        ></SpeedDial>
+      </div>
+
+      {/* Load Dialog */}
+      <Dialog
+        header="Load saved mapping data"
+        visible={isDialogVisible}
+        onHide={handleDialogHide}
+      >
         <div className="flex ">
           <DataTable
             value={mapList}
@@ -144,16 +166,16 @@ const Map: React.FC = () => {
             />
           </div>
         </div>
-      </OverlayPanel>
+      </Dialog>
 
       {/* Mapping */}
       <Sidebar
-        visible={visible}
+        visible={isSidebarVisible}
         fullScreen
-        onHide={() => setVisible(false)}
+        onHide={() => setIsSidebarVisible(false)}
         className="joystick-slide"
       >
-        <div id="mapping-container">
+        <div id="sidebar-container">
           <UtilityPanel />
           <LidarCanvas className="canvas-sidebar" />
           <Joystick />
