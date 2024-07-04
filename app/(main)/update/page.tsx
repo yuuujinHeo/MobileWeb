@@ -40,7 +40,7 @@ import {userContext} from '../../../interface/user'
 import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
 import { start } from 'repl';
 import { selectSetting } from '@/store/settingSlice';
-import getURL from '../api/url';
+import {getMobileAPIURL} from '../api/url';
 
 
 const Update: React.FC = () =>{
@@ -104,7 +104,7 @@ const Update: React.FC = () =>{
     }
 
     async function setURL(){
-        setMobileURL(await getURL());
+        setMobileURL(await getMobileAPIURL());
     }
     const onFileUpload = () => {
         console.log("onupload");
