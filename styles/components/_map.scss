@@ -12,7 +12,9 @@
 //   background-color: #66bb6a; /* 두 번째 아이템 배경색 */
 // }
 
-.pi-map,
-.pi-upload {
-  color: #ffffff;
+.p-speeddial-item {
+  .pi-map,
+  .pi-upload {
+    color: #ffffff;
+  }
 }

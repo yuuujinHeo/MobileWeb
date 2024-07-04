@@ -58,7 +58,7 @@ const Map: React.FC = () => {
     },
     {
       label: "Load",
-      icon: "pi pi-upload",
+      icon: "pi pi-download",
       command: () => {
         setIsDialogVisible(true);
       },
@@ -109,6 +109,8 @@ const Map: React.FC = () => {
   };
 
   const handleDialogHide = () => {
+    setIsDialogVisible(false);
+
     // reset
     setSelectedMap(null);
     setSelectedMapCloud(null);
