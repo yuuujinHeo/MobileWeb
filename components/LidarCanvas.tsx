@@ -13,8 +13,6 @@ import { io } from "socket.io-client";
 import axios from "axios";
 
 import { CANVAS_CLASSES } from "@/constants";
-import { Postpone } from "next/dist/server/app-render/dynamic-rendering";
-import PanelDemo from "@/app/(main)/panel/page";
 
 interface LidarCanvasProps {
   className: string;
@@ -50,6 +48,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      window.removeEventListener("click", onMouseClick);
       rendererRef.current?.setAnimationLoop(null);
 
       if (className !== CANVAS_CLASSES.OVERLAY) {
@@ -88,6 +87,16 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const color = new THREE.Color(0xffffff);
     scene.background = color;
     sceneRef.current = scene;
+
+    // planeMesh for raycasting
+    const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      visible: false,
+    });
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.rotation.x = -Math.PI / 2;
+    plane.name = "plane";
+    scene.add(plane);
 
     // camera
     const camera = new THREE.PerspectiveCamera(
@@ -138,6 +147,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+    window.addEventListener("click", onMouseClick);
   };
 
   const onWindowResize = () => {
@@ -157,6 +167,67 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       canvasRef.current.clientWidth,
       canvasRef.current.clientHeight
     );
+  };
+
+  const onMouseClick = (event: MouseEvent) => {
+    if (
+      !window ||
+      !cameraRef.current ||
+      !sceneRef.current ||
+      !canvasRef.current
+    )
+      return;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const pos = getCanvasRelativePosition(event);
+
+    if (!pos) return;
+    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+    mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
+
+    raycaster.setFromCamera(mouse, cameraRef.current);
+
+    const intersects = raycaster.intersectObjects(
+      sceneRef.current.children,
+      true
+    );
+
+    console.log(11, sceneRef.current.children);
+
+    if (intersects.length > 0) {
+      console.log(1111, "pick", intersects[0]);
+    } else {
+      console.log(2222, "no pick");
+      console.log(mouse.x, mouse.y);
+      // const loader = new ThreeMFLoader();
+      //
+      // loader.load("amr_texture.3MF", function (group) {
+      //   group.scale.set(0.001, 0.001, 0.001);
+      //   group.rotateX(Math.PI / -2);
+      //   group.position.set(mouse.x, mouse.y, 0);
+      //
+      //   group.traverse((obj) => {
+      //     if (obj instanceof THREE.Mesh) {
+      //       obj.material.color.set(new THREE.Color(0x33ff52));
+      //     }
+      //   });
+      //
+      //   robotModel.current = group;
+      //
+      //   sceneRef.current?.add(robotModel.current);
+      // });
+    }
+  };
+
+  const getCanvasRelativePosition = (event: MouseEvent) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) * canvasRef.current.width) / rect.width,
+      y: ((event.clientY - rect.top) * canvasRef.current.height) / rect.height,
+    };
   };
 
   const initRobot = async () => {
@@ -316,7 +387,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (className !== targetCanvas) return;
 
     // Reset before draw
-    resetCamera();
+    resetCamera(); // Temp. Do not reset if the state is mapping.
     clearMappingPoints();
 
     if (cloud) {
