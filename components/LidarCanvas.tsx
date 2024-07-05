@@ -14,6 +14,7 @@ import axios from "axios";
 
 import { CANVAS_CLASSES } from "@/constants";
 import { Postpone } from "next/dist/server/app-render/dynamic-rendering";
+import PanelDemo from "@/app/(main)/panel/page";
 
 interface LidarCanvasProps {
   className: string;
@@ -172,7 +173,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     const loader = new ThreeMFLoader();
 
-    loader.load("amr.3MF", function (group) {
+    loader.load("amr_texture.3MF", function (group) {
       group.scale.set(0.001, 0.001, 0.001);
       group.rotateX(Math.PI / -2);
 
