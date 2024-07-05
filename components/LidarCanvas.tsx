@@ -136,12 +136,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const control = new MapControls(camera, renderer.domElement);
     controlRef.current = control;
 
-    control.screenSpacePanning = false;
+    control.screenSpacePanning = true;
 
     control.minDistance = 5;
     control.maxDistance = 30;
-
-    control.maxPolarAngle = Math.PI / 2;
 
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
