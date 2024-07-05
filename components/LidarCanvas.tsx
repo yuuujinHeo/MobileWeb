@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
+import { updateInitData } from "@/store/canvasSlice";
 
 // three
 import * as THREE from "three";
@@ -20,6 +21,7 @@ interface LidarCanvasProps {
 }
 
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
+  const dispatch = useDispatch();
   const { action } = useSelector((state: RootState) => state.canvas);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -95,7 +97,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       visible: false,
     });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.rotation.x = -Math.PI / 2;
+    // plane.rotation.x = -Math.PI / 2;
     plane.name = "plane";
     scene.add(plane);
 
@@ -108,7 +110,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 25, 0);
+    camera.position.set(0, 0, 25);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -195,30 +197,39 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       true
     );
 
-    console.log(11, sceneRef.current.children);
-
     if (intersects.length > 0) {
-      console.log(1111, "pick", intersects[0]);
-    } else {
-      console.log(2222, "no pick");
-      console.log(mouse.x, mouse.y);
-      // const loader = new ThreeMFLoader();
-      //
-      // loader.load("amr_texture.3MF", function (group) {
-      //   group.scale.set(0.001, 0.001, 0.001);
-      //   group.rotateX(Math.PI / -2);
-      //   group.position.set(mouse.x, mouse.y, 0);
-      //
-      //   group.traverse((obj) => {
-      //     if (obj instanceof THREE.Mesh) {
-      //       obj.material.color.set(new THREE.Color(0x33ff52));
-      //     }
-      //   });
-      //
-      //   robotModel.current = group;
-      //
-      //   sceneRef.current?.add(robotModel.current);
-      // });
+      // remove prev initpoint
+      const prevInit = sceneRef.current.getObjectByName("initpoint");
+      if (prevInit) {
+        sceneRef.current.remove(prevInit);
+      }
+
+      const intersect = intersects[0];
+      const loader = new ThreeMFLoader();
+
+      loader.load("amr.3MF", function (group) {
+        group.scale.set(0.001, 0.001, 0.001);
+        group.position.set(intersect.point.x, -intersect.point.y, 0);
+        group.name = "initpoint";
+
+        group.traverse((obj) => {
+          if (obj instanceof THREE.Mesh) {
+            obj.material.color.set(new THREE.Color(0x33ff52));
+          }
+        });
+
+        sceneRef.current?.add(group);
+
+        // Update init data for LOC
+        dispatch(
+          updateInitData({
+            x: group.position.x.toString(),
+            y: group.position.y.toString(),
+            z: group.position.z.toString(),
+            rz: "",
+          })
+        );
+      });
     }
   };
 
@@ -239,7 +250,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
     const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    axesHelperOrin.rotateX(-Math.PI / 2);
+    // axesHelperOrin.rotateX(-Math.PI / 2);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
@@ -247,7 +258,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     loader.load("amr_texture.3MF", function (group) {
       group.scale.set(0.001, 0.001, 0.001);
-      group.rotateX(Math.PI / -2);
+      // group.rotateX(Math.PI / -2);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -389,7 +400,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const points = new THREE.Points(geo, material);
     lidarPoints.current = points.id;
 
-    points.rotation.x = -(Math.PI / 2);
+    // points.rotation.x = -(Math.PI / 2);
 
     sceneRef.current?.add(points);
   };
@@ -437,7 +448,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
       const points = new THREE.Points(geo, material);
 
-      points.rotation.x = -(Math.PI / 2);
+      // points.rotation.x = -(Math.PI / 2);
 
       mappingPointsArr.current.push(points.id);
 
