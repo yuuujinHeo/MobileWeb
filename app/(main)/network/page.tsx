@@ -1,5 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 'use client';
+
+
+
 import { Button } from 'primereact/button';
 import { Chart } from 'primereact/chart';
 import { Column } from 'primereact/column';
@@ -10,10 +13,11 @@ import React, {createContext, Dispatch, ReactNode, SetStateAction, useContext, u
 import Link from 'next/link';
 import { Demo } from '@/types';
 import { Panel } from 'primereact/panel';
-import {FieldArray, useFormik} from 'formik';
+import {FieldArray, useFormik, Formik} from 'formik';
 import { Dialog } from 'primereact/dialog';
 import { Tag } from 'primereact/tag';
 import { DataView } from 'primereact/dataview';
+import { Password } from 'primereact/password';
 import { ProgressSpinner } from 'primereact/progressspinner';
 import { Toolbar } from 'primereact/toolbar';
 import { GetServerSideProps } from 'next';
@@ -21,7 +25,10 @@ import { Toast } from 'primereact/toast';
 import { InputText } from 'primereact/inputtext';
 import { Rating } from 'primereact/rating';
 import { ChartData, ChartOptions } from 'chart.js';
+import { Avatar } from 'primereact/avatar';
 import { NetworkInfo } from '@/interface/network';
+import { Chip } from 'primereact/chip';
+import { Badge } from 'primereact/badge';
 import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import axios from 'axios';
@@ -29,13 +36,20 @@ import '../setting/style.scss';
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { useRouter } from 'next/navigation';
 import { current } from '@reduxjs/toolkit';
-import getURL from '../api/url'
+import {getMobileAPIURL} from '../api/url'
 
+const initialData = [
+    { id: 1, name: 'Form 1' , data:'Hi'},
+    { id: 2, name: 'Form 2' , data:'Im'},
+    { id: 3, name: 'Form 3' , data:'Yujin'}
+  ];
+  
 const Network:React.FC = () =>{
-    const [curEthernet, setCurEthernet] = useState<NetworkInfo>();
-    const [curWifi, setCurWifi] = useState<NetworkInfo>();
-    const [curBt, setCurBt] = useState<NetworkInfo>();
+    const [curEthernet, setCurEthernet] = useState<NetworkInfo[]>();
+    const [curWifi, setCurWifi] = useState<NetworkInfo[]>();
+    const [curBt, setCurBt] = useState<NetworkInfo[]>();
     const [wifis, setWifis] = useState<NetworkInfo[]>([]);
+    const [loading, setLoading] = useState(false);
     const [executed, setExecuted] = useState(false);
     const [visibleWifi, setVisibleWifi] = useState(false);
     const [mobileURL, setMobileURL] = useState('');
@@ -46,157 +60,95 @@ const Network:React.FC = () =>{
         console.log("network useEffect")
         setURL()
     },[])
+
     useEffect(()=>{
-        console.log("useEffect : ",mobileURL);
         if(mobileURL != ''){
             getCurrentInfo();
         }
     },[mobileURL])
 
 
-    const formik_ethernet = useFormik({
-        initialValues:{
-            type:curEthernet?.type,
-            state: curEthernet?.state,
-            device: curEthernet?.device,
-            mac: curEthernet?.mac,
-            name: curEthernet?.name,
-            ip: curEthernet?.ip,
-            gateway: curEthernet?.gateway,
-            dns: curEthernet?.dns,
-            subnet: curEthernet?.subnet,
-            stasignal_levelte: curEthernet?.signal_level,
-            quality: curEthernet?.quality,
-            security: curEthernet?.security
-        },
-        enableReinitialize: true,
-        validate: (values) => {
-            const errors = {
-                type:"",
-                state:"",
-                device: "",
-                mac: "",
-                name:"",
-                ip: "",
-                gateway: "",
-                dns: ['',''],
-                subnet: "",
-                stasignal_levelte: "",
-                quality: "",
-                security:""
-            };
-            return errors;
-        },
-        onSubmit: (data) => {
-            console.log("SAVE : ",data);
-        }
-    });
-    const formik_wifi = useFormik({
-        initialValues:{
-            type:curWifi?.type,
-            state: curWifi?.state,
-            device: curWifi?.device,
-            mac: curWifi?.mac,
-            name: curWifi?.name,
-            ip: curWifi?.ip,
-            gateway: curWifi?.gateway,
-            dns: curWifi?.dns,
-            subnet: curWifi?.subnet,
-            stasignal_levelte: curWifi?.signal_level,
-            quality: curWifi?.quality,
-            security: curWifi?.security
-        },
-        enableReinitialize: true,
-        validate: (values) => {
-            const errors = {
-                type:"",
-                state:"",
-                device: "",
-                mac: "",
-                name:"",
-                ip: "",
-                gateway: "",
-                dns: "",
-                subnet: "",
-                stasignal_levelte: "",
-                quality: "",
-                security:""
-            };
-            return errors;
-        },
-        onSubmit: (data) => {
-            console.log("SAVE : ",data);
-        }
-    });
-    const formik_bt = useFormik({
-        initialValues:{
-            type:curBt?.type,
-            state: curBt?.state,
-            device: curBt?.device,
-            mac: curBt?.mac,
-            name: curBt?.name,
-            ip: curBt?.ip,
-            gateway: curBt?.gateway,
-            dns: curBt?.dns,
-            subnet: curBt?.subnet,
-            stasignal_levelte: curBt?.signal_level,
-            quality: curBt?.quality,
-            security: curBt?.security
-        },
-        enableReinitialize: true,
-        validate: (values) => {
-            const errors = {
-                type:"",
-                state:"",
-                device: "",
-                mac: "",
-                name:"",
-                ip: "",
-                gateway: "",
-                dns: [],
-                subnet: "",
-                stasignal_levelte: "",
-                quality: "",
-                security:""
-            };
-            return errors;
-        },
-        onSubmit: (data) => {
-            console.log("SAVE : ",data);
-        }
-    });
-
-    async function getCurrentInfo(){
-        try{
-            console.log("??????????????",mobileURL);
-            const response = await axios.get(mobileURL+'/network/current');
-            console.log("--------------",response.data);   
-            setCurEthernet(response.data.ethernet);
-            setCurWifi(response.data.wifi);
-            setCurBt(response.data.bt);
-            formik_ethernet.handleReset(response.data.ethernet);
-            formik_wifi.handleReset(response.data.wifi);
-            formik_bt.handleReset(response.data.bt);
-        }catch(error){
-            console.error(error);
-            // alert(error);
-        }
+    function makeNetworkForm(data: NetworkInfo | undefined){
+        return useFormik({
+            initialValues:{
+                type:data?.type,
+                state: data?.state,
+                device: data?.device,
+                mac: data?.mac,
+                name: data?.name,
+                ip: data?.ip,
+                gateway: data?.gateway,
+                dns: data?.dns,
+                subnet: data?.subnet,
+                stasignal_levelte: data?.signal_level,
+                quality: data?.quality,
+                security: data?.security
+            },
+            enableReinitialize: true,
+            validate: (values) => {
+                const errors = {
+                    type:"",
+                    state:"",
+                    device: "",
+                    mac: "",
+                    name:"",
+                    ip: "",
+                    gateway: "",
+                    dns: ['',''],
+                    subnet: "",
+                    stasignal_levelte: "",
+                    quality: "",
+                    security:""
+                };
+                return errors;
+            },
+            onSubmit: (data) => {
+                console.log("SAVE : ",data);
+            }
+        })
     }
 
+    const formik_ethernet1 = makeNetworkForm(curEthernet?.[0]);
+    const formik_ethernet2 = makeNetworkForm(curEthernet?.[1]);
+    const formik_wifi = makeNetworkForm(curWifi?.[0]);
+    const formik_bt = makeNetworkForm(curBt?.[0]);
+
+    async function getCurrentInfo() {
+        try {
+          const response = await axios.get(mobileURL + '/network/current');
+          console.log("--------------", response.data);
+    
+          setCurEthernet(response.data.ethernet);
+          setCurWifi(response.data.wifi);
+          setCurBt(response.data.bt);
+          
+          if(response.data.ethernet.length > 0)
+            formik_ethernet1.handleReset(response.data.ethernet[0]);
+          if(response.data.ethernet.length > 1)
+            formik_ethernet1.handleReset(response.data.ethernet[1]);
+          formik_wifi.handleReset(response.data.wifi);
+          formik_bt.handleReset(response.data.bt);
+    
+        } catch (error) {
+          console.error(error);
+        }
+      }
     async function setURL(){
-        setMobileURL(await getURL());
+        setMobileURL(await getMobileAPIURL());
     }
 
     function refresh(){
         console.log("refresh");
-        formik_ethernet.handleReset(curEthernet);
-        formik_wifi.handleReset(curWifi);
-        formik_bt.handleReset(curBt);
+        formik_ethernet1.handleReset(curEthernet?.[0]);
+        formik_ethernet2.handleReset(curEthernet?.[1]);
+        formik_wifi.handleReset(curWifi?.[0]);
+        formik_bt.handleReset(curBt?.[0]);
     }
-    async function save_ethernet(){
+
+    async function save_ethernet_1(){
         console.log("save ethernet");
         try{
-            const response = await axios.put(mobileURL+'/network/ethernet',formik_ethernet.values);
+            const response = await axios.put(mobileURL+'/network/ethernet1',formik_ethernet1.values);
             console.log(response);
         }catch(error){
             console.error(error);
@@ -204,7 +156,33 @@ const Network:React.FC = () =>{
 
         }
     }
+    async function save_ethernet_2(){
+        console.log("save ethernet");
+        try{
+            const response = await axios.put(mobileURL+'/network/ethernet2',formik_ethernet2.values);
+            console.log(response);
+        }catch(error){
+            console.error(error);
+        }
+    }
     async function save_wifi(){
+        try{
+            setLoading(true);
+            const response = await axios.put(mobileURL+'/network/wifi',formik_wifi.values);
+            getCurrentInfo();
+            toast.current?.show({
+                severity: 'success',
+                summary: 'Wifi 세팅 성공',
+                detail: '설정이 완료되었습니다',
+                life: 3000
+            })
+            setLoading(false);
+        }catch(error){
+            console.error(error);
+            setLoading(false);
+        }
+    }
+    async function save_bt(){
 
     }
     async function showWifiPopup(){
@@ -232,9 +210,14 @@ const Network:React.FC = () =>{
         }
 
     }
+
+    //------------------------------------------------------------------------------------------------
     const PopupWifi = () =>{
         const [block, setBlock] = useState(false);
-        const getRating = (quality) =>{
+        const [visibleWifiPassword, setVisibleWifiPassword] = useState(false);
+        const [newWifi, setNewWifi] = useState<string>('');
+
+        const getRating = (quality: number) =>{
             if(quality>80){
                 return 5;
             }else if(quality>60){
@@ -247,14 +230,59 @@ const Network:React.FC = () =>{
                 return 1;
             }
         }
-        const connectWifi = async(wifi) =>{
+        
+        const PopupPassword = () =>{
+            const [password, setPassword] = useState('');
+            return(
+                <Dialog header = {newWifi}
+                style={{width: '350px'}} visible={visibleWifiPassword} onHide={() => setVisibleWifiPassword(false)}>
+
+                <div className='column gap-1 justify-content-center align-items-center flex'>
+                    <h6>패스워드를 입력하세요</h6>
+                    <Password
+                        className='flex'
+                        value={password}
+                        feedback={false}
+                        onChange={(e) => setPassword(e.target.value)} />
+
+                    <Button onClick={()=>{
+                        if(password != ''){
+                            connectWifi(newWifi, password);
+                        }else{
+                        }
+                    }}>연결</Button>
+                </div>
+
+                </Dialog>
+            );
+        }
+        const connectWifi = async(wifi: any, password: string | undefined=undefined) =>{
             console.log("connectWifi, ",wifi);
             try{
                 setBlock(true);
-                const response = await axios.post(mobileURL+'/network/wifi',wifi);
+
+                var response;
+                response = await axios.post(mobileURL+'/network/wifi',{...wifi,password:password});
+                
                 console.log("RESPONSE:",response.data);
-                setWifis(response.data);
                 setBlock(false);
+
+                if(response.data.includes('successfully')){
+                    toast.current?.show({
+                        severity: 'success',
+                        summary: 'Wifi 연결 성공',
+                        detail: '설정에 성공하였습니다',
+                        life: 3000
+                    })
+                }else if(response.data.includes('Secrets were required')){
+                    console.log("!!????????????!!!!!!!!!!!!!!");
+                }else if(response.data.includes('failed:')){
+                    console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                }else{
+
+                }
+                getCurrentInfo();
+                setVisibleWifi(false);
             }catch(error){
                 console.error(error);
                 toast.current?.show({
@@ -266,17 +294,27 @@ const Network:React.FC = () =>{
                 setBlock(false);
             }
         };
-        const renderListItem = (wifi) => {
+        const renderListItem = (wifi: { security: string, ssid: string; quality: any; }) => {
             return (
               <div className="col-12 p-md-3" >
                 <div className="product-item card">
                  <div className="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
                     <div className="flex flex-column align-items-center sm:align-items-start gap-3">
-                        <div className="text-2xl font-bold text-900">{wifi.ssid}</div>
+                        <div className="grid gap-2 text-2xl font-bold text-900">
+                            {wifi.ssid}
+                            {wifi.security!='' && <Avatar icon="pi pi-lock"></Avatar>}
+                        </div>
                         <Rating value={getRating(wifi.quality)} readOnly cancel={false}></Rating>
                     </div>
                         <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
-                            <Button onClick={()=>{connectWifi(wifi)}}>연결</Button>
+                            <Button onClick={()=>{
+                                if(wifi.security == ''){
+                                    connectWifi(wifi);
+                                }else{
+                                    setNewWifi(wifi.ssid);
+                                    setVisibleWifiPassword(true);
+                                }
+                            }}>연결</Button>
                         </div>
                     </div>
                 </div>
@@ -284,7 +322,7 @@ const Network:React.FC = () =>{
             );
           };
         
-        const itemTemplate = (wifi) => {
+        const itemTemplate = (wifi: any) => {
             if (!wifi) {
             return;
             }
@@ -307,8 +345,9 @@ const Network:React.FC = () =>{
 
         return(
             <Dialog header = '와이파이 리스트' 
-            style={{width: '80%', maxWidth:'600px', minWidth:'400px'}}
+            style={{width: '80%', maxWidth:'800px', minWidth:'400px'}}
             visible={visibleWifi} onHide={()=>setVisibleWifi(false)}>
+                <PopupPassword></PopupPassword>
                 <div className=' flex justify-content-center'>
                 {block&&
                 <ProgressSpinner  aria-label="Loading"/>}
@@ -325,340 +364,463 @@ const Network:React.FC = () =>{
         )
     }
 
-    const ethernet_header = (
-        <div className='grid justify-content-center mt-2 mb-1 ml-3'>
-            <label className="font-bold items-center text-2xl block">{formik_ethernet.values.device?formik_ethernet.values.device:'Ethernet'}</label>
-            <Tag severity={formik_ethernet.values.state===100?"success":"danger"} value={formik_ethernet.values.state===100?"connected":"disconnected"}  className="ml-5"></Tag>
-            
-        </div>
-    );
-    const wifi_header = (
-        <div className='grid justify-content-center mt-2 mb-1 ml-3'>
-            <label className="font-bold items-center text-2xl block">{formik_wifi.values.device?formik_wifi.values.device:'Wifi'}</label>
-            <Tag severity={formik_wifi.values.state===100?"success":"danger"} value={formik_wifi.values.state===100?"connected":"disconnected"}  className="ml-5"></Tag>
-        </div>
-    );
-    const bt_header = (
-        <div className='grid justify-content-center mt-2 mb-1 ml-3'>
-            <label className="font-bold items-center text-2xl block">bluetooth</label>
-            <Tag severity={formik_wifi.values.state===100?"success":"danger"} value={formik_wifi.values.state===100?"connected":"disconnected"}  className="ml-5"></Tag>
-        </div>
-    );
-
     return (
         <div className="column gap-3">
         <PopupWifi></PopupWifi>
         <Toast ref={toast}></Toast>
-                
-        <Panel header = {ethernet_header} > 
-            <div className="column ">
+
+
+        <Panel header={"Ethernet ("+curEthernet?.[0].name+" : "+curEthernet?.[0].device+")"}>
+            {(curEthernet?.[0] && curEthernet?.[0].name != '--') &&
+             <div className="column ">
+             <div className='grid gap-3' >
+                 <Button disabled={loading} onClick={refresh}>초기화</Button>
+                 <Button disabled={loading} onClick={save_ethernet_1}>적용</Button>
+             </div>
+            {loading?
+                <ProgressSpinner  aria-label="Loading"/> :
+                <div className = "column">
+                    <div className="flex-auto">
+                        <label className="font-bold block mb-2">
+                            Name
+                        </label>
+                        <InputText
+                            name="name"
+                            type="text"
+                            readOnly
+                            onChange={formik_ethernet1.handleChange}
+                            value={formik_ethernet1.values.name}
+                            className={`w-full p-inputtext-long ${formik_ethernet1.errors.name?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    <div className="flex-auto mb-2">
+                        <label className="font-bold block mb-2">
+                            Mac Address
+                        </label>
+                        <InputText
+                            name="mac"
+                            type="text"
+                            readOnly
+                            onChange={formik_ethernet1.handleChange}
+                            value={formik_ethernet1.values.mac}
+                            className={`w-full p-inputtext-long ${formik_ethernet1.errors.mac?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap gap-5 ">
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                IP
+                            </label>
+                            <InputText
+                                name="ip"
+                                type="text"
+                                onChange={formik_ethernet1.handleChange}
+                                value={formik_ethernet1.values.ip}
+                                className={`w-full p-inputtext-long ${formik_ethernet1.errors.ip?"p-invalid":""}`}
+                            />
+                        </div>
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                Subnet
+                            </label>
+                            <InputText
+                                name="subnet"
+                                type="text"
+                                onChange={formik_ethernet1.handleChange}
+                                value={formik_ethernet1.values.subnet}
+                                className={`w-full p-inputtext-long ${formik_ethernet1.errors.subnet?"p-invalid":""}`}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex-auto">
+                        <label className="font-bold block mb-2">
+                            Gateway
+                        </label>
+                        <InputText
+                            name="gateway"
+                            type="text"
+                            onChange={formik_ethernet1.handleChange}
+                            value={formik_ethernet1.values.gateway}
+                            className={`w-full p-inputtext-long ${formik_ethernet1.errors.gateway?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    {formik_ethernet1.values.dns && formik_ethernet1.values.dns?.length>0 &&
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                DNS_Main
+                            </label>
+                            <InputText
+                                name="dns[0]"
+                                type="text"
+                                onChange={formik_ethernet1.handleChange}
+                                value={formik_ethernet1.values.dns[0]}
+                                className={`w-full p-inputtext-long ${formik_ethernet1.errors.dns && formik_ethernet1.errors.dns![0]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                    {formik_ethernet1.values.dns?.[1] && formik_ethernet1.values.dns[1] != '' &&
+                        <div className="flex-auto mb-4">
+                            <label className="font-bold block mb-2">
+                                DNS_Serv
+                            </label>
+                            <InputText
+                                name="dns[1]"
+                                type="text"
+                                onChange={formik_ethernet1.handleChange}
+                                value={formik_ethernet1.values.dns[1]}
+                                className={`w-full p-inputtext-long ${formik_ethernet1.errors.dns && formik_ethernet1.errors.dns![1]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                    </div> 
+                    }
+             </div>
+            }
+            {!(curEthernet?.[0] && curEthernet?.[0].name != '--') &&
+            <>연결된 네트워크가 없습니다</>}
+        </Panel>
+
+        {(curEthernet?.[1] && curEthernet?.[1].name != '--') &&
+        <Panel header={"Ethernet ("+curEthernet?.[1].name+" : "+curEthernet?.[1].device+")"}>
+             <div className="column ">
+             <div className='grid gap-3' >
+                 <Button disabled={loading} onClick={refresh}>초기화</Button>
+                 <Button disabled={loading} onClick={save_ethernet_2}>적용</Button>
+             </div>
+            {loading?
+                <ProgressSpinner  aria-label="Loading"/> :
+                <div className = "column">
+                    <div className="flex-auto">
+                        <label className="font-bold block mb-2">
+                            Name
+                        </label>
+                        <InputText
+                            name="name"
+                            type="text"
+                            readOnly
+                            onChange={formik_ethernet2.handleChange}
+                            value={formik_ethernet2.values.name}
+                            className={`w-full p-inputtext-long ${formik_ethernet2.errors.name?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    <div className="flex-auto mb-2">
+                        <label className="font-bold block mb-2">
+                            Mac Address
+                        </label>
+                        <InputText
+                            name="mac"
+                            type="text"
+                            readOnly
+                            onChange={formik_ethernet2.handleChange}
+                            value={formik_ethernet2.values.mac}
+                            className={`w-full p-inputtext-long ${formik_ethernet2.errors.mac?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    <div className="flex flex-wrap gap-5 ">
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                IP
+                            </label>
+                            <InputText
+                                name="ip"
+                                type="text"
+                                onChange={formik_ethernet2.handleChange}
+                                value={formik_ethernet2.values.ip}
+                                className={`w-full p-inputtext-long ${formik_ethernet2.errors.ip?"p-invalid":""}`}
+                            />
+                        </div>
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                Subnet
+                            </label>
+                            <InputText
+                                name="subnet"
+                                type="text"
+                                onChange={formik_ethernet2.handleChange}
+                                value={formik_ethernet2.values.subnet}
+                                className={`w-full p-inputtext-long ${formik_ethernet2.errors.subnet?"p-invalid":""}`}
+                            />
+                        </div>
+                    </div>
+                    
+
+                    <div className="flex-auto">
+                        <label className="font-bold block mb-2">
+                            Gateway
+                        </label>
+                        <InputText
+                            name="gateway"
+                            type="text"
+                            onChange={formik_ethernet2.handleChange}
+                            value={formik_ethernet2.values.gateway}
+                            className={`w-full p-inputtext-long ${formik_ethernet2.errors.gateway?"p-invalid":""}`}
+                        />
+                    </div>
+
+                    {formik_ethernet2.values.dns && formik_ethernet2.values.dns?.length>0 &&
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                DNS_Main
+                            </label>
+                            <InputText
+                                name="dns[0]"
+                                type="text"
+                                onChange={formik_ethernet2.handleChange}
+                                value={formik_ethernet2.values.dns[0]}
+                                className={`w-full p-inputtext-long ${formik_ethernet2.errors.dns && formik_ethernet2.errors.dns![0]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                    {formik_ethernet2.values.dns?.[1] && formik_ethernet2.values.dns[1] != '' &&
+                        <div className="flex-auto mb-4">
+                            <label className="font-bold block mb-2">
+                                DNS_Serv
+                            </label>
+                            <InputText
+                                name="dns[1]"
+                                type="text"
+                                onChange={formik_ethernet2.handleChange}
+                                value={formik_ethernet2.values.dns[1]}
+                                className={`w-full p-inputtext-long ${formik_ethernet2.errors.dns && formik_ethernet2.errors.dns![1]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                    </div>
+                }
+                </div>
+        </Panel>
+        }
+
+        
+        {(curWifi?.[0] && curWifi?.[0].name != '--') &&
+            <Panel header={"Wifi ("+curWifi[0].name+" : "+curWifi?.[0].device+")"}>
+                <div className="column">
                 <div className='grid gap-3' >
-                    <Button onClick={refresh}>초기화</Button>
-                    <Button onClick={save_ethernet}>적용</Button>
+                    <Button disabled={loading} onClick={refresh}>초기화</Button>
+                    <Button disabled={loading} onClick={showWifiPopup}>검색</Button>
+                    <Button disabled={loading} onClick={save_wifi}>적용</Button>
                 </div>
-                <div className="flex-auto">
-                    <label className="font-bold block mb-2">
-                        Name
-                    </label>
-                    <InputText
-                        name="name"
-                        type="text"
-                        readOnly
-                        onChange={formik_ethernet.handleChange}
-                        value={formik_ethernet.values.name}
-                        className={`w-full p-inputtext-long ${formik_ethernet.errors.name?"p-invalid":""}`}
-                    />
-                </div>
-
-                <div className="flex-auto mb-2">
-                    <label className="font-bold block mb-2">
-                        Mac Address
-                    </label>
-                    <InputText
-                        name="mac"
-                        type="text"
-                        readOnly
-                        onChange={formik_ethernet.handleChange}
-                        value={formik_ethernet.values.mac}
-                        className={`w-full p-inputtext-long ${formik_ethernet.errors.mac?"p-invalid":""}`}
-                    />
-                </div>
-
-                <div className="flex flex-wrap gap-5 ">
+                {loading?
+                    <ProgressSpinner  aria-label="Loading"/> :
+                    <div className="column">
                     <div className="flex-auto">
                         <label className="font-bold block mb-2">
-                            IP
+                            Name
                         </label>
                         <InputText
-                            name="ip"
+                            name="name"
                             type="text"
-                            onChange={formik_ethernet.handleChange}
-                            value={formik_ethernet.values.ip}
-                            className={`w-full p-inputtext-long ${formik_ethernet.errors.ip?"p-invalid":""}`}
+                            readOnly
+                            onChange={formik_wifi.handleChange}
+                            value={formik_wifi.values.name}
+                            className={`w-full p-inputtext-long ${formik_wifi.errors.name?"p-invalid":""}`}
                         />
                     </div>
+    
+                    <div className="flex-auto mb-2">
+                        <label className="font-bold block mb-2">
+                            Mac Address
+                        </label>
+                        <InputText
+                            name="mac"
+                            type="text"
+                            readOnly
+                            onChange={formik_wifi.handleChange}
+                            value={formik_wifi.values.mac}
+                            className={`w-full p-inputtext-long ${formik_wifi.errors.mac?"p-invalid":""}`}
+                        />
+                    </div>
+    
+                    <div className="flex flex-wrap gap-5 ">
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                IP
+                            </label>
+                            <InputText
+                                name="ip"
+                                type="text"
+                                onChange={formik_wifi.handleChange}
+                                value={formik_wifi.values.ip}
+                                className={`w-full p-inputtext-long ${formik_wifi.errors.ip?"p-invalid":""}`}
+                            />
+                        </div>
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                Subnet
+                            </label>
+                            <InputText
+                                name="subnet"
+                                type="text"
+                                onChange={formik_wifi.handleChange}
+                                value={formik_wifi.values.subnet}
+                                className={`w-full p-inputtext-long ${formik_wifi.errors.subnet?"p-invalid":""}`}
+                            />
+                        </div>
+                    </div>
+    
                     <div className="flex-auto">
                         <label className="font-bold block mb-2">
-                            Subnet
+                            Gateway
                         </label>
                         <InputText
-                            name="subnet"
+                            name="gateway"
                             type="text"
-                            onChange={formik_ethernet.handleChange}
-                            value={formik_ethernet.values.subnet}
-                            className={`w-full p-inputtext-long ${formik_ethernet.errors.subnet?"p-invalid":""}`}
+                            onChange={formik_wifi.handleChange}
+                            value={formik_wifi.values.gateway}
+                            className={`w-full p-inputtext-long ${formik_wifi.errors.gateway?"p-invalid":""}`}
                         />
                     </div>
-                </div>
-
-                <div className="flex-auto">
-                    <label className="font-bold block mb-2">
-                        Gateway
-                    </label>
-                    <InputText
-                        name="gateway"
-                        type="text"
-                        onChange={formik_ethernet.handleChange}
-                        value={formik_ethernet.values.gateway}
-                        className={`w-full p-inputtext-long ${formik_ethernet.errors.gateway?"p-invalid":""}`}
-                    />
-                </div>
-
-                {formik_ethernet.values.dns && formik_ethernet.values.dns?.length>0 &&
-                    <div className="flex-auto">
-                        <label className="font-bold block mb-2">
-                            DNS_Main
-                        </label>
-                        <InputText
-                            name="dns[0]"
-                            type="text"
-                            onChange={formik_ethernet.handleChange}
-                            value={formik_ethernet.values.dns[0]}
-                            className={`w-full p-inputtext-long ${formik_ethernet.errors.dns && formik_ethernet.errors.dns![0]?"p-invalid":""}`}
-                        />
-                    </div>
+    
+                    {formik_wifi.values.dns && formik_wifi.values.dns?.length>0 &&
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                DNS_Main
+                            </label>
+                            <InputText
+                                name="dns[0]"
+                                type="text"
+                                onChange={formik_wifi.handleChange}
+                                value={formik_wifi.values.dns[0]}
+                                className={`w-full p-inputtext-long ${formik_wifi.errors.dns && formik_wifi.errors.dns![0]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                    {formik_wifi.values.dns?.[1] && formik_wifi.values.dns[1] != '' &&
+                        <div className="flex-auto mb-4">
+                            <label className="font-bold block mb-2">
+                                DNS_Serv
+                            </label>
+                            <InputText
+                                name="dns[1]"
+                                type="text"
+                                onChange={formik_wifi.handleChange}
+                                value={formik_wifi.values.dns[1]}
+                                className={`w-full p-inputtext-long ${formik_wifi.errors.dns && formik_wifi.errors.dns![1]?"p-invalid":""}`}
+                            />
+                        </div>
+                    }
+                        </div>
+                    
                 }
-                {formik_ethernet.values.dns && formik_ethernet.values.dns[1] != '' &&
-                    <div className="flex-auto mb-4">
-                        <label className="font-bold block mb-2">
-                            DNS_Serv
-                        </label>
-                        <InputText
-                            name="dns[1]"
-                            type="text"
-                            onChange={formik_ethernet.handleChange}
-                            value={formik_ethernet.values.dns[1]}
-                            className={`w-full p-inputtext-long ${formik_ethernet.errors.dns && formik_ethernet.errors.dns![1]?"p-invalid":""}`}
-                        />
-                    </div>
-                }
                 </div>
-        </Panel>
-        <Panel header = {wifi_header}  > 
-            <div className="column gap-4 ">
+            </Panel>
+        }
+
+        {(curBt?.[0] && curBt?.[0].name != '--') &&
+            <Panel header={"Bluetooth ("+curBt[0].name+" : "+curBt?.[0].device+")"}>
+                <div className="column ">
                 <div className='grid gap-3' >
-                    <Button onClick={refresh}>초기화</Button>
-                    <Button onClick={showWifiPopup}>검색</Button>
-                    <Button onClick={save_wifi}>적용</Button>
+                    <Button disabled={loading} onClick={refresh}>초기화</Button>
+                    <Button disabled={loading} onClick={save_bt}>적용</Button>
                 </div>
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Name
-                    </label>
-                    <InputText
-                        name="name"
-                        type="text"
-                        readOnly
-                        onChange={formik_wifi.handleChange}
-                        value={formik_wifi.values.name}
-                        className={`w-full p-inputtext-long ${formik_wifi.errors.name?"p-invalid":""}`}
-                    />
-                </div>
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Mac Address
-                    </label>
-                    <InputText
-                        name="mac"
-                        type="text"
-                        readOnly
-                        onChange={formik_wifi.handleChange}
-                        value={formik_wifi.values.mac}
-                        className={`w-full p-inputtext-long ${formik_wifi.errors.mac?"p-invalid":""}`}
-                    />
-                </div>
+                {loading?
+                    <ProgressSpinner  aria-label="Loading"/> :
+                    <div className = "column">
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                Name
+                            </label>
+                            <InputText
+                                name="name"
+                                type="text"
+                                readOnly
+                                onChange={formik_bt.handleChange}
+                                value={formik_bt.values.name}
+                                className={`w-full p-inputtext-long ${formik_bt.errors.name?"p-invalid":""}`}
+                            />
+                        </div>
 
-                <div className="flex flex-wrap gap-5 mb-4">
-                    <div className="flex-auto">
-                        <label className="font-bold block mb-2">
-                            IP
-                        </label>
-                        <InputText
-                            name="ip"
-                            type="text"
-                            onChange={formik_wifi.handleChange}
-                            value={formik_wifi.values.ip}
-                            className={`w-full p-inputtext-long ${formik_wifi.errors.ip?"p-invalid":""}`}
-                        />
-                    </div>
-                    <div className="flex-auto">
-                        <label className="font-bold block mb-2">
-                            Subnet
-                        </label>
-                        <InputText
-                            name="subnet"
-                            type="text"
-                            onChange={formik_wifi.handleChange}
-                            value={formik_wifi.values.subnet}
-                            className={`w-full p-inputtext-long ${formik_wifi.errors.subnet?"p-invalid":""}`}
-                        />
-                    </div>
-                </div>
+                        <div className="flex-auto mb-2">
+                            <label className="font-bold block mb-2">
+                                Mac Address
+                            </label>
+                            <InputText
+                                name="mac"
+                                type="text"
+                                readOnly
+                                onChange={formik_bt.handleChange}
+                                value={formik_bt.values.mac}
+                                className={`w-full p-inputtext-long ${formik_bt.errors.mac?"p-invalid":""}`}
+                            />
+                        </div>
 
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Gateway
-                    </label>
-                    <InputText
-                        name="gateway"
-                        type="text"
-                        onChange={formik_wifi.handleChange}
-                        value={formik_wifi.values.gateway}
-                        className={`w-full p-inputtext-long ${formik_wifi.errors.gateway?"p-invalid":""}`}
-                    />
-                </div>
+                        <div className="flex flex-wrap gap-5 ">
+                            <div className="flex-auto">
+                                <label className="font-bold block mb-2">
+                                    IP
+                                </label>
+                                <InputText
+                                    name="ip"
+                                    type="text"
+                                    onChange={formik_bt.handleChange}
+                                    value={formik_bt.values.ip}
+                                    className={`w-full p-inputtext-long ${formik_bt.errors.ip?"p-invalid":""}`}
+                                />
+                            </div>
+                            <div className="flex-auto">
+                                <label className="font-bold block mb-2">
+                                    Subnet
+                                </label>
+                                <InputText
+                                    name="subnet"
+                                    type="text"
+                                    onChange={formik_bt.handleChange}
+                                    value={formik_bt.values.subnet}
+                                    className={`w-full p-inputtext-long ${formik_bt.errors.subnet?"p-invalid":""}`}
+                                />
+                            </div>
+                        </div>
 
-                {formik_wifi.values.dns && formik_wifi.values.dns?.length>0 &&
-                    <div className="flex-auto mb-4">
-                        <label className="font-bold block mb-2">
-                            DNS_Main
-                        </label>
-                        <InputText
-                            name="dns"
-                            type="text"
-                            onChange={formik_wifi.handleChange}
-                            value={formik_wifi.values.dns[0]}
-                            className={`w-full p-inputtext-long ${formik_wifi.errors.dns && formik_wifi.errors.dns![0]?"p-invalid":""}`}
-                        />
-                    </div>
-                }
-                {formik_wifi.values.dns && formik_wifi.values.dns?.length>1 &&
-                    <div className="flex-auto mb-4">
-                        <label className="font-bold block mb-2">
-                            DNS_Serv
-                        </label>
-                        <InputText
-                            name="dns"
-                            type="text"
-                            onChange={formik_wifi.handleChange}
-                            // value={formik_wifi.values.dns&&Array.isArray(formik_wifi.values.dns) &&formik_wifi.values.dns.length>1?formik_wifi.values.dns[1]:''}
-                            value={formik_wifi.values.dns[1]}
-                            className={`w-full p-inputtext-long ${formik_wifi.errors.dns && formik_wifi.errors.dns![1]?"p-invalid":""}`}
-                        />
-                    </div>
-                }
-            </div>
-        </Panel>
-        {curBt?.state===100 &&
-        <Panel header = {bt_header} > 
-            <div className="column gap-4 ">
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Name
-                    </label>
-                    <InputText
-                        name="name"
-                        type="text"
-                        readOnly
-                        onChange={formik_bt.handleChange}
-                        value={formik_bt.values.name}
-                        className={`w-full p-inputtext-long ${formik_bt.errors.name?"p-invalid":""}`}
-                    />
-                </div>
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Mac Address
-                    </label>
-                    <InputText
-                        name="mac"
-                        type="text"
-                        readOnly
-                        onChange={formik_bt.handleChange}
-                        value={formik_bt.values.mac}
-                        className={`w-full p-inputtext-long ${formik_bt.errors.mac?"p-invalid":""}`}
-                    />
-                </div>
+                        <div className="flex-auto">
+                            <label className="font-bold block mb-2">
+                                Gateway
+                            </label>
+                            <InputText
+                                name="gateway"
+                                type="text"
+                                onChange={formik_bt.handleChange}
+                                value={formik_bt.values.gateway}
+                                className={`w-full p-inputtext-long ${formik_bt.errors.gateway?"p-invalid":""}`}
+                            />
+                        </div>
 
-                <div className="flex flex-wrap gap-5 mb-4">
-                    <div className="flex-auto">
-                        <label className="font-bold block mb-2">
-                            IP
-                        </label>
-                        <InputText
-                            name="ip"
-                            type="text"
-                            onChange={formik_bt.handleChange}
-                            value={formik_bt.values.ip}
-                            className={`w-full p-inputtext-long ${formik_bt.errors.ip?"p-invalid":""}`}
-                        />
+                        {formik_bt.values.dns && formik_bt.values.dns?.length>0 &&
+                            <div className="flex-auto">
+                                <label className="font-bold block mb-2">
+                                    DNS_Main
+                                </label>
+                                <InputText
+                                    name="dns[0]"
+                                    type="text"
+                                    onChange={formik_bt.handleChange}
+                                    value={formik_bt.values.dns[0]}
+                                    className={`w-full p-inputtext-long ${formik_bt.errors.dns && formik_bt.errors.dns![0]?"p-invalid":""}`}
+                                />
+                            </div>
+                        }
+                        {formik_bt.values.dns?.[1] && formik_bt.values.dns[1] != '' &&
+                            <div className="flex-auto mb-4">
+                                <label className="font-bold block mb-2">
+                                    DNS_Serv
+                                </label>
+                                <InputText
+                                    name="dns[1]"
+                                    type="text"
+                                    onChange={formik_bt.handleChange}
+                                    value={formik_bt.values.dns[1]}
+                                    className={`w-full p-inputtext-long ${formik_bt.errors.dns && formik_bt.errors.dns![1]?"p-invalid":""}`}
+                                />
+                            </div>
+                        }
+                        </div> }
                     </div>
-                    <div className="flex-auto">
-                        <label className="font-bold block mb-2">
-                            Subnet
-                        </label>
-                        <InputText
-                            name="subnet"
-                            type="text"
-                            onChange={formik_bt.handleChange}
-                            value={formik_bt.values.subnet}
-                            className={`w-full p-inputtext-long ${formik_bt.errors.subnet?"p-invalid":""}`}
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-auto mb-4">
-                    <label className="font-bold block mb-2">
-                        Gateway
-                    </label>
-                    <InputText
-                        name="gateway"
-                        type="text"
-                        onChange={formik_bt.handleChange}
-                        value={formik_bt.values.gateway}
-                        className={`w-full p-inputtext-long ${formik_bt.errors.gateway?"p-invalid":""}`}
-                    />
-                </div>
-
-                {formik_bt.values.dns && formik_bt.values.dns?.length>0 &&
-                    <div className="flex-auto mb-4">
-                        <label className="font-bold block mb-2">
-                            DNS_Main
-                        </label>
-                        <InputText
-                            name="dns"
-                            type="text"
-                            onChange={formik_bt.handleChange}
-                            value={formik_bt.values.dns[0]}
-                            className={`w-full p-inputtext-long ${formik_bt.errors.dns && formik_bt.errors.dns![0]?"p-invalid":""}`}
-                        />
-                    </div>
-                }
-                {formik_bt.values.dns && formik_bt.values.dns?.length>1 &&
-                    <div className="flex-auto mb-4">
-                        <label className="font-bold block mb-2">
-                            DNS_Serv
-                        </label>
-                        <InputText
-                            name="dns"
-                            type="text"
-                            onChange={formik_bt.handleChange}
-                            value={formik_bt.values.dns[1]}
-                            className={`w-full p-inputtext-long ${formik_bt.errors.dns && formik_bt.errors.dns![1]?"p-invalid":""}`}
-                        />
-                    </div>
-                }
-            </div>
-        </Panel>
+            </Panel>
         }
         </div>
     );

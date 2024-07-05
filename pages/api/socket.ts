@@ -1,13 +1,15 @@
 import { Server } from "socket.io";
 import io from "socket.io-client";
 import type { NextApiRequest, NextApiResponse } from "next";
+import { getMobileSocketURL } from "@/app/(main)/api/url";
 
-function ioHandler(req: NextApiRequest, res: NextApiResponse) {
+async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
     console.log("*First use, starting socket.io");
 
     const io2 = new Server((res.socket as any).server);
-    let socket = io("http://10.108.1.40:10334");
+    let url = await getMobileSocketURL();
+    let socket = io(url);
 
     socket.on("connect", () => {
       socket.on("mapping", (data: string[][]) => {

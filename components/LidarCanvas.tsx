@@ -31,7 +31,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
-  // const [mobileURL, setMobileURL] = useState("");
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -45,7 +44,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (className !== CANVAS_CLASSES.OVERLAY) {
       initRobot();
       connectSocket();
+      reloadMappingData();
     }
+
     return () => {
       window.removeEventListener("resize", onWindowResize);
       window.removeEventListener("click", onMouseClick);
@@ -61,11 +62,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   useEffect(() => {
     switch (action.command) {
       case "MAPPING_START":
-        if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
-          socketRef.current.on("mapping", (data) => {
-            drawCloud("SIDEBAR", data);
-          });
-        }
+        // if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
+        //   socketRef.current.on("mapping", (data) => {
+        //     drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+        //   });
+        // }
         break;
       case "MAPPING_STOP":
         clearMappingPoints();
@@ -295,6 +296,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
               rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
             });
           });
+          socketRef.current.on("mapping", (data) => {
+            drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+          });
         }
 
         socketRef.current.on("status", (data) => {
@@ -307,6 +311,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
           driveRobot(robotPose);
         });
       });
+    }
+  };
+
+  const reloadMappingData = async () => {
+    try {
+      await axios.get(url + "/mapping/reload");
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -386,9 +398,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (!isInitializedRef.current) return;
     if (className !== targetCanvas) return;
 
-    // Reset before draw
-    resetCamera(); // Temp. Do not reset if the state is mapping.
-    clearMappingPoints();
+    // Reset before draw.
+    if (targetCanvas === CANVAS_CLASSES.OVERLAY) {
+      resetCamera();
+      clearMappingPoints();
+    }
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
