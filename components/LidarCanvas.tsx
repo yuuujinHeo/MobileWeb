@@ -33,7 +33,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const controlRef = useRef<MapControls | null>(null);
   const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
-  // const [mobileURL, setMobileURL] = useState("");
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -48,6 +47,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       initRobot();
       connectSocket();
     }
+
     return () => {
       window.removeEventListener("resize", onWindowResize);
       rendererRef.current?.setAnimationLoop(null);
@@ -64,7 +64,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "MAPPING_START":
         if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
           socketRef.current.on("mapping", (data) => {
-            drawCloud("SIDEBAR", data);
+            drawCloud(CANVAS_CLASSES.SIDEBAR, data);
           });
         }
         break;
@@ -237,6 +237,25 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         });
       });
     }
+
+    if (className === CANVAS_CLASSES.SIDEBAR) {
+      // Check if there is any reload data
+      reloadMappingData();
+    }
+  };
+
+  const reloadMappingData = async () => {
+    try {
+      await axios.get(url + "/mapping/reload");
+
+      if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
+        socketRef.current.on("mapping", (data) => {
+          drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const driveRobot = (data) => {
@@ -316,8 +335,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (className !== targetCanvas) return;
 
     // Reset before draw
-    resetCamera();
-    clearMappingPoints();
+    if (className === CANVAS_CLASSES.OVERLAY) {
+      resetCamera();
+      clearMappingPoints();
+    }
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
