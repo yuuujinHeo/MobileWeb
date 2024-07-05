@@ -7,11 +7,13 @@ import { drawCloud } from "@/store/canvasSlice";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
+import { ButtonGroup } from "primereact/buttongroup";
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
+import { Card } from "primereact/card";
 
 import UtilityPanel from "@/components/UtilityPanel";
 
@@ -19,9 +21,25 @@ import { CANVAS_CLASSES } from "@/constants";
 
 import axios from "axios";
 
+interface LocValues {
+  x: string;
+  y: string;
+  z: string;
+  rz: string;
+}
+interface LocReqPayload {
+  time: string;
+  command: string;
+  x?: string;
+  y?: string;
+  z?: string;
+  rz?: string;
+}
+
 // components
 import LidarCanvas from "@/components/LidarCanvas";
 import { SpeedDial } from "primereact/speeddial";
+import { Panel } from "primereact/panel";
 
 interface ListData {
   name: string;
@@ -101,11 +119,16 @@ const Map: React.FC = () => {
   };
 
   const handleLoadMap = () => {
+    // Draw cloud points to lidar canvas
     dispatch(
       drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
     );
 
+    // Hide dialogue
     setIsDialogVisible(false);
+
+    // Send selected map data to slam
+    sendSelectedMapToSLAM();
   };
 
   const handleDialogHide = () => {
@@ -114,6 +137,54 @@ const Map: React.FC = () => {
     // reset
     setSelectedMap(null);
     setSelectedMapCloud(null);
+  };
+
+  const sendSelectedMapToSLAM = async () => {
+    if (!selectedMap) return;
+    try {
+      await axios.post(url + "/map/current", {
+        name: selectedMap.name,
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const sendLOCRequest = async (command: string) => {
+    try {
+      // [TEMP]
+      const testValue: LocValues = {
+        x: "0.0",
+        y: "0.0",
+        z: "0.0",
+        rz: "0.0",
+      };
+
+      const payload: LocReqPayload = {
+        time: getCurrentTime(),
+        command: command,
+      };
+
+      if (command === "init") {
+        payload.x = testValue.x;
+        payload.y = testValue.y;
+        payload.z = testValue.z;
+        payload.rz = testValue.rz;
+      }
+
+      await axios.post(url + "/localization", payload);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const getCurrentTime = () => {
+    const currentTime = new Date()
+      .toISOString()
+      .replace("T", " ")
+      .replace("Z", "");
+
+    return currentTime;
   };
 
   return (
@@ -132,6 +203,54 @@ const Map: React.FC = () => {
           hideIcon="pi pi-times"
           style={{ left: 15, top: 15 }}
         ></SpeedDial>
+      </div>
+
+      {/* Loc panel */}
+      <div id="loc-container">
+        <Card id="loc-panel" title="Localization">
+          <ButtonGroup>
+            <Button
+              label="INIT"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                sendLOCRequest("init");
+              }}
+            />
+            <Button
+              label="AUTO INIT"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                sendLOCRequest("autoinit");
+              }}
+            />
+            <Button
+              label="LOC START"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                sendLOCRequest("start");
+              }}
+            />
+            <Button
+              label="LOC STOP"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                sendLOCRequest("stop");
+              }}
+            />
+          </ButtonGroup>
+        </Card>
       </div>
 
       {/* Load Dialog */}
