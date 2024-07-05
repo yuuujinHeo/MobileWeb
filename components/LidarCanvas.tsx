@@ -46,6 +46,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (className !== CANVAS_CLASSES.OVERLAY) {
       initRobot();
       connectSocket();
+      reloadMappingData();
     }
 
     return () => {
@@ -62,11 +63,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   useEffect(() => {
     switch (action.command) {
       case "MAPPING_START":
-        if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
-          socketRef.current.on("mapping", (data) => {
-            drawCloud(CANVAS_CLASSES.SIDEBAR, data);
-          });
-        }
+        // if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
+        //   socketRef.current.on("mapping", (data) => {
+        //     drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+        //   });
+        // }
         break;
       case "MAPPING_STOP":
         clearMappingPoints();
@@ -224,6 +225,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
               rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
             });
           });
+          socketRef.current.on("mapping", (data) => {
+            drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+          });
         }
 
         socketRef.current.on("status", (data) => {
@@ -237,22 +241,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         });
       });
     }
-
-    if (className === CANVAS_CLASSES.SIDEBAR) {
-      // Check if there is any reload data
-      reloadMappingData();
-    }
   };
 
   const reloadMappingData = async () => {
     try {
       await axios.get(url + "/mapping/reload");
-
-      if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
-        socketRef.current.on("mapping", (data) => {
-          drawCloud(CANVAS_CLASSES.SIDEBAR, data);
-        });
-      }
     } catch (e) {
       console.error(e);
     }
@@ -334,8 +327,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (!isInitializedRef.current) return;
     if (className !== targetCanvas) return;
 
-    // Reset before draw
-    if (className === CANVAS_CLASSES.OVERLAY) {
+    // Reset before draw.
+    if (targetCanvas === CANVAS_CLASSES.OVERLAY) {
       resetCamera();
       clearMappingPoints();
     }
