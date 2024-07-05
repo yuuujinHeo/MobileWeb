@@ -173,7 +173,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const loader = new ThreeMFLoader();
 
     loader.load("amr.3MF", function (group) {
-      group.scale.set(0.0005, 0.0005, 0.0005);
+      group.scale.set(0.001, 0.001, 0.001);
       group.rotateX(Math.PI / -2);
 
       group.traverse((obj) => {

@@ -20,7 +20,7 @@ import { useDispatch, UseDispatch, useSelector } from 'react-redux';
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
 import {store,AppDispatch, RootState} from '../../../store/store';
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
-import getURL from '../api/url';
+import {getMobileAPIURL} from '../api/url';
 import { selectStatus, setStatus } from '@/store/statusSlice';
 import { selectState, setState } from '@/store/stateSlice';
 import { io } from "socket.io-client";
@@ -51,7 +51,7 @@ const Setting: React.FC = () => {
     },[])
 
     async function setURL(){
-        setMobileURL(await getURL());
+        setMobileURL(await getMobileAPIURL());
     }
 
     useEffect(()=>{

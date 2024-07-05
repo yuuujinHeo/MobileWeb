@@ -45,7 +45,7 @@ import { selectStatus, initState, setStatus, StatusState } from '@/store/statusS
 import { io } from "socket.io-client";
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 import './style.scss';
-import getURL from '../api/url';
+import {getMobileAPIURL} from '../api/url';
 import { transStatus } from '../api/to';
 
 const State: React.FC = () =>{
@@ -85,7 +85,7 @@ const State: React.FC = () =>{
     }, []);
           
     async function setURL(){
-        setMobileURL(await getURL());
+        setMobileURL(await getMobileAPIURL());
     }
 
 
