@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
+import { updateInitData } from "@/store/canvasSlice";
 
 // three
 import * as THREE from "three";
@@ -13,8 +14,6 @@ import { io } from "socket.io-client";
 import axios from "axios";
 
 import { CANVAS_CLASSES } from "@/constants";
-import { Postpone } from "next/dist/server/app-render/dynamic-rendering";
-import PanelDemo from "@/app/(main)/panel/page";
 
 interface LidarCanvasProps {
   className: string;
@@ -22,6 +21,7 @@ interface LidarCanvasProps {
 }
 
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
+  const dispatch = useDispatch();
   const { action } = useSelector((state: RootState) => state.canvas);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -51,6 +51,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      window.removeEventListener("click", onMouseClick);
       rendererRef.current?.setAnimationLoop(null);
 
       if (className !== CANVAS_CLASSES.OVERLAY) {
@@ -90,6 +91,16 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     scene.background = color;
     sceneRef.current = scene;
 
+    // planeMesh for raycasting
+    // [Note] For now, width and height values are arbitary.
+    const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const planeMaterial = new THREE.MeshBasicMaterial({
+      visible: false,
+    });
+    const plane = new THREE.Mesh(planeGeometry, planeMaterial);
+    plane.name = "plane";
+    scene.add(plane);
+
     // camera
     const camera = new THREE.PerspectiveCamera(
       60,
@@ -99,7 +110,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 25, 0);
+    camera.position.set(0, 0, 25);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -125,12 +136,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const control = new MapControls(camera, renderer.domElement);
     controlRef.current = control;
 
-    control.screenSpacePanning = false;
+    control.screenSpacePanning = true;
 
     control.minDistance = 5;
     control.maxDistance = 30;
-
-    control.maxPolarAngle = Math.PI / 2;
 
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
@@ -139,6 +148,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+    window.addEventListener("click", onMouseClick);
   };
 
   const onWindowResize = () => {
@@ -160,6 +170,76 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     );
   };
 
+  const onMouseClick = (event: MouseEvent) => {
+    if (
+      !window ||
+      !cameraRef.current ||
+      !sceneRef.current ||
+      !canvasRef.current
+    )
+      return;
+
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const pos = getCanvasRelativePosition(event);
+
+    if (!pos) return;
+    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+    mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
+
+    raycaster.setFromCamera(mouse, cameraRef.current);
+
+    const intersects = raycaster.intersectObjects(
+      sceneRef.current.children,
+      true
+    );
+
+    if (intersects.length > 0) {
+      // remove prev initpoint
+      const prevInit = sceneRef.current.getObjectByName("initpoint");
+      if (prevInit) {
+        sceneRef.current.remove(prevInit);
+      }
+
+      const intersect = intersects[0];
+      const loader = new ThreeMFLoader();
+
+      loader.load("amr.3MF", function (group) {
+        group.scale.set(0.001, 0.001, 0.001);
+        group.position.set(intersect.point.x, -intersect.point.y, 0);
+        group.name = "initpoint";
+
+        group.traverse((obj) => {
+          if (obj instanceof THREE.Mesh) {
+            obj.material.color.set(new THREE.Color(0x33ff52));
+          }
+        });
+
+        sceneRef.current?.add(group);
+
+        // Update init data for LOC
+        dispatch(
+          updateInitData({
+            x: group.position.x.toString(),
+            y: group.position.y.toString(),
+            z: group.position.z.toString(),
+            rz: "",
+          })
+        );
+      });
+    }
+  };
+
+  const getCanvasRelativePosition = (event: MouseEvent) => {
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    return {
+      x: ((event.clientX - rect.left) * canvasRef.current.width) / rect.width,
+      y: ((event.clientY - rect.top) * canvasRef.current.height) / rect.height,
+    };
+  };
+
   const initRobot = async () => {
     if (!sceneRef.current) return;
 
@@ -168,7 +248,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
     const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    axesHelperOrin.rotateX(-Math.PI / 2);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
@@ -176,7 +255,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     loader.load("amr_texture.3MF", function (group) {
       group.scale.set(0.001, 0.001, 0.001);
-      group.rotateX(Math.PI / -2);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -318,8 +396,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const points = new THREE.Points(geo, material);
     lidarPoints.current = points.id;
 
-    points.rotation.x = -(Math.PI / 2);
-
     sceneRef.current?.add(points);
   };
 
@@ -365,8 +441,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       });
 
       const points = new THREE.Points(geo, material);
-
-      points.rotation.x = -(Math.PI / 2);
 
       mappingPointsArr.current.push(points.id);
 

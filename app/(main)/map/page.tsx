@@ -2,7 +2,8 @@
 import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 // redux
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import { drawCloud } from "@/store/canvasSlice";
 
 // prime
@@ -56,6 +57,8 @@ const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const dispatch = useDispatch();
+  const initData = useSelector((state: RootState) => state.canvas.initData);
+
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
@@ -152,25 +155,14 @@ const Map: React.FC = () => {
 
   const sendLOCRequest = async (command: string) => {
     try {
-      // [TEMP]
-      const testValue: LocValues = {
-        x: "0.0",
-        y: "0.0",
-        z: "0.0",
-        rz: "0.0",
-      };
-
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
+        x: initData.x,
+        y: initData.y,
+        z: initData.z,
+        rz: initData.rz,
       };
-
-      if (command === "init") {
-        payload.x = testValue.x;
-        payload.y = testValue.y;
-        payload.z = testValue.z;
-        payload.rz = testValue.rz;
-      }
 
       await axios.post(url + "/localization", payload);
     } catch (e) {
@@ -215,8 +207,9 @@ const Map: React.FC = () => {
               severity="secondary"
               text
               raised
-              onClick={() => {
+              onClick={(e) => {
                 sendLOCRequest("init");
+                e.stopPropagation();
               }}
             />
             <Button
@@ -225,8 +218,9 @@ const Map: React.FC = () => {
               severity="secondary"
               text
               raised
-              onClick={() => {
+              onClick={(e) => {
                 sendLOCRequest("autoinit");
+                e.stopPropagation();
               }}
             />
             <Button
@@ -235,8 +229,9 @@ const Map: React.FC = () => {
               severity="secondary"
               text
               raised
-              onClick={() => {
+              onClick={(e) => {
                 sendLOCRequest("start");
+                e.stopPropagation();
               }}
             />
             <Button
@@ -245,8 +240,9 @@ const Map: React.FC = () => {
               severity="secondary"
               text
               raised
-              onClick={() => {
+              onClick={(e) => {
                 sendLOCRequest("stop");
+                e.stopPropagation();
               }}
             />
           </ButtonGroup>
