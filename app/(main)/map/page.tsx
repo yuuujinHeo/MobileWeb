@@ -15,6 +15,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Card } from "primereact/card";
+import { SelectButton } from "primereact/selectbutton";
 
 import UtilityPanel from "@/components/UtilityPanel";
 
@@ -67,6 +68,7 @@ const Map: React.FC = () => {
   const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
     null
   );
+  const [locMarker, setLocMarker] = useState<string>("Off");
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const dialItems = [
@@ -184,6 +186,7 @@ const Map: React.FC = () => {
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
         selectedMapCloud={selectedMapCloud}
+        locMarker={locMarker}
       />
       <div style={{ position: "absolute" }}>
         <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
@@ -200,6 +203,17 @@ const Map: React.FC = () => {
       {/* Loc panel */}
       <div id="loc-container">
         <Card id="loc-panel" title="Localization">
+          <div id="switch-container">
+            <span>Marker</span>
+            <SelectButton
+              value={locMarker}
+              options={["On", "Off"]}
+              onChange={(e) => {
+                if (e.value !== null) setLocMarker(e.value);
+                e.stopPropagation();
+              }}
+            />
+          </div>
           <ButtonGroup>
             <Button
               label="INIT"

@@ -9,6 +9,7 @@ import { updateInitData } from "@/store/canvasSlice";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
+import { TransformControls } from "three/examples/jsm/controls/TransformControls";
 
 import { io } from "socket.io-client";
 import axios from "axios";
@@ -18,9 +19,14 @@ import { CANVAS_CLASSES } from "@/constants";
 interface LidarCanvasProps {
   className: string;
   selectedMapCloud?: string[][] | null;
+  locMarker?: string;
 }
 
-const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
+const LidarCanvas = ({
+  className,
+  selectedMapCloud,
+  locMarker,
+}: LidarCanvasProps) => {
   const dispatch = useDispatch();
   const { action } = useSelector((state: RootState) => state.canvas);
 
@@ -31,8 +37,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
+  const transformControlRef = useRef<TransformControls>();
   const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
+  const isDragging = useRef<boolean>(false);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -51,7 +59,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
-      window.removeEventListener("click", onMouseClick);
       rendererRef.current?.setAnimationLoop(null);
 
       if (className !== CANVAS_CLASSES.OVERLAY) {
@@ -80,6 +87,120 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         break;
     }
   }, [action]);
+
+  useEffect(() => {
+    const handleMouseDown = () => {
+      isDragging.current = false;
+    };
+
+    const handleMouseMove = () => {
+      isDragging.current = true;
+    };
+
+    const handleMouseUp = (event: MouseEvent) => {
+      if (!isDragging.current) {
+        onClickMouse(event);
+      }
+    };
+
+    let onClickMouse: (event: MouseEvent) => void;
+    if (locMarker === "On") {
+      resetCamera();
+
+      if (controlRef.current && rendererRef.current) {
+        controlRef.current.enableRotate = false;
+      }
+
+      onClickMouse = (event: MouseEvent) => {
+        if (
+          !window ||
+          !cameraRef.current ||
+          !sceneRef.current ||
+          !canvasRef.current ||
+          !rendererRef.current
+        )
+          return;
+
+        transformControlRef.current?.detach();
+
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const pos = getCanvasRelativePosition(event);
+
+        if (!pos) return;
+        mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+        mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
+
+        raycaster.setFromCamera(mouse, cameraRef.current);
+
+        const intersects = raycaster.intersectObjects(
+          sceneRef.current.children,
+          true
+        );
+
+        if (intersects.length > 0) {
+          // remove prev initpoint
+          const prevInit = sceneRef.current.getObjectByName("initpoint");
+          if (prevInit) {
+            sceneRef.current.remove(prevInit);
+          }
+
+          let intersect;
+          intersects.forEach((inter) => {
+            if (inter.object.name === "plane") intersect = inter;
+          });
+
+          const loader = new ThreeMFLoader();
+
+          loader.load("amr.3MF", function (group) {
+            group.scale.set(0.001, 0.001, 0.001);
+            group.position.set(intersect.point.x, -intersect.point.y, 0);
+            group.name = "initpoint";
+
+            group.traverse((obj) => {
+              if (obj instanceof THREE.Mesh) {
+                obj.material.color.set(new THREE.Color(0x33ff52));
+              }
+            });
+            const axesHelper = new THREE.AxesHelper(2);
+            group.add(axesHelper);
+            sceneRef.current?.add(group);
+            transformControlRef.current?.attach(group);
+
+            // Update init data for LOC
+            dispatch(
+              updateInitData({
+                x: group.position.x.toString(),
+                y: group.position.y.toString(),
+                z: group.position.z.toString(),
+                rz: "",
+              })
+            );
+          });
+        }
+      };
+
+      window.addEventListener("mousedown", handleMouseDown);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      // window.addEventListener("click", onClickMouse);
+    } else if (locMarker === "Off") {
+      if (controlRef.current && rendererRef.current) {
+        controlRef.current.enableRotate = true;
+      }
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("click", onClickMouse);
+      window.removeEventListener("mousedown", handleMouseDown);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [locMarker]);
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
@@ -141,6 +262,19 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     control.minDistance = 5;
     control.maxDistance = 30;
 
+    // transform control
+    const tfControl = new TransformControls(camera, renderer.domElement);
+    transformControlRef.current = tfControl;
+    tfControl.mode = "rotate";
+    tfControl.showX = false;
+    tfControl.showY = false;
+    tfControl.size = 0.5;
+    tfControl.addEventListener("change", render);
+    tfControl.addEventListener("dragging-changed", (event) => {
+      control.enabled = !event.value;
+    });
+    scene.add(tfControl);
+
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
 
@@ -148,7 +282,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
-    window.addEventListener("click", onMouseClick);
   };
 
   const onWindowResize = () => {
@@ -168,67 +301,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       canvasRef.current.clientWidth,
       canvasRef.current.clientHeight
     );
-  };
-
-  const onMouseClick = (event: MouseEvent) => {
-    if (
-      !window ||
-      !cameraRef.current ||
-      !sceneRef.current ||
-      !canvasRef.current
-    )
-      return;
-
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const pos = getCanvasRelativePosition(event);
-
-    if (!pos) return;
-    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-    mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
-
-    raycaster.setFromCamera(mouse, cameraRef.current);
-
-    const intersects = raycaster.intersectObjects(
-      sceneRef.current.children,
-      true
-    );
-
-    if (intersects.length > 0) {
-      // remove prev initpoint
-      const prevInit = sceneRef.current.getObjectByName("initpoint");
-      if (prevInit) {
-        sceneRef.current.remove(prevInit);
-      }
-
-      const intersect = intersects[0];
-      const loader = new ThreeMFLoader();
-
-      loader.load("amr.3MF", function (group) {
-        group.scale.set(0.001, 0.001, 0.001);
-        group.position.set(intersect.point.x, -intersect.point.y, 0);
-        group.name = "initpoint";
-
-        group.traverse((obj) => {
-          if (obj instanceof THREE.Mesh) {
-            obj.material.color.set(new THREE.Color(0x33ff52));
-          }
-        });
-
-        sceneRef.current?.add(group);
-
-        // Update init data for LOC
-        dispatch(
-          updateInitData({
-            x: group.position.x.toString(),
-            y: group.position.y.toString(),
-            z: group.position.z.toString(),
-            rz: "",
-          })
-        );
-      });
-    }
   };
 
   const getCanvasRelativePosition = (event: MouseEvent) => {
@@ -465,11 +537,16 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const resetCamera = () => {
     if (!cameraRef.current || !controlRef.current) return;
     cameraRef.current.up.set(0, 1, 0);
-    cameraRef.current.position.set(0, 25, 0);
+    cameraRef.current.position.set(0, 0, 25);
     cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
     cameraRef.current.updateProjectionMatrix();
     controlRef.current.target.set(0, 0, 0);
     controlRef.current.update();
+  };
+
+  const render = () => {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
   return <canvas className={className} ref={canvasRef} />;
