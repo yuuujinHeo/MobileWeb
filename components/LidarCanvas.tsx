@@ -92,12 +92,12 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     sceneRef.current = scene;
 
     // planeMesh for raycasting
+    // [Note] For now, width and height values are arbitary.
     const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
     const planeMaterial = new THREE.MeshBasicMaterial({
       visible: false,
     });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    // plane.rotation.x = -Math.PI / 2;
     plane.name = "plane";
     scene.add(plane);
 
@@ -248,7 +248,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
     const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    // axesHelperOrin.rotateX(-Math.PI / 2);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
@@ -256,7 +255,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     loader.load("amr_texture.3MF", function (group) {
       group.scale.set(0.001, 0.001, 0.001);
-      // group.rotateX(Math.PI / -2);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -398,8 +396,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const points = new THREE.Points(geo, material);
     lidarPoints.current = points.id;
 
-    // points.rotation.x = -(Math.PI / 2);
-
     sceneRef.current?.add(points);
   };
 
@@ -445,8 +441,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       });
 
       const points = new THREE.Points(geo, material);
-
-      // points.rotation.x = -(Math.PI / 2);
 
       mappingPointsArr.current.push(points.id);
 
