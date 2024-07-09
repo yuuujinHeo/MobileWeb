@@ -44,6 +44,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
   let isMouseDown: boolean = false;
+  let pressedMouseBtn: number | null;
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -227,8 +228,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const handleMouseDown = (event: MouseEvent) => {
     isMouseDown = true;
+    pressedMouseBtn = event.button;
 
-    if (event.button === 2) {
+    if (pressedMouseBtn === 2) {
       if (
         !window ||
         !cameraRef.current ||
@@ -298,7 +300,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const handleMouseMove = (event: MouseEvent) => {
-    if (isMouseDown) {
+    if (isMouseDown && pressedMouseBtn === 2) {
       const marker: THREE.Object3D | undefined =
         transformControlRef.current?.object;
       if (
@@ -336,6 +338,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
+    pressedMouseBtn = null;
   };
 
   const onWindowResize = () => {
