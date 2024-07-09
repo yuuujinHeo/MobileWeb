@@ -19,13 +19,13 @@ import { CANVAS_CLASSES } from "@/constants";
 interface LidarCanvasProps {
   className: string;
   selectedMapCloud?: string[][] | null;
-  locMarker?: string;
+  localization?: string;
 }
 
 const LidarCanvas = ({
   className,
   selectedMapCloud,
-  locMarker,
+  localization,
 }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   const { action } = useSelector((state: RootState) => state.canvas);
@@ -89,118 +89,15 @@ const LidarCanvas = ({
   }, [action]);
 
   useEffect(() => {
-    const handleMouseDown = () => {
-      isDragging.current = false;
-    };
-
-    const handleMouseMove = () => {
-      isDragging.current = true;
-    };
-
-    const handleMouseUp = (event: MouseEvent) => {
-      if (!isDragging.current) {
-        onClickMouse(event);
-      }
-    };
-
-    let onClickMouse: (event: MouseEvent) => void;
-    if (locMarker === "On") {
-      resetCamera();
-
-      if (controlRef.current && rendererRef.current) {
-        controlRef.current.enableRotate = false;
-      }
-
-      onClickMouse = (event: MouseEvent) => {
-        if (
-          !window ||
-          !cameraRef.current ||
-          !sceneRef.current ||
-          !canvasRef.current ||
-          !rendererRef.current
-        )
-          return;
-
-        transformControlRef.current?.detach();
-
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        const pos = getCanvasRelativePosition(event);
-
-        if (!pos) return;
-        mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-        mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
-
-        raycaster.setFromCamera(mouse, cameraRef.current);
-
-        const intersects = raycaster.intersectObjects(
-          sceneRef.current.children,
-          true
-        );
-
-        if (intersects.length > 0) {
-          // remove prev initpoint
-          const prevInit = sceneRef.current.getObjectByName("initpoint");
-          if (prevInit) {
-            sceneRef.current.remove(prevInit);
-          }
-
-          let intersect;
-          intersects.forEach((inter) => {
-            if (inter.object.name === "plane") intersect = inter;
-          });
-
-          const loader = new ThreeMFLoader();
-
-          loader.load("amr.3MF", function (group) {
-            group.scale.set(0.001, 0.001, 0.001);
-            group.position.set(intersect.point.x, -intersect.point.y, 0);
-            group.name = "initpoint";
-
-            group.traverse((obj) => {
-              if (obj instanceof THREE.Mesh) {
-                obj.material.color.set(new THREE.Color(0x33ff52));
-              }
-            });
-            const axesHelper = new THREE.AxesHelper(2);
-            group.add(axesHelper);
-            sceneRef.current?.add(group);
-            transformControlRef.current?.attach(group);
-
-            // Update init data for LOC
-            dispatch(
-              updateInitData({
-                x: group.position.x.toString(),
-                y: group.position.y.toString(),
-                z: group.position.z.toString(),
-                rz: "",
-              })
-            );
-          });
-        }
-      };
-
-      window.addEventListener("mousedown", handleMouseDown);
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-      // window.addEventListener("click", onClickMouse);
-    } else if (locMarker === "Off") {
-      if (controlRef.current && rendererRef.current) {
-        controlRef.current.enableRotate = true;
-      }
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+    if (localization === "On") {
+      handleLocalizationOn();
+    } else if (localization === "Off") {
+      handleLocalizationOff();
     }
-
     return () => {
-      window.removeEventListener("click", onClickMouse);
-      window.removeEventListener("mousedown", handleMouseDown);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      handleLocalizationOff();
     };
-  }, [locMarker]);
+  }, [localization]);
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
@@ -282,6 +179,108 @@ const LidarCanvas = ({
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+  };
+
+  const handleLocalizationOn = () => {
+    resetCamera();
+    if (controlRef.current && rendererRef.current) {
+      controlRef.current.enableRotate = false;
+      controlRef.current.enablePan = false;
+    }
+    window.addEventListener("mousedown", handleMouseDown);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleLocalizationOff = () => {
+    if (controlRef.current && rendererRef.current) {
+      controlRef.current.enableRotate = true;
+      controlRef.current.enablePan = true;
+    }
+    window.removeEventListener("mousedown", handleMouseDown);
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  };
+
+  const handleMouseDown = () => {
+    isDragging.current = false;
+  };
+
+  const handleMouseMove = () => {
+    isDragging.current = true;
+  };
+
+  const handleMouseUp = (event: MouseEvent) => {
+    if (!isDragging.current) {
+      // [TEMP] For now, there is only one logic.
+      if (
+        !window ||
+        !cameraRef.current ||
+        !sceneRef.current ||
+        !canvasRef.current ||
+        !rendererRef.current
+      )
+        return;
+
+      transformControlRef.current?.detach();
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      const pos = getCanvasRelativePosition(event);
+
+      if (!pos) return;
+      mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+      mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
+
+      raycaster.setFromCamera(mouse, cameraRef.current);
+
+      const intersects = raycaster.intersectObjects(
+        sceneRef.current.children,
+        true
+      );
+
+      if (intersects.length > 0) {
+        // remove prev initpoint
+        const prevInit = sceneRef.current.getObjectByName("initpoint");
+        if (prevInit) {
+          sceneRef.current.remove(prevInit);
+        }
+
+        let intersect;
+        intersects.forEach((inter) => {
+          if (inter.object.name === "plane") intersect = inter;
+        });
+
+        const loader = new ThreeMFLoader();
+
+        loader.load("amr.3MF", function (group) {
+          group.scale.set(0.001, 0.001, 0.001);
+          group.position.set(intersect.point.x, -intersect.point.y, 0);
+          group.name = "initpoint";
+
+          group.traverse((obj) => {
+            if (obj instanceof THREE.Mesh) {
+              obj.material.color.set(new THREE.Color(0x33ff52));
+            }
+          });
+          const axesHelper = new THREE.AxesHelper(2);
+          group.add(axesHelper);
+          sceneRef.current?.add(group);
+          transformControlRef.current?.attach(group);
+
+          // Update init data for LOC
+          dispatch(
+            updateInitData({
+              x: group.position.x.toString(),
+              y: group.position.y.toString(),
+              z: group.position.z.toString(),
+              rz: "",
+            })
+          );
+        });
+      }
+    }
   };
 
   const onWindowResize = () => {

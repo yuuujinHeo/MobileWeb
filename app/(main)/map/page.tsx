@@ -68,7 +68,7 @@ const Map: React.FC = () => {
   const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
     null
   );
-  const [locMarker, setLocMarker] = useState<string>("Off");
+  const [selectBtn, setSelectBtn] = useState<string>("Off");
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const dialItems = [
@@ -186,7 +186,7 @@ const Map: React.FC = () => {
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
         selectedMapCloud={selectedMapCloud}
-        locMarker={locMarker}
+        localization={selectBtn}
       />
       <div style={{ position: "absolute" }}>
         <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
@@ -206,10 +206,10 @@ const Map: React.FC = () => {
           <div id="switch-container">
             <span>Marker</span>
             <SelectButton
-              value={locMarker}
+              value={selectBtn}
               options={["On", "Off"]}
               onChange={(e) => {
-                if (e.value !== null) setLocMarker(e.value);
+                if (e.value !== null) setSelectBtn(e.value);
                 e.stopPropagation();
               }}
             />
