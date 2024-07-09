@@ -157,13 +157,14 @@ const Map: React.FC = () => {
 
   const sendLOCRequest = async (command: string) => {
     try {
+      const r2d = (Number(initData.rz) * (180 / Math.PI)).toString();
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
         x: initData.x,
         y: initData.y,
         z: initData.z,
-        rz: initData.rz,
+        rz: r2d,
       };
 
       await axios.post(url + "/localization", payload);

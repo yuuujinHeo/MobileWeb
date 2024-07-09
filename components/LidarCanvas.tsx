@@ -62,6 +62,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         console.log("Socket disconnect ", socketRef.current.id);
         socketRef.current.disconnect();
       }
+      //control dispose
+      controlRef.current?.dispose();
+      transformControlRef.current?.dispose();
     };
   }, []);
 
@@ -159,7 +162,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     control.maxDistance = 300;
 
     // transform control
-    const tfControl = new TransformControls(camera, renderer.domElement);
+    const tfControl: TransformControls = new TransformControls(
+      camera,
+      renderer.domElement
+    );
     transformControlRef.current = tfControl;
     tfControl.mode = "rotate";
     tfControl.showX = false;
@@ -168,6 +174,19 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     tfControl.addEventListener("change", render);
     tfControl.addEventListener("dragging-changed", (event) => {
       control.enabled = !event.value;
+    });
+    tfControl.addEventListener("mouseUp", () => {
+      const obj: THREE.Object3D | undefined = tfControl.object;
+      if (obj) {
+        dispatch(
+          updateInitData({
+            x: obj.position.x.toString(),
+            y: obj.position.y.toString(),
+            z: obj.position.z.toString(),
+            rz: obj.rotation.z.toString(),
+          })
+        );
+      }
     });
     scene.add(tfControl);
 
