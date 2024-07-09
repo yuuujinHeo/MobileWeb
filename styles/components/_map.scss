@@ -20,14 +20,26 @@
   position: relative;
   right: 15px;
   top: 15px;
+  z-index: 999;
   #loc-panel {
-    min-width: 10vw;
+    min-width: 15vw;
     position: absolute;
     right: 0;
     opacity: 0.66;
+    #switch-container {
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: row;
+      align-items: center;
+      margin-bottom: 1rem;
+      .p-selectbutton {
+        margin-left: 0.5rem;
+      }
+    }
   }
   .p-card-content {
     display: flex;
+    flex-direction: column;
     justify-content: center;
   }
 }

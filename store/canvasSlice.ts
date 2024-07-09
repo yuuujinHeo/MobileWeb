@@ -23,6 +23,7 @@ const initialState = {
     z: "",
     rz: "",
   },
+  localization: "Off",
 };
 
 const canvasSlice = createSlice({
@@ -45,8 +46,12 @@ const canvasSlice = createSlice({
       state.initData.z = action.payload.z;
       state.initData.rz = action.payload.rz;
     },
+    toggleLocalization(state, action) {
+      state.localization = action.payload.command;
+    },
   },
 });
 
-export const { drawCloud, handleMapping, updateInitData } = canvasSlice.actions;
+export const { drawCloud, handleMapping, updateInitData, toggleLocalization } =
+  canvasSlice.actions;
 export default canvasSlice.reducer;

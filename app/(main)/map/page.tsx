@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { drawCloud } from "@/store/canvasSlice";
+import { drawCloud, toggleLocalization } from "@/store/canvasSlice";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
@@ -15,6 +15,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Card } from "primereact/card";
+import { SelectButton } from "primereact/selectbutton";
 
 import UtilityPanel from "@/components/UtilityPanel";
 
@@ -67,6 +68,7 @@ const Map: React.FC = () => {
   const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
     null
   );
+  const [selectBtn, setSelectBtn] = useState<string>("Off");
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const dialItems = [
@@ -200,6 +202,20 @@ const Map: React.FC = () => {
       {/* Loc panel */}
       <div id="loc-container">
         <Card id="loc-panel" title="Localization">
+          <div id="switch-container">
+            <span>Marker</span>
+            <SelectButton
+              value={selectBtn}
+              options={["On", "Off"]}
+              onChange={(e) => {
+                if (e.value !== null) {
+                  setSelectBtn(e.value);
+                }
+                const command: string = e.value;
+                dispatch(toggleLocalization({ command: command }));
+              }}
+            />
+          </div>
           <ButtonGroup>
             <Button
               label="INIT"
