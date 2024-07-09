@@ -37,13 +37,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const transformControlRef = useRef<TransformControls>();
   const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
-  const isDragging = useRef<boolean>(false);
+  const lidarPoints = useRef<number>();
+  const mappingPointsArr = useRef<number[]>([]);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-  const lidarPoints = useRef<number>();
-  const mappingPointsArr = useRef<number[]>([]);
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
+  let isDragging: boolean = false;
+  let isMouseDown: boolean = false;
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -113,7 +114,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // planeMesh for raycasting
     // [Note] For now, width and height values are arbitary.
-    const planeGeometry = new THREE.PlaneGeometry(1000, 1000);
+    const planeGeometry = new THREE.PlaneGeometry(100000, 100000);
     const planeMaterial = new THREE.MeshBasicMaterial({
       visible: false,
     });
@@ -203,7 +204,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     resetCamera();
     if (controlRef.current && rendererRef.current) {
       controlRef.current.enableRotate = false;
-      // [TEMP]
       controlRef.current.enablePan = false;
     }
     if (canvasRef.current) {
@@ -219,7 +219,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
     if (controlRef.current && rendererRef.current) {
       controlRef.current.enableRotate = true;
-      // [TEMP]
       controlRef.current.enablePan = true;
     }
     if (canvasRef.current) {
@@ -230,15 +229,51 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const handleMouseDown = () => {
-    isDragging.current = false;
+    isDragging = false;
+    isMouseDown = true;
   };
 
-  const handleMouseMove = () => {
-    isDragging.current = true;
+  const handleMouseMove = (event) => {
+    isDragging = true;
+    if (isMouseDown) {
+      const marker: THREE.Object3D | undefined =
+        transformControlRef.current?.object;
+      if (
+        marker &&
+        canvasRef.current &&
+        cameraRef.current &&
+        sceneRef.current
+      ) {
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+
+        const pos = getCanvasRelativePosition(event);
+        if (!pos) return;
+
+        mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+        mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, cameraRef.current);
+
+        const plane = sceneRef.current.getObjectByName("plane");
+        if (!plane) return;
+
+        const intersects = raycaster.intersectObject(plane, true);
+        if (!intersects) return;
+
+        const v3 = intersects[0].point;
+        const angle = Math.atan2(
+          v3.y - marker.position.y,
+          v3.x - marker.position.x
+        );
+        marker.rotation.z = angle;
+      }
+    }
   };
 
   const handleMouseUp = (event: MouseEvent) => {
-    if (!isDragging.current) {
+    isMouseDown = false;
+    if (!isDragging) {
       // [TEMP] For now, there is only one logic.
       if (
         !window ||
@@ -258,14 +293,13 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
       if (!pos) return;
       mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-      mouse.y = (pos.y / canvasRef.current.height) * 2 - 1; // note
+      mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1; // note
 
       raycaster.setFromCamera(mouse, cameraRef.current);
 
-      const intersects = raycaster.intersectObjects(
-        sceneRef.current.children,
-        true
-      );
+      const plane = sceneRef.current.getObjectByName("plane");
+      if (!plane) return;
+      const intersects = raycaster.intersectObject(plane, true);
 
       if (intersects.length > 0) {
         // remove prev initpoint
@@ -274,16 +308,13 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
           sceneRef.current.remove(prevInit);
         }
 
-        let intersect;
-        intersects.forEach((inter) => {
-          if (inter.object.name === "plane") intersect = inter;
-        });
+        const intersect = intersects[0];
 
         const loader = new ThreeMFLoader();
 
         loader.load("amr.3MF", function (group) {
           group.scale.set(0.001, 0.001, 0.001);
-          group.position.set(intersect.point.x, -intersect.point.y, 0);
+          group.position.set(intersect.point.x, intersect.point.y, 0);
           group.name = "initpoint";
 
           group.traverse((obj) => {
