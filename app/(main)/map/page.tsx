@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { drawCloud } from "@/store/canvasSlice";
+import { drawCloud, toggleLocalization } from "@/store/canvasSlice";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
@@ -186,7 +186,6 @@ const Map: React.FC = () => {
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
         selectedMapCloud={selectedMapCloud}
-        localization={selectBtn}
       />
       <div style={{ position: "absolute" }}>
         <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
@@ -209,8 +208,11 @@ const Map: React.FC = () => {
               value={selectBtn}
               options={["On", "Off"]}
               onChange={(e) => {
-                if (e.value !== null) setSelectBtn(e.value);
-                e.stopPropagation();
+                if (e.value !== null) {
+                  setSelectBtn(e.value);
+                }
+                const command: string = e.value;
+                dispatch(toggleLocalization({ command: command }));
               }}
             />
           </div>

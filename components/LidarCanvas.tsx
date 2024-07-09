@@ -19,16 +19,13 @@ import { CANVAS_CLASSES } from "@/constants";
 interface LidarCanvasProps {
   className: string;
   selectedMapCloud?: string[][] | null;
-  localization?: string;
 }
 
-const LidarCanvas = ({
-  className,
-  selectedMapCloud,
-  localization,
-}: LidarCanvasProps) => {
+const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
-  const { action } = useSelector((state: RootState) => state.canvas);
+  const { action, localization } = useSelector(
+    (state: RootState) => state.canvas
+  );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const socketRef = useRef<any>();
@@ -89,10 +86,12 @@ const LidarCanvas = ({
   }, [action]);
 
   useEffect(() => {
-    if (localization === "On") {
-      handleLocalizationOn();
-    } else if (localization === "Off") {
-      handleLocalizationOff();
+    if (className === CANVAS_CLASSES.DEFAULT) {
+      if (localization === "On") {
+        handleLocalizationOn();
+      } else if (localization === "Off") {
+        handleLocalizationOff();
+      }
     }
     return () => {
       handleLocalizationOff();
@@ -157,7 +156,7 @@ const LidarCanvas = ({
     control.screenSpacePanning = true;
 
     control.minDistance = 5;
-    control.maxDistance = 30;
+    control.maxDistance = 300;
 
     // transform control
     const tfControl = new TransformControls(camera, renderer.domElement);
@@ -185,21 +184,30 @@ const LidarCanvas = ({
     resetCamera();
     if (controlRef.current && rendererRef.current) {
       controlRef.current.enableRotate = false;
+      // [TEMP]
       controlRef.current.enablePan = false;
     }
-    window.addEventListener("mousedown", handleMouseDown);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseup", handleMouseUp);
+    if (canvasRef.current) {
+      canvasRef.current.addEventListener("mousedown", handleMouseDown);
+      canvasRef.current.addEventListener("mousemove", handleMouseMove);
+      canvasRef.current.addEventListener("mouseup", handleMouseUp);
+    }
   };
 
   const handleLocalizationOff = () => {
+    if (transformControlRef.current) {
+      transformControlRef.current.detach();
+    }
     if (controlRef.current && rendererRef.current) {
       controlRef.current.enableRotate = true;
+      // [TEMP]
       controlRef.current.enablePan = true;
     }
-    window.removeEventListener("mousedown", handleMouseDown);
-    window.removeEventListener("mousemove", handleMouseMove);
-    window.removeEventListener("mouseup", handleMouseUp);
+    if (canvasRef.current) {
+      canvasRef.current.removeEventListener("mousedown", handleMouseDown);
+      canvasRef.current.removeEventListener("mousemove", handleMouseMove);
+      canvasRef.current.removeEventListener("mouseup", handleMouseUp);
+    }
   };
 
   const handleMouseDown = () => {
@@ -264,12 +272,14 @@ const LidarCanvas = ({
               obj.material.color.set(new THREE.Color(0x33ff52));
             }
           });
+
           const axesHelper = new THREE.AxesHelper(2);
+          axesHelper.scale.set(1000, 1000, 1000);
           group.add(axesHelper);
+
           sceneRef.current?.add(group);
           transformControlRef.current?.attach(group);
 
-          // Update init data for LOC
           dispatch(
             updateInitData({
               x: group.position.x.toString(),
@@ -325,6 +335,7 @@ const LidarCanvas = ({
     const loader = new ThreeMFLoader();
 
     loader.load("amr_texture.3MF", function (group) {
+      group.name = "amr";
       group.scale.set(0.001, 0.001, 0.001);
 
       group.traverse((obj) => {
@@ -339,7 +350,12 @@ const LidarCanvas = ({
       const axesHelper = new THREE.AxesHelper(2);
       robotModel.current.add(axesHelper);
 
-      sceneRef.current?.add(robotModel.current);
+      axesHelper.scale.set(1000, 1000, 1000);
+      group.add(axesHelper);
+
+      if (sceneRef.current) {
+        sceneRef.current.add(robotModel.current);
+      }
     });
 
     // get Robot position
@@ -402,7 +418,7 @@ const LidarCanvas = ({
 
   const driveRobot = (data) => {
     if (!robotModel.current) return;
-    robotModel.current.position.set(data.x, 0, -data.y);
+    robotModel.current.position.set(data.x, data.y, 0);
 
     robotModel.current.rotation.z = data.rz;
   };
