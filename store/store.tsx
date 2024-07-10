@@ -1,13 +1,13 @@
-
-import { configureStore } from '@reduxjs/toolkit';
-import { useMemo } from 'react';
+import { configureStore } from "@reduxjs/toolkit";
+import { useMemo } from "react";
 import { createWrapper } from "next-redux-wrapper";
-import networkReducer from './networkSlice';
-import userReducer from './userSlice';
-import settingReducer from './settingSlice';
-import statusSlice from './statusSlice';
-import stateSlice from './stateSlice'
+import networkReducer from "./networkSlice";
+import userReducer from "./userSlice";
+import settingReducer from "./settingSlice";
+import statusSlice from "./statusSlice";
+import stateSlice from "./stateSlice";
 import canvasReducer from "./canvasSlice";
+import propertyPanelReducer from "./propertyPanelSlices";
 
 export const store = configureStore({
   reducer: {
@@ -16,8 +16,9 @@ export const store = configureStore({
     status: statusSlice,
     state1: stateSlice,
     canvas: canvasReducer,
-    user:userReducer,
-  }
+    propertyPanel: propertyPanelReducer,
+    user: userReducer,
+  },
 });
 
 export const useStore = (initialState) => {
@@ -26,4 +27,3 @@ export const useStore = (initialState) => {
 };
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
-
