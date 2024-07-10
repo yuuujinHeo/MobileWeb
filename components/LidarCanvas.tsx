@@ -339,6 +339,19 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
     pressedMouseBtn = null;
+
+    if (!transformControlRef.current || event.button !== 2) return;
+    const obj: THREE.Object3D | undefined = transformControlRef.current.object;
+    if (obj) {
+      dispatch(
+        updateInitData({
+          x: obj.position.x.toString(),
+          y: obj.position.y.toString(),
+          z: obj.position.z.toString(),
+          rz: obj.rotation.z.toString(),
+        })
+      );
+    }
   };
 
   const onWindowResize = () => {
