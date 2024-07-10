@@ -1,3 +1,4 @@
+import { CommandProps } from "@/types/layout";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {
@@ -23,13 +24,14 @@ const initialState = {
     z: "",
     rz: "",
   },
-  localization: "Off",
+  isMarkingMode: false,
 };
 
 const canvasSlice = createSlice({
   name: "Canvas",
   initialState: initialState,
   reducers: {
+    // [TODO] Need to be refactored. Too many duplicates.
     drawCloud(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
       state.action.target = action.payload.target;
@@ -46,12 +48,21 @@ const canvasSlice = createSlice({
       state.initData.z = action.payload.z;
       state.initData.rz = action.payload.rz;
     },
-    toggleLocalization(state, action) {
-      state.localization = action.payload.command;
+    toggleMarkingMode(state, action) {
+      state.isMarkingMode = action.payload.isMarkingMode;
+    },
+    addNode(state, action) {
+      state.action.command = action.payload.command;
+      state.action.timestamp = Date.now();
     },
   },
 });
 
-export const { drawCloud, handleMapping, updateInitData, toggleLocalization } =
-  canvasSlice.actions;
+export const {
+  drawCloud,
+  handleMapping,
+  updateInitData,
+  toggleMarkingMode,
+  addNode,
+} = canvasSlice.actions;
 export default canvasSlice.reducer;

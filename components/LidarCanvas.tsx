@@ -23,7 +23,7 @@ interface LidarCanvasProps {
 
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
-  const { action, localization } = useSelector(
+  const { action, isMarkingMode, initData } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -39,6 +39,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
+  const nodesRef = useRef<Map<string, THREE.Group>>(new Map());
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -84,6 +85,31 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "DRAW_CLOUD":
         if (selectedMapCloud) drawCloud(action.target, selectedMapCloud);
         break;
+      case "ADD_NODE":
+        const loader = new ThreeMFLoader();
+        loader.load("amr.3MF", function (group) {
+          group.scale.set(0.001, 0.001, 0.001);
+          group.position.set(Number(initData.x), Number(initData.y), 0);
+          group.rotation.z = Number(initData.rz);
+
+          group.traverse((obj) => {
+            if (obj instanceof THREE.Mesh) {
+              obj.material.color.set(new THREE.Color(0x33ff52));
+            }
+          });
+
+          const axesHelper = new THREE.AxesHelper(2);
+          axesHelper.scale.set(1000, 1000, 1000);
+          group.add(axesHelper);
+
+          const nodeId = `node-${group.uuid}`;
+          // group을 포함하는 노드 정보가 들어가야한다. link된 node가 있는지 등의 정보가 필요.
+          nodesRef.current.set(nodeId, group);
+          console.log(123123123, nodesRef.current);
+
+          sceneRef.current?.add(group);
+        });
+        break;
       default:
         break;
     }
@@ -91,16 +117,19 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
-      if (localization === "On") {
-        handleLocalizationOn();
-      } else if (localization === "Off") {
-        handleLocalizationOff();
+      if (isMarkingMode) {
+        // handleLocalizationOn();
+        toggleMarkingMode(true);
+      } else if (isMarkingMode) {
+        // handleLocalizationOff();
+        toggleMarkingMode(false);
       }
     }
     return () => {
-      handleLocalizationOff();
+      toggleMarkingMode(false);
+      // handleLocalizationOff();
     };
-  }, [localization]);
+  }, [isMarkingMode]);
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
@@ -200,26 +229,23 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     window.addEventListener("resize", onWindowResize);
   };
 
-  const handleLocalizationOn = () => {
-    resetCamera();
-    if (controlRef.current && rendererRef.current) {
+  const toggleMarkingMode = (cmd: boolean) => {
+    if (
+      !controlRef.current ||
+      !rendererRef.current ||
+      !canvasRef.current ||
+      !transformControlRef.current
+    )
+      return;
+    if (cmd) {
+      resetCamera();
       controlRef.current.enableRotate = false;
-    }
-    if (canvasRef.current) {
       canvasRef.current.addEventListener("mousedown", handleMouseDown);
       canvasRef.current.addEventListener("mousemove", handleMouseMove);
       canvasRef.current.addEventListener("mouseup", handleMouseUp);
-    }
-  };
-
-  const handleLocalizationOff = () => {
-    if (transformControlRef.current) {
+    } else {
       transformControlRef.current.detach();
-    }
-    if (controlRef.current && rendererRef.current) {
       controlRef.current.enableRotate = true;
-    }
-    if (canvasRef.current) {
       canvasRef.current.removeEventListener("mousedown", handleMouseDown);
       canvasRef.current.removeEventListener("mousemove", handleMouseMove);
       canvasRef.current.removeEventListener("mouseup", handleMouseUp);
@@ -275,7 +301,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
-              obj.material.color.set(new THREE.Color(0x33ff52));
+              obj.material.color.set(new THREE.Color(0xbdc3c7));
             }
           });
 
@@ -401,7 +427,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
-          obj.material.color.set(new THREE.Color(0xc661a8));
+          obj.material.color.set(new THREE.Color(0x0087fc));
         }
       });
 

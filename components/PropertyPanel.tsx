@@ -4,7 +4,7 @@ import { useState } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { toggleLocalization } from "@/store/canvasSlice";
+import { toggleMarkingMode, addNode } from "@/store/canvasSlice";
 
 import { Panel } from "primereact/panel";
 import { SelectButton } from "primereact/selectbutton";
@@ -67,16 +67,18 @@ export default function PropertyPanel() {
     localization: (
       <div id="loc-container">
         <div id="switch-container">
-          <span>Marker</span>
+          <span>Marking Mode</span>
           <SelectButton
             value={selectBtn}
             options={["On", "Off"]}
             onChange={(e) => {
               if (e.value !== null) {
                 setSelectBtn(e.value);
+                let isMarkingMode: boolean = false;
+                if (e.value === "On") isMarkingMode = true;
+                else if (e.value === "Off") isMarkingMode = false;
+                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
               }
-              const command: string = e.value;
-              dispatch(toggleLocalization({ command: command }));
             }}
           />
         </div>
@@ -128,7 +130,36 @@ export default function PropertyPanel() {
         </ButtonGroup>
       </div>
     ),
-    annotation: <div>annotation default</div>,
+    annotation: (
+      <div id="annotation-container">
+        <div id="switch-container">
+          <span>Marking Mode</span>
+          <SelectButton
+            value={selectBtn}
+            options={["On", "Off"]}
+            onChange={(e) => {
+              if (e.value !== null) {
+                setSelectBtn(e.value);
+                let isMarkingMode: boolean = false;
+                if (e.value === "On") isMarkingMode = true;
+                else if (e.value === "Off") isMarkingMode = false;
+                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
+              }
+            }}
+          />
+        </div>
+        <Button
+          label="Add Node"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            dispatch(addNode({ command: "ADD_NODE" }));
+          }}
+        />
+      </div>
+    ),
   };
 
   return <Panel header={selectedPanel}>{panelContents[selectedPanel]}</Panel>;
