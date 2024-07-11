@@ -1,18 +1,19 @@
 import { Server } from "socket.io";
 import io from "socket.io-client";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { getMobileSocketURL } from "@/app/(main)/api/url";
+// import { getMobileSocketURL } from "@/app/(main)/api/url";
 
 async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
     console.log("*First use, starting socket.io");
 
     const io2 = new Server((res.socket as any).server);
-    let url = await getMobileSocketURL();
+    let url = "http://10.108.1.40:10334"
     let socket = io(url);
 
     socket.on("connect", () => {
       socket.on("mapping", (data: string[][]) => {
+        console.log('mapping in');
         io2.emit("mapping", data);
       });
       socket.on("lidar", (data: string[][]) => {
