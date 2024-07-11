@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { drawCloud } from "@/store/canvasSlice";
+import { createAction } from "@/store/canvasSlice";
 import { selectPanel } from "@/store/propertyPanelSlices";
 
 // prime
@@ -112,7 +112,7 @@ const Map: React.FC = () => {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setSelectedMapCloud(res.data);
       dispatch(
-        drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
+        createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
       );
     } catch (e) {
       console.error(e);
@@ -126,7 +126,7 @@ const Map: React.FC = () => {
   const handleLoadMap = () => {
     // Draw cloud points to lidar canvas
     dispatch(
-      drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
+      createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
     );
 
     // Hide dialogue

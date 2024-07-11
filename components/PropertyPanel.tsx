@@ -1,15 +1,19 @@
 "use clinet";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { toggleLocalization } from "@/store/canvasSlice";
+import { toggleMarkingMode, createAction } from "@/store/canvasSlice";
 
 import { Panel } from "primereact/panel";
+import { Toast } from "primereact/toast";
 import { SelectButton } from "primereact/selectbutton";
 import { ButtonGroup } from "primereact/buttongroup";
 import { Button } from "primereact/button";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { InputText } from "primereact/inputtext";
+import { FloatLabel } from "primereact/floatlabel";
 
 import axios from "axios";
 
@@ -22,6 +26,8 @@ interface LocReqPayload {
   rz?: string;
 }
 
+type Severity = "success" | "info" | "warn" | "error";
+
 export default function PropertyPanel() {
   const dispatch = useDispatch();
 
@@ -33,6 +39,9 @@ export default function PropertyPanel() {
 
   // state
   const [selectBtn, setSelectBtn] = useState<string>("Off");
+
+  const toast = useRef<Toast>(null);
+  const filenameRef = useRef<string>("");
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -63,20 +72,71 @@ export default function PropertyPanel() {
     return currentTime;
   };
 
+  const showToast = (severity: Severity, summary: string, detail: string) => {
+    toast.current?.show({
+      severity: severity,
+      summary: summary,
+      detail: detail,
+      life: 3000,
+    });
+  };
+  const saveAnnotation = () => {
+    // dialog for save button
+    const accept = async () => {
+      try {
+        dispatch(
+          createAction({
+            command: "SAVE_ANNOTATION",
+            name: filenameRef.current,
+          })
+        );
+        showToast("info", "Save", "Save succeed");
+      } catch (e) {
+        showToast("error", "Error", `Save failed: ${e.message}`);
+      }
+    };
+
+    const reject = () => {
+      showToast("warn", "Rejected", "You have rejected");
+    };
+
+    confirmDialog({
+      message: (
+        <div>
+          <FloatLabel>
+            <InputText
+              id="filename"
+              onChange={(e) => {
+                filenameRef.current = e.target.value;
+              }}
+            />
+            <label htmlFor="filename">Filename</label>
+          </FloatLabel>
+        </div>
+      ),
+      header: "Save",
+      icon: "pi pi-save",
+      accept,
+      reject,
+    });
+  };
+
   const panelContents = {
     localization: (
       <div id="loc-container">
         <div id="switch-container">
-          <span>Marker</span>
+          <span>Marking Mode</span>
           <SelectButton
             value={selectBtn}
             options={["On", "Off"]}
             onChange={(e) => {
               if (e.value !== null) {
                 setSelectBtn(e.value);
+                let isMarkingMode: boolean = false;
+                if (e.value === "On") isMarkingMode = true;
+                else if (e.value === "Off") isMarkingMode = false;
+                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
               }
-              const command: string = e.value;
-              dispatch(toggleLocalization({ command: command }));
             }}
           />
         </div>
@@ -128,7 +188,48 @@ export default function PropertyPanel() {
         </ButtonGroup>
       </div>
     ),
-    annotation: <div>annotation default</div>,
+    annotation: (
+      <div id="annotation-container">
+        <ConfirmDialog />
+        <Toast ref={toast} />
+        <div id="switch-container">
+          <span>Marking Mode</span>
+          <SelectButton
+            value={selectBtn}
+            options={["On", "Off"]}
+            onChange={(e) => {
+              if (e.value !== null) {
+                setSelectBtn(e.value);
+                let isMarkingMode: boolean = false;
+                if (e.value === "On") isMarkingMode = true;
+                else if (e.value === "Off") isMarkingMode = false;
+                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
+              }
+            }}
+          />
+        </div>
+        <Button
+          label="Add Node"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            dispatch(createAction({ command: "ADD_NODE" }));
+          }}
+        />
+        <Button
+          label="Save"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            saveAnnotation();
+          }}
+        />
+      </div>
+    ),
   };
 
   return <Panel header={selectedPanel}>{panelContents[selectedPanel]}</Panel>;
