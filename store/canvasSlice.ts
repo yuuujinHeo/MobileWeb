@@ -3,7 +3,8 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {
   command: string;
-  target: string;
+  target?: string;
+  name?: string;
 }
 interface Init {
   x: string;
@@ -16,6 +17,7 @@ const initialState = {
   action: {
     command: "",
     target: "",
+    name: "",
     timestamp: 0,
   },
   initData: {
@@ -31,15 +33,15 @@ const canvasSlice = createSlice({
   name: "Canvas",
   initialState: initialState,
   reducers: {
-    // [TODO] Need to be refactored. Too many duplicates.
-    drawCloud(state, action: PayloadAction<CommandData>) {
+    createAction(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
-      state.action.target = action.payload.target;
+      if (action.payload.target) state.action.target = action.payload.target;
+      if (action.payload.name) state.action.name = action.payload.name;
       state.action.timestamp = Date.now();
     },
     handleMapping(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
-      state.action.target = action.payload.target;
+      if (action.payload.target) state.action.target = action.payload.target;
       state.action.timestamp = Date.now();
     },
     updateInitData(state, action: PayloadAction<Init>) {
@@ -51,18 +53,13 @@ const canvasSlice = createSlice({
     toggleMarkingMode(state, action) {
       state.isMarkingMode = action.payload.isMarkingMode;
     },
-    addNode(state, action) {
-      state.action.command = action.payload.command;
-      state.action.timestamp = Date.now();
-    },
   },
 });
 
 export const {
-  drawCloud,
   handleMapping,
   updateInitData,
   toggleMarkingMode,
-  addNode,
+  createAction,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;
