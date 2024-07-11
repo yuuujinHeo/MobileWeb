@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {
   command: string;
+  category?: string;
   target?: string;
   name?: string;
 }
@@ -16,6 +17,7 @@ interface Init {
 const initialState = {
   action: {
     command: "",
+    category: "",
     target: "",
     name: "",
     timestamp: 0,
@@ -35,6 +37,8 @@ const canvasSlice = createSlice({
   reducers: {
     createAction(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
+      if (action.payload.category)
+        state.action.category = action.payload.category;
       if (action.payload.target) state.action.target = action.payload.target;
       if (action.payload.name) state.action.name = action.payload.name;
       state.action.timestamp = Date.now();

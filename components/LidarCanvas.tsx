@@ -45,8 +45,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
-  const nodesRef = useRef<Map<string, THREE.Group>>(new Map());
-  let nodeNum = useRef<number>(0);
+  const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
+  let routeNum = useRef<number>(0);
+  let goalNum = useRef<number>(0);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -93,7 +94,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         if (selectedMapCloud) drawCloud(action.target, selectedMapCloud);
         break;
       case "ADD_NODE":
-        addNode();
+        if (action.category === "ROUTE") {
+          addRouteNode();
+        } else if (action.category === "GOAL") addGoalNode();
         break;
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
@@ -656,11 +659,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
-  const addNode = () => {
+  const addGoalNode = () => {
     const loader = new ThreeMFLoader();
     loader.load("amr.3MF", function (group) {
+      setupNode(group, "GOAL");
       group.scale.set(0.001, 0.001, 0.001);
-      group.position.set(Number(initData.x), Number(initData.y), 0);
       group.rotation.z = Number(initData.rz);
 
       group.traverse((obj) => {
@@ -673,28 +676,50 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       axesHelper.scale.set(1000, 1000, 1000);
       group.add(axesHelper);
 
-      const nodeId = `node-${group.uuid}`;
-
-      nodesRef.current.set(nodeId, group);
-
-      nodeNum.current += 1;
-      group.name = `node-${nodeNum.current}`;
-
-      group.userData.info = "";
-      group.userData.links = [];
-      group.userData.type = "";
-
+      addLabelToNode(group);
       sceneRef.current?.add(group);
-
-      const nodeDiv = document.createElement("div");
-      nodeDiv.className = "label";
-      nodeDiv.textContent = group.name;
-      nodeDiv.style.backgroundColor = "transparent";
-
-      const nodeLabel = new CSS2DObject(nodeDiv);
-      nodeLabel.center.set(-0.5, 1.5);
-      group.add(nodeLabel);
     });
+  };
+
+  const addRouteNode = () => {
+    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+    const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
+    const route = new THREE.Mesh(geometry, material);
+
+    setupNode(route, "ROUTE");
+    route.scale.set(0.05, 0.05, 0.05);
+
+    addLabelToNode(route);
+    sceneRef.current?.add(route);
+  };
+
+  const setupNode = (node: THREE.Object3D, type: string) => {
+    node.position.set(Number(initData.x), Number(initData.y), 0);
+    const nodeId = `node-${node.uuid}`;
+    nodesRef.current.set(nodeId, node);
+
+    if (type === "ROUTE") {
+      routeNum.current += 1;
+      node.name = `route-${routeNum.current}`;
+    } else if (type === "GOAL") {
+      goalNum.current += 1;
+      node.name = `goal-${goalNum.current}`;
+    }
+
+    node.userData.info = "";
+    node.userData.links = [];
+    node.userData.type = type;
+  };
+
+  const addLabelToNode = (node: THREE.Object3D) => {
+    const nodeDiv = document.createElement("div");
+    nodeDiv.className = "label";
+    nodeDiv.textContent = node.name;
+    nodeDiv.style.backgroundColor = "transparent";
+
+    const nodeLabel = new CSS2DObject(nodeDiv);
+    nodeLabel.center.set(-0.5, 1.5);
+    node.add(nodeLabel);
   };
 
   const saveAnnotation = async (filename: string) => {

@@ -209,13 +209,23 @@ export default function PropertyPanel() {
           />
         </div>
         <Button
-          label="Add Node"
+          label="Add Route"
           size="small"
           severity="secondary"
           text
           raised
           onClick={() => {
-            dispatch(createAction({ command: "ADD_NODE" }));
+            dispatch(createAction({ command: "ADD_NODE", category: "ROUTE" }));
+          }}
+        />
+        <Button
+          label="Add Goal"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            dispatch(createAction({ command: "ADD_NODE", category: "GOAL" }));
           }}
         />
         <Button
