@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, Children } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
-import { updateInitData, changeSelectedObject } from "@/store/canvasSlice";
+import { updateInitData, changeSelectedObjectInfo } from "@/store/canvasSlice";
 
 // three
 import * as THREE from "three";
@@ -48,6 +48,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const objects = useRef<THREE.Object3D[]>([]);
+  const selectedRef = useRef<THREE.Object3D | null>(null);
 
   let routeNum = useRef<number>(0);
   let goalNum = useRef<number>(0);
@@ -110,10 +111,63 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
         break;
+      case "UPDATE_PROPERTY":
+        updateProperty(action.category, action.value);
+
+        break;
       default:
         break;
     }
   }, [action]);
+
+  const updateProperty = (category: string, value: string) => {
+    const selectedObj = selectedRef.current;
+    if (!selectedObj) return;
+
+    switch (category) {
+      case "name":
+        selectedObj.name = value;
+        break;
+      case "pose-x":
+        selectedObj.position.x = Number(value);
+        break;
+      case "pose-y":
+        selectedObj.position.y = Number(value);
+        break;
+      case "pose-z":
+        selectedObj.position.z = Number(value);
+        break;
+      case "pose-rz":
+        selectedObj.rotation.z = Number(value);
+        break;
+      case "type":
+        selectedObj.userData.type = value;
+        break;
+      case "info":
+        selectedObj.userData.info = value;
+        break;
+      default:
+        break;
+    }
+
+    removeLabelFromNode(selectedObj);
+    addLabelToNode(selectedObj);
+
+    const pos = selectedObj.position.toArray().toString();
+    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
+    const pose = pos + "," + rot;
+
+    dispatch(
+      changeSelectedObjectInfo({
+        id: selectedObj.uuid,
+        name: selectedObj.name,
+        links: selectedObj.userData.links,
+        pose: pose,
+        type: selectedObj.userData.type,
+        info: selectedObj.userData.info,
+      })
+    );
+  };
 
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
@@ -300,11 +354,36 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       let selected = intersects[0].object;
       selected = findTopParent(selected);
 
-      console.log(selected);
+      selectedRef.current = selected;
+
       transformControlRef.current?.attach(selected);
 
+      // const position = selected.position.toArray();
+      // const parsedPos = position.map((position) => {
+      //   let res: string = "";
+      //   if (position.toString().length > 5) {
+      //     res = position.toString().slice(0, 4);
+      //   } else {
+      //     res = position.toString();
+      //   }
+      //   return res;
+      // });
+      //
+      // const rotation = selected.rotation.toArray();
+      // const parsedRot = rotation.map((rot) => {
+      //   let res: string = "";
+      //   if (rot) {
+      //     if (rot.toString().length > 5) {
+      //       res = rot?.toString().slice(0, 4);
+      //     } else {
+      //       res = rot.toString();
+      //     }
+      //   }
+      //   return res;
+      // });
       const pos = selected.position.toArray().toString();
       const rot = selected.rotation.toArray().slice(0, 3).toString();
+      // const pose = parsedPos.toString() + "," + parsedRot.toString();
       const pose = pos + "," + rot;
       const nodeInfo = {
         id: selected.uuid,
@@ -315,10 +394,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         info: selected.userData.info,
       };
       // dispatch
-      dispatch(changeSelectedObject(nodeInfo));
+      dispatch(changeSelectedObjectInfo(nodeInfo));
     } else {
+      selectedRef.current = null;
       dispatch(
-        changeSelectedObject({
+        changeSelectedObjectInfo({
           id: "",
           name: "",
           links: [],
@@ -357,6 +437,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         group.traverse((obj) => {
           if (obj instanceof THREE.Mesh) {
             obj.material.color.set(new THREE.Color(0xbdc3c7));
+            obj.material.transparent = true;
+            obj.material.opacity = 0.4;
           }
         });
 
@@ -757,6 +839,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
+    route.scale.set(0.02, 0.02, 0.02);
 
     const geo = new THREE.PlaneGeometry(1, 1);
     const mat = new THREE.MeshBasicMaterial({
@@ -769,7 +852,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     route.add(plane);
 
     setupNode(route, "ROUTE");
-    route.scale.set(0.05, 0.05, 0.05);
 
     addLabelToNode(route);
     sceneRef.current?.add(route);
@@ -801,8 +883,17 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     nodeDiv.style.backgroundColor = "transparent";
 
     const nodeLabel = new CSS2DObject(nodeDiv);
-    nodeLabel.center.set(-0.5, 1.5);
+    nodeLabel.name = "label";
+    nodeLabel.center.set(-0.3, 1.5);
     node.add(nodeLabel);
+  };
+
+  const removeLabelFromNode = (node: THREE.Object3D) => {
+    let label: THREE.Object3D | null = null;
+    node.traverse((children) => {
+      if (children.name === "label") label = children;
+    });
+    if (label) node.remove(label);
   };
 
   const saveAnnotation = async (filename: string) => {
@@ -822,8 +913,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     });
 
     try {
-      // const res = await axios.post(url + `/map/topo/${filename}`, nodeArr);
-      // console.log(res);
+      await axios.post(url + `/map/topo/${filename}`, nodeArr);
     } catch (e) {
       console.error(e);
     }
