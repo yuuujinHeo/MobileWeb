@@ -84,6 +84,7 @@ const Map: React.FC = () => {
       icon: "pi pi-download",
       command: () => {
         setIsDialogVisible(true);
+        getMapList();
       },
     },
   ];
