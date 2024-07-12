@@ -59,6 +59,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
   let isMouseDown: boolean = false;
   let pressedMouseBtn: number | null;
+
+  let isTouchDragging: boolean = false;
   let touchStartTime = 0;
   const LONG_TOUCH_DURATION = 1000;
 
@@ -78,6 +80,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         canvasRef.current.removeEventListener("mousemove", handleMouseMove);
         canvasRef.current.removeEventListener("mouseup", handleMouseUp);
         canvasRef.current.removeEventListener("touchstart", handleTouchStart);
+        canvasRef.current.removeEventListener("touchmove", handleMouseMove);
         canvasRef.current.removeEventListener("touchend", handleTouchEnd);
       }
       rendererRef.current?.setAnimationLoop(null);
@@ -302,6 +305,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     canvasRef.current.addEventListener("mousemove", handleMouseMove);
     canvasRef.current.addEventListener("mouseup", handleMouseUp);
     canvasRef.current.addEventListener("touchstart", handleTouchStart);
+    canvasRef.current.addEventListener("touchmove", handleTouchMove);
     canvasRef.current.addEventListener("touchend", handleTouchEnd);
   };
 
@@ -350,7 +354,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     return currenteObj;
   };
 
-  const selectObject = (event: MouseEvent) => {
+  const selectObject = (event: MouseEvent | TouchEvent) => {
     const raycaster = getRaycaster(event);
     if (!sceneRef.current || !raycaster) return;
 
@@ -416,7 +420,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   };
 
-  const createNodeHelper = (event: MouseEvent) => {
+  const createNodeHelper = (event: MouseEvent | TouchEvent) => {
     const raycaster = getRaycaster(event);
     if (!sceneRef.current || !raycaster) return;
 
@@ -486,6 +490,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const handleTouchStart = (event) => {
+    isTouchDragging = false;
     touchStartTime = new Date().getTime();
   };
 
@@ -526,6 +531,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   };
 
+  const handleTouchMove = () => {
+    isTouchDragging = true;
+  };
+
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
     pressedMouseBtn = null;
@@ -547,8 +556,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const handleTouchEnd = (event) => {
     const touchEndTime = new Date().getTime();
     const touchDuration = touchEndTime - touchStartTime;
-    if (touchDuration >= LONG_TOUCH_DURATION) {
-      createNodeHelper(event);
+    if (touchDuration >= LONG_TOUCH_DURATION && !isTouchDragging) {
+      if (isMarkingModeRef.current) createNodeHelper(event);
     }
   };
 
