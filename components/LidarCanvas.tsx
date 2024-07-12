@@ -59,6 +59,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
   let isMouseDown: boolean = false;
   let pressedMouseBtn: number | null;
+  let touchStartTime = 0;
+  const LONG_TOUCH_DURATION = 1000;
 
   // 3D Scene setting when the component is mounted
   useEffect(() => {
@@ -75,6 +77,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         canvasRef.current.removeEventListener("mousedown", handleMouseDown);
         canvasRef.current.removeEventListener("mousemove", handleMouseMove);
         canvasRef.current.removeEventListener("mouseup", handleMouseUp);
+        canvasRef.current.removeEventListener("touchstart", handleTouchStart);
+        canvasRef.current.removeEventListener("touchend", handleTouchEnd);
       }
       rendererRef.current?.setAnimationLoop(null);
 
@@ -297,6 +301,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     canvasRef.current.addEventListener("mousedown", handleMouseDown);
     canvasRef.current.addEventListener("mousemove", handleMouseMove);
     canvasRef.current.addEventListener("mouseup", handleMouseUp);
+    canvasRef.current.addEventListener("touchstart", handleTouchStart);
+    canvasRef.current.addEventListener("touchend", handleTouchEnd);
   };
 
   const toggleMarkingMode = () => {
@@ -316,7 +322,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   };
 
-  const getRaycaster = (event: MouseEvent) => {
+  const getRaycaster = (event: MouseEvent | TouchEvent) => {
     if (!canvasRef.current || !cameraRef.current) return;
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
@@ -479,6 +485,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   };
 
+  const handleTouchStart = (event) => {
+    touchStartTime = new Date().getTime();
+  };
+
   const handleMouseMove = (event: MouseEvent) => {
     if (isMouseDown && pressedMouseBtn === 2) {
       const marker: THREE.Object3D | undefined =
@@ -534,6 +544,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   };
 
+  const handleTouchEnd = (event) => {
+    const touchEndTime = new Date().getTime();
+    const touchDuration = touchEndTime - touchStartTime;
+    if (touchDuration >= LONG_TOUCH_DURATION) {
+      createNodeHelper(event);
+    }
+  };
+
   const onWindowResize = () => {
     if (
       !canvasRef.current ||
@@ -558,12 +576,22 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     );
   };
 
-  const getCanvasRelativePosition = (event: MouseEvent) => {
+  const getCanvasRelativePosition = (event: MouseEvent | TouchEvent) => {
     if (!canvasRef.current) return;
     const rect = canvasRef.current.getBoundingClientRect();
+
+    let clientX, clientY;
+    if (event instanceof MouseEvent) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else if (event instanceof TouchEvent && event.changedTouches.length > 0) {
+      clientX = event.changedTouches[0].clientX;
+      clientY = event.changedTouches[0].clientY;
+    }
+
     return {
-      x: ((event.clientX - rect.left) * canvasRef.current.width) / rect.width,
-      y: ((event.clientY - rect.top) * canvasRef.current.height) / rect.height,
+      x: ((clientX - rect.left) * canvasRef.current.width) / rect.width,
+      y: ((clientY - rect.top) * canvasRef.current.height) / rect.height,
     };
   };
 
