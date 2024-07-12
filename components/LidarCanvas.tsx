@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
-import { updateInitData } from "@/store/canvasSlice";
+import { updateInitData, changeSelectedObject } from "@/store/canvasSlice";
 
 // three
 import * as THREE from "three";
@@ -45,8 +45,13 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
-  const nodesRef = useRef<Map<string, THREE.Group>>(new Map());
-  let nodeNum = useRef<number>(0);
+
+  const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
+  const objects = useRef<THREE.Object3D[]>([]);
+
+  let routeNum = useRef<number>(0);
+  let goalNum = useRef<number>(0);
+  let isMarkingModeRef = useRef<boolean>(false);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -65,6 +70,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      if (canvasRef.current) {
+        canvasRef.current.removeEventListener("mousedown", handleMouseDown);
+        canvasRef.current.removeEventListener("mousemove", handleMouseMove);
+        canvasRef.current.removeEventListener("mouseup", handleMouseUp);
+      }
       rendererRef.current?.setAnimationLoop(null);
 
       if (className !== CANVAS_CLASSES.OVERLAY) {
@@ -93,7 +103,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         if (selectedMapCloud) drawCloud(action.target, selectedMapCloud);
         break;
       case "ADD_NODE":
-        addNode();
+        if (action.category === "ROUTE") {
+          addRouteNode();
+        } else if (action.category === "GOAL") addGoalNode();
         break;
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
@@ -106,15 +118,15 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
       if (isMarkingMode) {
-        // handleLocalizationOn();
-        toggleMarkingMode(true);
-      } else if (isMarkingMode) {
-        // handleLocalizationOff();
-        toggleMarkingMode(false);
+        isMarkingModeRef.current = true;
+        toggleMarkingMode();
+      } else if (!isMarkingMode) {
+        isMarkingModeRef.current = false;
+        toggleMarkingMode();
       }
     }
     return () => {
-      toggleMarkingMode(false);
+      // toggleMarkingMode(false);
       // handleLocalizationOff();
     };
   }, [isMarkingMode]);
@@ -227,9 +239,13 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+
+    canvasRef.current.addEventListener("mousedown", handleMouseDown);
+    canvasRef.current.addEventListener("mousemove", handleMouseMove);
+    canvasRef.current.addEventListener("mouseup", handleMouseUp);
   };
 
-  const toggleMarkingMode = (cmd: boolean) => {
+  const toggleMarkingMode = () => {
     if (
       !controlRef.current ||
       !rendererRef.current ||
@@ -237,18 +253,129 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       !transformControlRef.current
     )
       return;
-    if (cmd) {
+    if (isMarkingModeRef.current) {
       resetCamera();
       controlRef.current.enableRotate = false;
-      canvasRef.current.addEventListener("mousedown", handleMouseDown);
-      canvasRef.current.addEventListener("mousemove", handleMouseMove);
-      canvasRef.current.addEventListener("mouseup", handleMouseUp);
     } else {
       transformControlRef.current.detach();
       controlRef.current.enableRotate = true;
-      canvasRef.current.removeEventListener("mousedown", handleMouseDown);
-      canvasRef.current.removeEventListener("mousemove", handleMouseMove);
-      canvasRef.current.removeEventListener("mouseup", handleMouseUp);
+    }
+  };
+
+  const getRaycaster = (event: MouseEvent) => {
+    if (!canvasRef.current || !cameraRef.current) return;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const pos = getCanvasRelativePosition(event);
+
+    if (!pos) return;
+    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+    mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, cameraRef.current);
+
+    return raycaster;
+  };
+
+  const findTopParent = (object: THREE.Object3D): THREE.Object3D => {
+    let currenteObj: THREE.Object3D = object;
+    while (
+      currenteObj &&
+      currenteObj.parent &&
+      currenteObj.parent.type !== "Scene"
+    ) {
+      currenteObj = currenteObj.parent;
+    }
+    return currenteObj;
+  };
+
+  const selectObject = (event: MouseEvent) => {
+    const raycaster = getRaycaster(event);
+    if (!sceneRef.current || !raycaster) return;
+
+    const intersects = raycaster.intersectObjects(objects.current, true);
+
+    if (intersects.length) {
+      let selected = intersects[0].object;
+      selected = findTopParent(selected);
+
+      console.log(selected);
+      transformControlRef.current?.attach(selected);
+
+      const pos = selected.position.toArray().toString();
+      const rot = selected.rotation.toArray().slice(0, 3).toString();
+      const pose = pos + "," + rot;
+      const nodeInfo = {
+        id: selected.uuid,
+        name: selected.name,
+        links: selected.userData.links,
+        pose: pose,
+        type: selected.userData.type,
+        info: selected.userData.info,
+      };
+      // dispatch
+      dispatch(changeSelectedObject(nodeInfo));
+    } else {
+      dispatch(
+        changeSelectedObject({
+          id: "",
+          name: "",
+          links: [],
+          pose: "",
+          type: "",
+          info: "",
+        })
+      );
+    }
+  };
+
+  const createNodeHelper = (event: MouseEvent) => {
+    const raycaster = getRaycaster(event);
+    if (!sceneRef.current || !raycaster) return;
+
+    const plane = sceneRef.current.getObjectByName("plane");
+    if (!plane) return;
+    const intersects = raycaster.intersectObject(plane, true);
+
+    if (intersects.length > 0) {
+      // remove prev initpoint
+      const prevInit = sceneRef.current.getObjectByName("initpoint");
+      if (prevInit) {
+        sceneRef.current.remove(prevInit);
+      }
+
+      const intersect = intersects[0];
+
+      const loader = new ThreeMFLoader();
+
+      loader.load("amr.3MF", function (group) {
+        group.scale.set(0.001, 0.001, 0.001);
+        group.position.set(intersect.point.x, intersect.point.y, 0);
+        group.name = "initpoint";
+
+        group.traverse((obj) => {
+          if (obj instanceof THREE.Mesh) {
+            obj.material.color.set(new THREE.Color(0xbdc3c7));
+          }
+        });
+
+        const axesHelper = new THREE.AxesHelper(2);
+        axesHelper.scale.set(1000, 1000, 1000);
+        group.add(axesHelper);
+
+        sceneRef.current?.add(group);
+        transformControlRef.current?.attach(group);
+
+        dispatch(
+          updateInitData({
+            x: group.position.x.toString(),
+            y: group.position.y.toString(),
+            z: group.position.z.toString(),
+            rz: "",
+          })
+        );
+      });
     }
   };
 
@@ -256,72 +383,17 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     isMouseDown = true;
     pressedMouseBtn = event.button;
 
-    if (pressedMouseBtn === 2) {
-      if (
-        !window ||
-        !cameraRef.current ||
-        !sceneRef.current ||
-        !canvasRef.current ||
-        !rendererRef.current
-      )
-        return;
+    transformControlRef.current?.detach();
 
-      transformControlRef.current?.detach();
-
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2();
-
-      const pos = getCanvasRelativePosition(event);
-
-      if (!pos) return;
-      mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-      mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1; // note
-
-      raycaster.setFromCamera(mouse, cameraRef.current);
-
-      const plane = sceneRef.current.getObjectByName("plane");
-      if (!plane) return;
-      const intersects = raycaster.intersectObject(plane, true);
-
-      if (intersects.length > 0) {
-        // remove prev initpoint
-        const prevInit = sceneRef.current.getObjectByName("initpoint");
-        if (prevInit) {
-          sceneRef.current.remove(prevInit);
-        }
-
-        const intersect = intersects[0];
-
-        const loader = new ThreeMFLoader();
-
-        loader.load("amr.3MF", function (group) {
-          group.scale.set(0.001, 0.001, 0.001);
-          group.position.set(intersect.point.x, intersect.point.y, 0);
-          group.name = "initpoint";
-
-          group.traverse((obj) => {
-            if (obj instanceof THREE.Mesh) {
-              obj.material.color.set(new THREE.Color(0xbdc3c7));
-            }
-          });
-
-          const axesHelper = new THREE.AxesHelper(2);
-          axesHelper.scale.set(1000, 1000, 1000);
-          group.add(axesHelper);
-
-          sceneRef.current?.add(group);
-          transformControlRef.current?.attach(group);
-
-          dispatch(
-            updateInitData({
-              x: group.position.x.toString(),
-              y: group.position.y.toString(),
-              z: group.position.z.toString(),
-              rz: "",
-            })
-          );
-        });
-      }
+    switch (event.button) {
+      case 0:
+        selectObject(event);
+        break;
+      case 2:
+        if (isMarkingModeRef.current) createNodeHelper(event);
+        break;
+      default:
+        break;
     }
   };
 
@@ -656,11 +728,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
-  const addNode = () => {
+  const addGoalNode = () => {
     const loader = new ThreeMFLoader();
     loader.load("amr.3MF", function (group) {
+      setupNode(group, "GOAL");
       group.scale.set(0.001, 0.001, 0.001);
-      group.position.set(Number(initData.x), Number(initData.y), 0);
       group.rotation.z = Number(initData.rz);
 
       group.traverse((obj) => {
@@ -673,28 +745,64 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       axesHelper.scale.set(1000, 1000, 1000);
       group.add(axesHelper);
 
-      const nodeId = `node-${group.uuid}`;
-
-      nodesRef.current.set(nodeId, group);
-
-      nodeNum.current += 1;
-      group.name = `node-${nodeNum.current}`;
-
-      group.userData.info = "";
-      group.userData.links = [];
-      group.userData.type = "";
-
+      addLabelToNode(group);
       sceneRef.current?.add(group);
 
-      const nodeDiv = document.createElement("div");
-      nodeDiv.className = "label";
-      nodeDiv.textContent = group.name;
-      nodeDiv.style.backgroundColor = "transparent";
-
-      const nodeLabel = new CSS2DObject(nodeDiv);
-      nodeLabel.center.set(-0.5, 1.5);
-      group.add(nodeLabel);
+      objects.current.push(group);
+      console.log("add goal node", objects.current);
     });
+  };
+
+  const addRouteNode = () => {
+    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+    const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
+    const route = new THREE.Mesh(geometry, material);
+
+    const geo = new THREE.PlaneGeometry(1, 1);
+    const mat = new THREE.MeshBasicMaterial({
+      color: 0xffff00,
+      side: THREE.DoubleSide,
+    });
+    const plane = new THREE.Mesh(geo, mat);
+    plane.scale.set(30, 30, 1);
+    plane.visible = false;
+    route.add(plane);
+
+    setupNode(route, "ROUTE");
+    route.scale.set(0.05, 0.05, 0.05);
+
+    addLabelToNode(route);
+    sceneRef.current?.add(route);
+    objects.current.push(route);
+  };
+
+  const setupNode = (node: THREE.Object3D, type: string) => {
+    node.position.set(Number(initData.x), Number(initData.y), 0);
+    const nodeId = `node-${node.uuid}`;
+    nodesRef.current.set(nodeId, node);
+
+    if (type === "ROUTE") {
+      routeNum.current += 1;
+      node.name = `route-${routeNum.current}`;
+    } else if (type === "GOAL") {
+      goalNum.current += 1;
+      node.name = `goal-${goalNum.current}`;
+    }
+
+    node.userData.info = "";
+    node.userData.links = [];
+    node.userData.type = type;
+  };
+
+  const addLabelToNode = (node: THREE.Object3D) => {
+    const nodeDiv = document.createElement("div");
+    nodeDiv.className = "label";
+    nodeDiv.textContent = node.name;
+    nodeDiv.style.backgroundColor = "transparent";
+
+    const nodeLabel = new CSS2DObject(nodeDiv);
+    nodeLabel.center.set(-0.5, 1.5);
+    node.add(nodeLabel);
   };
 
   const saveAnnotation = async (filename: string) => {

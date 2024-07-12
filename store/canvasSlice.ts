@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {
   command: string;
+  category?: string;
   target?: string;
   name?: string;
 }
@@ -14,8 +15,17 @@ interface Init {
 }
 
 const initialState = {
+  selectedObject: {
+    id: "",
+    name: "",
+    links: [],
+    pose: "",
+    type: "",
+    info: "",
+  },
   action: {
     command: "",
+    category: "",
     target: "",
     name: "",
     timestamp: 0,
@@ -35,6 +45,8 @@ const canvasSlice = createSlice({
   reducers: {
     createAction(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
+      if (action.payload.category)
+        state.action.category = action.payload.category;
       if (action.payload.target) state.action.target = action.payload.target;
       if (action.payload.name) state.action.name = action.payload.name;
       state.action.timestamp = Date.now();
@@ -53,6 +65,9 @@ const canvasSlice = createSlice({
     toggleMarkingMode(state, action) {
       state.isMarkingMode = action.payload.isMarkingMode;
     },
+    changeSelectedObject(state, action) {
+      state.selectedObject = action.payload;
+    },
   },
 });
 
@@ -61,5 +76,6 @@ export const {
   updateInitData,
   toggleMarkingMode,
   createAction,
+  changeSelectedObject,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;
