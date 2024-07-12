@@ -15,6 +15,14 @@ interface Init {
 }
 
 const initialState = {
+  selectedObject: {
+    id: "",
+    name: "",
+    links: [],
+    pose: "",
+    type: "",
+    info: "",
+  },
   action: {
     command: "",
     category: "",
@@ -57,6 +65,9 @@ const canvasSlice = createSlice({
     toggleMarkingMode(state, action) {
       state.isMarkingMode = action.payload.isMarkingMode;
     },
+    changeSelectedObject(state, action) {
+      state.selectedObject = action.payload;
+    },
   },
 });
 
@@ -65,5 +76,6 @@ export const {
   updateInitData,
   toggleMarkingMode,
   createAction,
+  changeSelectedObject,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;
