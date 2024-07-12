@@ -37,7 +37,7 @@ export default function PropertyPanel() {
   const selectedPanel = useSelector(
     (state: RootState) => state.propertyPanel.selectedPanel
   );
-  const { initData, selectedObject } = useSelector(
+  const { initData, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -56,9 +56,8 @@ export default function PropertyPanel() {
   ];
 
   useEffect(() => {
-    setSelectedType(selectedObject.type);
-    console.log("selectedObject changed");
-  }, [selectedObject]);
+    setSelectedType(selectedObjectInfo.type);
+  }, [selectedObjectInfo]);
 
   const sendLOCRequest = async (command: string) => {
     try {
@@ -261,7 +260,7 @@ export default function PropertyPanel() {
     <Panel header={selectedPanel}>
       {panelContents[selectedPanel]}
       <Divider />
-      {selectedObject.name !== "" ? (
+      {selectedObjectInfo.name !== "" ? (
         <div id="selected-info">
           <h5>Selected Object </h5>
           <div
@@ -271,25 +270,92 @@ export default function PropertyPanel() {
             }}
           >
             ID
-            <InputText value={selectedObject.id} />
+            <InputText
+              value={selectedObjectInfo.id}
+              className="p-inputtext-sm"
+            />
           </div>
           <div>
             NAME
-            <InputText value={selectedObject.name} />
+            <InputText
+              value={selectedObjectInfo.name}
+              className="p-inputtext-sm"
+              onChange={(e) => {
+                dispatch(
+                  createAction({
+                    command: "UPDATE_PROPERTY",
+                    category: "name",
+                    value: e.target.value,
+                  })
+                );
+              }}
+            />
           </div>
           <div>
             <p>POSE</p>
             <p>
-              X <InputText value={selectedObject.pose.split(",")[0]} />
+              X{" "}
+              <InputText
+                value={selectedObjectInfo.pose.split(",")[0]}
+                className="p-inputtext-sm"
+                onChange={(e) => {
+                  dispatch(
+                    createAction({
+                      command: "UPDATE_PROPERTY",
+                      category: "pose-x",
+                      value: e.target.value,
+                    })
+                  );
+                }}
+              />
             </p>
             <p>
-              Y <InputText value={selectedObject.pose.split(",")[1]} />
+              Y{" "}
+              <InputText
+                value={selectedObjectInfo.pose.split(",")[1]}
+                className="p-inputtext-sm"
+                onChange={(e) => {
+                  dispatch(
+                    createAction({
+                      command: "UPDATE_PROPERTY",
+                      category: "pose-y",
+                      value: e.target.value,
+                    })
+                  );
+                }}
+              />
             </p>
             <p>
-              Z <InputText value={selectedObject.pose.split(",")[2]} />
+              Z{" "}
+              <InputText
+                value={selectedObjectInfo.pose.split(",")[2]}
+                className="p-inputtext-sm"
+                onChange={(e) => {
+                  dispatch(
+                    createAction({
+                      command: "UPDATE_PROPERTY",
+                      category: "pose-z",
+                      value: e.target.value,
+                    })
+                  );
+                }}
+              />
             </p>
             <p>
-              RZ <InputText value={selectedObject.pose.split(",")[5]} />
+              RZ{" "}
+              <InputText
+                value={selectedObjectInfo.pose.split(",")[5]}
+                className="p-inputtext-sm"
+                onChange={(e) => {
+                  dispatch(
+                    createAction({
+                      command: "UPDATE_PROPERTY",
+                      category: "pose-rz",
+                      value: e.target.value,
+                    })
+                  );
+                }}
+              />
             </p>
           </div>
           <div>
@@ -298,14 +364,34 @@ export default function PropertyPanel() {
               value={selectedType}
               onChange={(e) => {
                 setSelectedType(e.value);
+                // dispatch(
+                //   createAction({
+                //     command: "UPDATE_PROPERTY",
+                //     category: "type",
+                //     value: e.value,
+                //   })
+                // );
               }}
               options={nodeTypes}
               optionLabel="name"
-              placeholder={selectedObject.type}
+              placeholder={selectedObjectInfo.type}
             />
           </div>
           <div>
-            Info <InputText value={selectedObject.info} />
+            Info{" "}
+            <InputText
+              value={selectedObjectInfo.info}
+              className="p-inputtext-sm"
+              onChange={(e) => {
+                dispatch(
+                  createAction({
+                    command: "UPDATE_PROPERTY",
+                    category: "info",
+                    value: e.target.value,
+                  })
+                );
+              }}
+            />
           </div>
         </div>
       ) : (
