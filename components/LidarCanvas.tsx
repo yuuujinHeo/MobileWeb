@@ -119,10 +119,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (className === CANVAS_CLASSES.DEFAULT) {
       if (isMarkingMode) {
         isMarkingModeRef.current = true;
-        toggleMarkingMode(true);
+        toggleMarkingMode();
       } else if (!isMarkingMode) {
         isMarkingModeRef.current = false;
-        toggleMarkingMode(false);
+        toggleMarkingMode();
       }
     }
     return () => {
