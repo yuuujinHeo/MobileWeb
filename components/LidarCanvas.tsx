@@ -85,7 +85,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       }
       rendererRef.current?.setAnimationLoop(null);
 
-      if (className !== CANVAS_CLASSES.OVERLAY) {
+      if (socketRef.current && className !== CANVAS_CLASSES.OVERLAY) {
         console.log("Socket disconnect ", socketRef.current.id);
         socketRef.current.disconnect();
       }

@@ -43,6 +43,12 @@ export default function PropertyPanel() {
 
   // state
   const [selectBtn, setSelectBtn] = useState<string>("Off");
+  const [displayInfo, setDisplayInfo] = useState({
+    x: "0",
+    y: "0",
+    z: "0",
+    rz: "0",
+  });
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
@@ -57,6 +63,15 @@ export default function PropertyPanel() {
 
   useEffect(() => {
     setSelectedType(selectedObjectInfo.type);
+
+    if (selectedObjectInfo && selectedObjectInfo.pose) {
+      setDisplayInfo({
+        x: selectedObjectInfo.pose.split(",")[0].slice(0, 6) || "0",
+        y: selectedObjectInfo.pose.split(",")[1].slice(0, 6) || "0",
+        z: selectedObjectInfo.pose.split(",")[2].slice(0, 6) || "0",
+        rz: selectedObjectInfo.pose.split(",")[5].slice(0, 6) || "0",
+      });
+    }
   }, [selectedObjectInfo]);
 
   const sendLOCRequest = async (command: string) => {
@@ -133,6 +148,29 @@ export default function PropertyPanel() {
       accept,
       reject,
     });
+  };
+
+  const handleInputChange = (input: string, target: string) => {
+    const updatedInfo = { ...displayInfo, [target]: input };
+    setDisplayInfo(updatedInfo);
+
+    const isInputValidate = getIsInputValidate(input);
+    if (isInputValidate) {
+      dispatch(
+        createAction({
+          command: "UPDATE_PROPERTY",
+          category: `pose-${target}`,
+          value: input,
+        })
+      );
+    }
+  };
+
+  const getIsInputValidate = (input: string) => {
+    // Do not dispatch when the input value is "" or ends with "."
+    // This allows InputText to display a value such as "" or "1."
+    if (input === "" || input.endsWith(".")) return false;
+    return !isNaN(Number(input));
   };
 
   const panelContents = {
@@ -294,66 +332,48 @@ export default function PropertyPanel() {
           <div>
             <p>POSE</p>
             <p>
-              X{" "}
+              X
               <InputText
-                value={selectedObjectInfo.pose.split(",")[0]}
+                value={displayInfo.x}
                 className="p-inputtext-sm"
+                keyfilter={"num"}
                 onChange={(e) => {
-                  dispatch(
-                    createAction({
-                      command: "UPDATE_PROPERTY",
-                      category: "pose-x",
-                      value: e.target.value,
-                    })
-                  );
+                  handleInputChange(e.target.value, "x");
                 }}
               />
             </p>
+
             <p>
               Y{" "}
               <InputText
-                value={selectedObjectInfo.pose.split(",")[1]}
+                value={displayInfo.y}
                 className="p-inputtext-sm"
+                keyfilter={"num"}
                 onChange={(e) => {
-                  dispatch(
-                    createAction({
-                      command: "UPDATE_PROPERTY",
-                      category: "pose-y",
-                      value: e.target.value,
-                    })
-                  );
+                  handleInputChange(e.target.value, "y");
                 }}
               />
             </p>
             <p>
               Z{" "}
               <InputText
-                value={selectedObjectInfo.pose.split(",")[2]}
+                value={displayInfo.z}
                 className="p-inputtext-sm"
+                keyfilter={"num"}
+                disabled
                 onChange={(e) => {
-                  dispatch(
-                    createAction({
-                      command: "UPDATE_PROPERTY",
-                      category: "pose-z",
-                      value: e.target.value,
-                    })
-                  );
+                  handleInputChange(e.target.value, "z");
                 }}
               />
             </p>
             <p>
               RZ{" "}
               <InputText
-                value={selectedObjectInfo.pose.split(",")[5]}
+                value={displayInfo.rz}
                 className="p-inputtext-sm"
+                keyfilter={"num"}
                 onChange={(e) => {
-                  dispatch(
-                    createAction({
-                      command: "UPDATE_PROPERTY",
-                      category: "pose-rz",
-                      value: e.target.value,
-                    })
-                  );
+                  handleInputChange(e.target.value, "rz");
                 }}
               />
             </p>
