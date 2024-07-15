@@ -159,21 +159,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     removeLabelFromNode(selectedObj);
     addLabelToNode(selectedObj);
-
-    const pos = selectedObj.position.toArray().toString();
-    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
-    const pose = pos + "," + rot;
-
-    dispatch(
-      changeSelectedObjectInfo({
-        id: selectedObj.uuid,
-        name: selectedObj.name,
-        links: selectedObj.userData.links,
-        pose: pose,
-        type: selectedObj.userData.type,
-        info: selectedObj.userData.info,
-      })
-    );
+    dispatchChange();
   };
 
   useEffect(() => {
@@ -274,7 +260,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     tfControl.showX = false;
     tfControl.showY = false;
     tfControl.size = 0.5;
-    tfControl.addEventListener("change", render);
+    tfControl.addEventListener("change", handleTransformChange);
     tfControl.addEventListener("dragging-changed", (event) => {
       control.enabled = !event.value;
     });
@@ -369,43 +355,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
       transformControlRef.current?.attach(selected);
 
-      // const position = selected.position.toArray();
-      // const parsedPos = position.map((position) => {
-      //   let res: string = "";
-      //   if (position.toString().length > 5) {
-      //     res = position.toString().slice(0, 4);
-      //   } else {
-      //     res = position.toString();
-      //   }
-      //   return res;
-      // });
-      //
-      // const rotation = selected.rotation.toArray();
-      // const parsedRot = rotation.map((rot) => {
-      //   let res: string = "";
-      //   if (rot) {
-      //     if (rot.toString().length > 5) {
-      //       res = rot?.toString().slice(0, 4);
-      //     } else {
-      //       res = rot.toString();
-      //     }
-      //   }
-      //   return res;
-      // });
-      const pos = selected.position.toArray().toString();
-      const rot = selected.rotation.toArray().slice(0, 3).toString();
-      // const pose = parsedPos.toString() + "," + parsedRot.toString();
-      const pose = pos + "," + rot;
-      const nodeInfo = {
-        id: selected.uuid,
-        name: selected.name,
-        links: selected.userData.links,
-        pose: pose,
-        type: selected.userData.type,
-        info: selected.userData.info,
-      };
-      // dispatch
-      dispatch(changeSelectedObjectInfo(nodeInfo));
+      dispatchChange();
     } else {
       selectedRef.current = null;
       dispatch(
@@ -961,6 +911,31 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const dispatchChange = () => {
+    const selectedObj = selectedRef.current;
+    if (!selectedObj) return;
+
+    const pos = selectedObj.position.toArray().toString();
+    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
+    const pose = pos + "," + rot;
+
+    dispatch(
+      changeSelectedObjectInfo({
+        id: selectedObj.uuid,
+        name: selectedObj.name,
+        links: selectedObj.userData.links,
+        pose: pose,
+        type: selectedObj.userData.type,
+        info: selectedObj.userData.info,
+      })
+    );
+  };
+
+  const handleTransformChange = () => {
+    dispatchChange();
+    render();
   };
 
   return <canvas className={className} ref={canvasRef} />;
