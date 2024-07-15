@@ -1,8 +1,10 @@
+import { CommandProps } from "@/types/layout";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {
   command: string;
-  target: string;
+  target?: string;
+  name?: string;
 }
 interface Init {
   x: string;
@@ -15,6 +17,7 @@ const initialState = {
   action: {
     command: "",
     target: "",
+    name: "",
     timestamp: 0,
   },
   initData: {
@@ -23,21 +26,22 @@ const initialState = {
     z: "",
     rz: "",
   },
-  localization: "Off",
+  isMarkingMode: false,
 };
 
 const canvasSlice = createSlice({
   name: "Canvas",
   initialState: initialState,
   reducers: {
-    drawCloud(state, action: PayloadAction<CommandData>) {
+    createAction(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
-      state.action.target = action.payload.target;
+      if (action.payload.target) state.action.target = action.payload.target;
+      if (action.payload.name) state.action.name = action.payload.name;
       state.action.timestamp = Date.now();
     },
     handleMapping(state, action: PayloadAction<CommandData>) {
       state.action.command = action.payload.command;
-      state.action.target = action.payload.target;
+      if (action.payload.target) state.action.target = action.payload.target;
       state.action.timestamp = Date.now();
     },
     updateInitData(state, action: PayloadAction<Init>) {
@@ -46,12 +50,16 @@ const canvasSlice = createSlice({
       state.initData.z = action.payload.z;
       state.initData.rz = action.payload.rz;
     },
-    toggleLocalization(state, action) {
-      state.localization = action.payload.command;
+    toggleMarkingMode(state, action) {
+      state.isMarkingMode = action.payload.isMarkingMode;
     },
   },
 });
 
-export const { drawCloud, handleMapping, updateInitData, toggleLocalization } =
-  canvasSlice.actions;
+export const {
+  handleMapping,
+  updateInitData,
+  toggleMarkingMode,
+  createAction,
+} = canvasSlice.actions;
 export default canvasSlice.reducer;

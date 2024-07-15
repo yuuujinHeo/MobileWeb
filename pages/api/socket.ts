@@ -8,7 +8,8 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
     console.log("*First use, starting socket.io");
 
     const io2 = new Server((res.socket as any).server);
-    let url = "http://10.108.1.40:10334"
+    // let url = await getMobileSocketURL();
+    const url = "http://10.108.1.40:10334/";
     let socket = io(url);
 
     socket.on("connect", () => {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useDispatch } from "react-redux";
 import { handleMapping } from "@/store/canvasSlice";
 
@@ -16,7 +16,7 @@ type Severity = "success" | "info" | "warn" | "error";
 
 const UtilityPanel = () => {
   const dispatch = useDispatch();
-  const [filename, setFilename] = useState<string>("");
+  const filenameRef = useRef<string>("");
   const toast = useRef<Toast>(null);
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -64,8 +64,7 @@ const UtilityPanel = () => {
     // dialog for save button
     const accept = async () => {
       try {
-        // await axios.get(url + `/mapping/save/33`);
-        await axios.get(url + `/mapping/save/${filename}`);
+        await axios.get(url + `/mapping/save/${filenameRef.current}`);
 
         showToast("info", "Save", "Save succeed");
       } catch (e) {
@@ -84,7 +83,7 @@ const UtilityPanel = () => {
             <InputText
               id="filename"
               onChange={(e) => {
-                setFilename(e.target.value);
+                filenameRef.current = e.target.value;
               }}
             />
             <label htmlFor="filename">Filename</label>

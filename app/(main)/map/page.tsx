@@ -4,44 +4,27 @@ import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { drawCloud, toggleLocalization } from "@/store/canvasSlice";
+import { createAction } from "@/store/canvasSlice";
+import { selectPanel } from "@/store/propertyPanelSlices";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
-import { ButtonGroup } from "primereact/buttongroup";
 import { Button } from "primereact/button";
 import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
-import { Card } from "primereact/card";
-import { SelectButton } from "primereact/selectbutton";
 
 import UtilityPanel from "@/components/UtilityPanel";
+import PropertyPanel from "@/components/PropertyPanel";
 
 import { CANVAS_CLASSES } from "@/constants";
 
 import axios from "axios";
 
-interface LocValues {
-  x: string;
-  y: string;
-  z: string;
-  rz: string;
-}
-interface LocReqPayload {
-  time: string;
-  command: string;
-  x?: string;
-  y?: string;
-  z?: string;
-  rz?: string;
-}
-
 // components
 import LidarCanvas from "@/components/LidarCanvas";
 import { SpeedDial } from "primereact/speeddial";
-import { Panel } from "primereact/panel";
 
 interface ListData {
   name: string;
@@ -58,7 +41,11 @@ const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const dispatch = useDispatch();
-  const initData = useSelector((state: RootState) => state.canvas.initData);
+
+  // root state
+  const selectedPanel = useSelector(
+    (state: RootState) => state.propertyPanel.selectedPanel
+  );
 
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
@@ -68,7 +55,6 @@ const Map: React.FC = () => {
   const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
     null
   );
-  const [selectBtn, setSelectBtn] = useState<string>("Off");
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const dialItems = [
@@ -77,6 +63,20 @@ const Map: React.FC = () => {
       icon: "pi pi-map",
       command: () => {
         setIsSidebarVisible(true);
+      },
+    },
+    {
+      label: "Localization",
+      icon: "pi pi-compass",
+      command: () => {
+        dispatch(selectPanel({ selectedPanel: "localization" }));
+      },
+    },
+    {
+      label: "Annotation",
+      icon: "pi pi-flag",
+      command: () => {
+        dispatch(selectPanel({ selectedPanel: "annotation" }));
       },
     },
     {
@@ -112,7 +112,7 @@ const Map: React.FC = () => {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setSelectedMapCloud(res.data);
       dispatch(
-        drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
+        createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
       );
     } catch (e) {
       console.error(e);
@@ -126,7 +126,7 @@ const Map: React.FC = () => {
   const handleLoadMap = () => {
     // Draw cloud points to lidar canvas
     dispatch(
-      drawCloud({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
+      createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
     );
 
     // Hide dialogue
@@ -155,32 +155,6 @@ const Map: React.FC = () => {
     }
   };
 
-  const sendLOCRequest = async (command: string) => {
-    try {
-      const payload: LocReqPayload = {
-        time: getCurrentTime(),
-        command: command,
-        x: initData.x,
-        y: initData.y,
-        z: initData.z,
-        rz: initData.rz,
-      };
-
-      await axios.post(url + "/localization", payload);
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  const getCurrentTime = () => {
-    const currentTime = new Date()
-      .toISOString()
-      .replace("T", " ")
-      .replace("Z", "");
-
-    return currentTime;
-  };
-
   return (
     <div id="map">
       <LidarCanvas
@@ -199,70 +173,8 @@ const Map: React.FC = () => {
         ></SpeedDial>
       </div>
 
-      {/* Loc panel */}
-      <div id="loc-container">
-        <Card id="loc-panel" title="Localization">
-          <div id="switch-container">
-            <span>Marker</span>
-            <SelectButton
-              value={selectBtn}
-              options={["On", "Off"]}
-              onChange={(e) => {
-                if (e.value !== null) {
-                  setSelectBtn(e.value);
-                }
-                const command: string = e.value;
-                dispatch(toggleLocalization({ command: command }));
-              }}
-            />
-          </div>
-          <ButtonGroup>
-            <Button
-              label="INIT"
-              size="small"
-              severity="secondary"
-              text
-              raised
-              onClick={(e) => {
-                sendLOCRequest("init");
-                e.stopPropagation();
-              }}
-            />
-            <Button
-              label="AUTO INIT"
-              size="small"
-              severity="secondary"
-              text
-              raised
-              onClick={(e) => {
-                sendLOCRequest("autoinit");
-                e.stopPropagation();
-              }}
-            />
-            <Button
-              label="LOC START"
-              size="small"
-              severity="secondary"
-              text
-              raised
-              onClick={(e) => {
-                sendLOCRequest("start");
-                e.stopPropagation();
-              }}
-            />
-            <Button
-              label="LOC STOP"
-              size="small"
-              severity="secondary"
-              text
-              raised
-              onClick={(e) => {
-                sendLOCRequest("stop");
-                e.stopPropagation();
-              }}
-            />
-          </ButtonGroup>
-        </Card>
+      <div id="property-container">
+        <PropertyPanel />
       </div>
 
       {/* Load Dialog */}
