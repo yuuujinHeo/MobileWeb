@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, Children } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
 import { updateInitData, changeSelectedObjectInfo } from "@/store/canvasSlice";
@@ -19,7 +19,6 @@ import { io } from "socket.io-client";
 import axios from "axios";
 
 import { CANVAS_CLASSES } from "@/constants";
-import { resourceLimits } from "worker_threads";
 
 interface LidarCanvasProps {
   className: string;
@@ -58,6 +57,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
   let isMouseDown: boolean = false;
+  let isMouseDragged: boolean = false;
   let pressedMouseBtn: number | null;
 
   let isTouchDragging: boolean = false;
@@ -356,6 +356,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const selectObject = (event: MouseEvent | TouchEvent) => {
     const raycaster = getRaycaster(event);
+    transformControlRef.current?.detach();
     if (!sceneRef.current || !raycaster) return;
 
     const intersects = raycaster.intersectObjects(objects.current, true);
@@ -422,6 +423,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const createNodeHelper = (event: MouseEvent | TouchEvent) => {
     const raycaster = getRaycaster(event);
+    transformControlRef.current?.detach();
     if (!sceneRef.current || !raycaster) return;
 
     const plane = sceneRef.current.getObjectByName("plane");
@@ -473,14 +475,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const handleMouseDown = (event: MouseEvent) => {
     isMouseDown = true;
+    isMouseDragged = false;
     pressedMouseBtn = event.button;
 
-    transformControlRef.current?.detach();
-
     switch (event.button) {
-      case 0:
-        selectObject(event);
-        break;
       case 2:
         if (isMarkingModeRef.current) createNodeHelper(event);
         break;
@@ -495,6 +493,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const handleMouseMove = (event: MouseEvent) => {
+    isMouseDragged = true;
     if (isMouseDown && pressedMouseBtn === 2) {
       const marker: THREE.Object3D | undefined =
         transformControlRef.current?.object;
@@ -538,6 +537,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
     pressedMouseBtn = null;
+
+    switch (event.button) {
+      case 0:
+        if (!isMouseDragged) selectObject(event);
+        break;
+      default:
+        break;
+    }
 
     if (!transformControlRef.current || event.button !== 2) return;
     const obj: THREE.Object3D | undefined = transformControlRef.current.object;
