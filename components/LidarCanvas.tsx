@@ -871,6 +871,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       sceneRef.current?.add(group);
 
       objects.current.push(group);
+
+      selectObject(group);
     });
   };
 
@@ -895,6 +897,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     addLabelToNode(route);
     sceneRef.current?.add(route);
     objects.current.push(route);
+    selectObject(route);
   };
 
   const setupNode = (node: THREE.Object3D, type: string) => {
