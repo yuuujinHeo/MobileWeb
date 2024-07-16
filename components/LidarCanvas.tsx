@@ -27,6 +27,7 @@ interface LidarCanvasProps {
 
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
+  // root state
   const { action, isMarkingMode, initData } = useSelector(
     (state: RootState) => state.canvas
   );
@@ -46,7 +47,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const mappingPointsArr = useRef<number[]>([]);
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
-  const objects = useRef<THREE.Object3D[]>([]);
+  let objects = useRef<THREE.Object3D[]>([]);
   const selectedRef = useRef<THREE.Object3D | null>(null);
 
   let routeNum = useRef<number>(0);
@@ -56,6 +57,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
+  let removedNodePos: {
+    x: number;
+    y: number;
+    z: number;
+    rz: number;
+  } | null = null;
+
+  // mouse event variables
   let isMouseDown: boolean = false;
   let isMouseDragged: boolean = false;
   let pressedMouseBtn: number | null;
@@ -115,12 +124,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
           addRouteNode();
         } else if (action.category === "GOAL") addGoalNode();
         break;
+      case "DELETE_NODE":
+        removeNode();
+        break;
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
         break;
       case "UPDATE_PROPERTY":
         updateProperty(action.category, action.value);
-
         break;
       default:
         break;
@@ -134,6 +145,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     switch (category) {
       case "name":
         selectedObj.name = value;
+        // update label
+        removeLabelFromNode(selectedObj);
+        addLabelToNode(selectedObj);
         break;
       case "pose-x":
         selectedObj.position.x = Number(value);
@@ -148,7 +162,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         selectedObj.rotation.z = Number(value);
         break;
       case "type":
-        selectedObj.userData.type = value;
+        if (selectedObj.userData.type !== value) {
+          removeNode();
+          if (value === "GOAL") {
+            addGoalNode();
+          } else if (value === "ROUTE") {
+            addRouteNode();
+          }
+        }
         break;
       case "info":
         selectedObj.userData.info = value;
@@ -157,23 +178,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         break;
     }
 
-    removeLabelFromNode(selectedObj);
-    addLabelToNode(selectedObj);
-
-    const pos = selectedObj.position.toArray().toString();
-    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
-    const pose = pos + "," + rot;
-
-    dispatch(
-      changeSelectedObjectInfo({
-        id: selectedObj.uuid,
-        name: selectedObj.name,
-        links: selectedObj.userData.links,
-        pose: pose,
-        type: selectedObj.userData.type,
-        info: selectedObj.userData.info,
-      })
-    );
+    // update selected object info
+    dispatchChange();
   };
 
   useEffect(() => {
@@ -274,7 +280,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     tfControl.showX = false;
     tfControl.showY = false;
     tfControl.size = 0.5;
-    tfControl.addEventListener("change", render);
+    tfControl.addEventListener("change", handleTransformChange);
     tfControl.addEventListener("dragging-changed", (event) => {
       control.enabled = !event.value;
     });
@@ -354,58 +360,45 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     return currenteObj;
   };
 
-  const selectObject = (event: MouseEvent | TouchEvent) => {
-    const raycaster = getRaycaster(event);
-    transformControlRef.current?.detach();
-    if (!sceneRef.current || !raycaster) return;
+  const getIntersectByRaycasting = (event: MouseEvent | TouchEvent) => {
+    if (
+      !canvasRef.current ||
+      !cameraRef.current ||
+      !sceneRef.current ||
+      !transformControlRef.current
+    )
+      return null;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const pos = getCanvasRelativePosition(event);
+
+    if (!pos) return null;
+    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+    mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, cameraRef.current);
 
     const intersects = raycaster.intersectObjects(objects.current, true);
 
+    let intersect: THREE.Object3D | null;
     if (intersects.length) {
-      let selected = intersects[0].object;
+      intersect = intersects[0].object;
+    } else {
+      intersect = null;
+    }
+
+    return intersect;
+  };
+
+  const selectObject = (intersect: THREE.Object3D | null) => {
+    transformControlRef.current?.detach();
+    if (intersect !== null) {
+      let selected = intersect;
       selected = findTopParent(selected);
-
       selectedRef.current = selected;
-
       transformControlRef.current?.attach(selected);
-
-      // const position = selected.position.toArray();
-      // const parsedPos = position.map((position) => {
-      //   let res: string = "";
-      //   if (position.toString().length > 5) {
-      //     res = position.toString().slice(0, 4);
-      //   } else {
-      //     res = position.toString();
-      //   }
-      //   return res;
-      // });
-      //
-      // const rotation = selected.rotation.toArray();
-      // const parsedRot = rotation.map((rot) => {
-      //   let res: string = "";
-      //   if (rot) {
-      //     if (rot.toString().length > 5) {
-      //       res = rot?.toString().slice(0, 4);
-      //     } else {
-      //       res = rot.toString();
-      //     }
-      //   }
-      //   return res;
-      // });
-      const pos = selected.position.toArray().toString();
-      const rot = selected.rotation.toArray().slice(0, 3).toString();
-      // const pose = parsedPos.toString() + "," + parsedRot.toString();
-      const pose = pos + "," + rot;
-      const nodeInfo = {
-        id: selected.uuid,
-        name: selected.name,
-        links: selected.userData.links,
-        pose: pose,
-        type: selected.userData.type,
-        info: selected.userData.info,
-      };
-      // dispatch
-      dispatch(changeSelectedObjectInfo(nodeInfo));
+      dispatchChange();
     } else {
       selectedRef.current = null;
       dispatch(
@@ -540,7 +533,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     switch (event.button) {
       case 0:
-        if (!isMouseDragged) selectObject(event);
+        if (!isMouseDragged) {
+          const intersect = getIntersectByRaycasting(event);
+          selectObject(intersect);
+        }
+
         break;
       default:
         break;
@@ -875,7 +872,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       sceneRef.current?.add(group);
 
       objects.current.push(group);
-      console.log("add goal node", objects.current);
+
+      selectObject(group);
     });
   };
 
@@ -900,11 +898,21 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     addLabelToNode(route);
     sceneRef.current?.add(route);
     objects.current.push(route);
+    selectObject(route);
   };
 
   const setupNode = (node: THREE.Object3D, type: string) => {
-    node.position.set(Number(initData.x), Number(initData.y), 0);
-    const nodeId = `node-${node.uuid}`;
+    // Set node position
+    if (removedNodePos) {
+      // The removedNodePos variable is always null,
+      // except when the node type changes.
+      // This is because it is initialized when the component is refreshed.
+      // (e.g., when a state change occurs).
+      node.position.set(removedNodePos.x, removedNodePos.y, 0);
+    } else {
+      node.position.set(Number(initData.x), Number(initData.y), 0);
+    }
+    const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
     if (type === "ROUTE") {
@@ -940,6 +948,56 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (label) node.remove(label);
   };
 
+  const removeNode = () => {
+    const selectedObj = selectedRef.current;
+    const scene = sceneRef.current;
+    const nodes = nodesRef.current;
+    if (!selectedObj || !scene) return;
+
+    removedNodePos = {
+      x: selectedObj.position.x,
+      y: selectedObj.position.y,
+      z: selectedObj.position.z,
+      rz: selectedObj.rotation.z,
+    };
+
+    // Num update
+    // if (selectedObj.userData.type === "GOAL") {
+    //   goalNum.current -= 1;
+    // } else if (selectedObj.userData.type === "ROUTE") {
+    //   routeNum.current -= 1;
+    // }
+
+    if (transformControlRef.current) {
+      transformControlRef.current.detach();
+    }
+    selectedRef.current = null;
+
+    // remove 3d modeling & label
+    removeLabelFromNode(selectedObj);
+    scene.remove(selectedObj);
+
+    // Remove the node from nodesRef
+    nodes.delete(selectedObj.uuid);
+    // Resetting the array which is used for raycasting
+    const filteredObjects = objects.current.filter(
+      (obj) => obj.name !== selectedObj.name
+    );
+    objects.current = filteredObjects;
+
+    // Reset the selected object info
+    dispatch(
+      changeSelectedObjectInfo({
+        id: "",
+        name: "",
+        links: [],
+        pose: "",
+        type: "",
+        info: "",
+      })
+    );
+  };
+
   const saveAnnotation = async (filename: string) => {
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const pos = node.position.toArray().toString();
@@ -961,6 +1019,31 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     } catch (e) {
       console.error(e);
     }
+  };
+
+  const dispatchChange = () => {
+    const selectedObj = selectedRef.current;
+    if (!selectedObj) return;
+
+    const pos = selectedObj.position.toArray().toString();
+    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
+    const pose = pos + "," + rot;
+
+    dispatch(
+      changeSelectedObjectInfo({
+        id: selectedObj.uuid,
+        name: selectedObj.name,
+        links: selectedObj.userData.links,
+        pose: pose,
+        type: selectedObj.userData.type,
+        info: selectedObj.userData.info,
+      })
+    );
+  };
+
+  const handleTransformChange = () => {
+    dispatchChange();
+    render();
   };
 
   return <canvas className={className} ref={canvasRef} />;
