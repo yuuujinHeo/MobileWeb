@@ -148,6 +148,14 @@ export default function PropertyPanel() {
     });
   };
 
+  const deleteNode = () => {
+    dispatch(
+      createAction({
+        command: "DELETE_NODE",
+      })
+    );
+  };
+
   const handleInputChange = (input: string, target: string) => {
     const updatedInfo = { ...displayInfo, [target]: input };
     setDisplayInfo(updatedInfo);
@@ -411,6 +419,14 @@ export default function PropertyPanel() {
               }}
             />
           </div>
+          <Button
+            label="Delete Node"
+            size="small"
+            severity="danger"
+            text
+            raised
+            onClick={deleteNode}
+          />
         </div>
       ) : (
         <h5>Nothing selected</h5>

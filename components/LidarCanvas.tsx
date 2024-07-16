@@ -28,7 +28,7 @@ interface LidarCanvasProps {
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
-  const { action, isMarkingMode, initData, selectedObjectInfo } = useSelector(
+  const { action, isMarkingMode, initData } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -124,6 +124,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
           addRouteNode();
         } else if (action.category === "GOAL") addGoalNode();
         break;
+      case "DELETE_NODE":
+        removeNode();
+        break;
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
         break;
@@ -137,7 +140,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedRef.current;
-    const scene = sceneRef.current;
     if (!selectedObj) return;
 
     switch (category) {
@@ -531,7 +533,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     switch (event.button) {
       case 0:
-        // if (!isMouseDragged) selectObject(event);
         if (!isMouseDragged) {
           const intersect = getIntersectByRaycasting(event);
           selectObject(intersect);
@@ -903,9 +904,11 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const setupNode = (node: THREE.Object3D, type: string) => {
     // Set node position
     if (removedNodePos) {
+      // The removedNodePos variable is always null,
+      // except when the node type changes.
+      // This is because it is initialized when the component is refreshed.
+      // (e.g., when a state change occurs).
       node.position.set(removedNodePos.x, removedNodePos.y, 0);
-      // reset removedNodePos
-      removedNodePos = null;
     } else {
       node.position.set(Number(initData.x), Number(initData.y), 0);
     }
@@ -960,9 +963,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     // Num update
     // if (selectedObj.userData.type === "GOAL") {
-    //   routeNum.current -= 1;
-    // } else if (selectedObj.userData.type === "ROUTE") {
     //   goalNum.current -= 1;
+    // } else if (selectedObj.userData.type === "ROUTE") {
+    //   routeNum.current -= 1;
     // }
 
     if (transformControlRef.current) {
