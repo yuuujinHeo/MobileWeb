@@ -27,7 +27,8 @@ interface LidarCanvasProps {
 
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
-  const { action, isMarkingMode, initData } = useSelector(
+  // root state
+  const { action, isMarkingMode, initData, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -46,7 +47,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const mappingPointsArr = useRef<number[]>([]);
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
-  const objects = useRef<THREE.Object3D[]>([]);
+  let objects = useRef<THREE.Object3D[]>([]);
   const selectedRef = useRef<THREE.Object3D | null>(null);
 
   let routeNum = useRef<number>(0);
@@ -56,6 +57,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
+  let removedNodePos: {
+    x: number;
+    y: number;
+    z: number;
+    rz: number;
+  } | null = null;
+
+  // mouse event variables
   let isMouseDown: boolean = false;
   let isMouseDragged: boolean = false;
   let pressedMouseBtn: number | null;
@@ -120,7 +129,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         break;
       case "UPDATE_PROPERTY":
         updateProperty(action.category, action.value);
-
         break;
       default:
         break;
@@ -129,11 +137,15 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedRef.current;
+    const scene = sceneRef.current;
     if (!selectedObj) return;
 
     switch (category) {
       case "name":
         selectedObj.name = value;
+        // update label
+        removeLabelFromNode(selectedObj);
+        addLabelToNode(selectedObj);
         break;
       case "pose-x":
         selectedObj.position.x = Number(value);
@@ -148,7 +160,18 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         selectedObj.rotation.z = Number(value);
         break;
       case "type":
+        console.log(1, "action update detected");
         selectedObj.userData.type = value;
+        // TODO
+        // remove selected node
+        removeNode();
+        if (value === "GOAL") {
+          addGoalNode();
+        } else if (value === "ROUTE") {
+          // Add a new route node
+          addRouteNode();
+        }
+
         break;
       case "info":
         selectedObj.userData.info = value;
@@ -157,8 +180,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         break;
     }
 
-    removeLabelFromNode(selectedObj);
-    addLabelToNode(selectedObj);
+    // update selected object info
     dispatchChange();
   };
 
@@ -825,7 +847,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       sceneRef.current?.add(group);
 
       objects.current.push(group);
-      console.log("add goal node", objects.current);
     });
   };
 
@@ -853,8 +874,15 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const setupNode = (node: THREE.Object3D, type: string) => {
-    node.position.set(Number(initData.x), Number(initData.y), 0);
-    const nodeId = `node-${node.uuid}`;
+    // Set node position
+    if (removedNodePos) {
+      node.position.set(removedNodePos.x, removedNodePos.y, 0);
+      // reset removedNodePos
+      removedNodePos = null;
+    } else {
+      node.position.set(Number(initData.x), Number(initData.y), 0);
+    }
+    const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
     if (type === "ROUTE") {
@@ -888,6 +916,56 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       if (children.name === "label") label = children;
     });
     if (label) node.remove(label);
+  };
+
+  const removeNode = () => {
+    const selectedObj = selectedRef.current;
+    const scene = sceneRef.current;
+    const nodes = nodesRef.current;
+    if (!selectedObj || !scene) return;
+
+    removedNodePos = {
+      x: selectedObj.position.x,
+      y: selectedObj.position.y,
+      z: selectedObj.position.z,
+      rz: selectedObj.rotation.z,
+    };
+
+    // Num update
+    // if (selectedObj.userData.type === "GOAL") {
+    //   routeNum.current -= 1;
+    // } else if (selectedObj.userData.type === "ROUTE") {
+    //   goalNum.current -= 1;
+    // }
+
+    if (transformControlRef.current) {
+      transformControlRef.current.detach();
+    }
+    selectedRef.current = null;
+
+    // remove 3d modeling & label
+    removeLabelFromNode(selectedObj);
+    scene.remove(selectedObj);
+
+    // Remove the node from nodesRef
+    nodes.delete(selectedObj.uuid);
+    // Resetting the array which is used for raycasting
+    const filteredObjects = objects.current.filter(
+      (obj) => obj.name !== selectedObj.name
+    );
+    objects.current = filteredObjects;
+
+    // Reset the selected object info
+    dispatch(
+      changeSelectedObjectInfo({
+        id: "",
+        name: "",
+        links: [],
+        pose: "",
+        type: "",
+        info: "",
+      })
+    );
   };
 
   const saveAnnotation = async (filename: string) => {

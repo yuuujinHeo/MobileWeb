@@ -62,8 +62,6 @@ export default function PropertyPanel() {
   ];
 
   useEffect(() => {
-    setSelectedType(selectedObjectInfo.type);
-
     if (selectedObjectInfo && selectedObjectInfo.pose) {
       setDisplayInfo({
         x: selectedObjectInfo.pose.split(",")[0].slice(0, 6) || "0",
@@ -383,14 +381,14 @@ export default function PropertyPanel() {
             <Dropdown
               value={selectedType}
               onChange={(e) => {
-                setSelectedType(e.value);
-                // dispatch(
-                //   createAction({
-                //     command: "UPDATE_PROPERTY",
-                //     category: "type",
-                //     value: e.value,
-                //   })
-                // );
+                setSelectedType(e.value.name);
+                dispatch(
+                  createAction({
+                    command: "UPDATE_PROPERTY",
+                    category: "type",
+                    value: e.value.name,
+                  })
+                );
               }}
               options={nodeTypes}
               optionLabel="name"
