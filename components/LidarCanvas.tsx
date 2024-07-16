@@ -160,18 +160,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         selectedObj.rotation.z = Number(value);
         break;
       case "type":
-        console.log(1, "action update detected");
-        selectedObj.userData.type = value;
-        // TODO
-        // remove selected node
-        removeNode();
-        if (value === "GOAL") {
-          addGoalNode();
-        } else if (value === "ROUTE") {
-          // Add a new route node
-          addRouteNode();
+        if (selectedObj.userData.type !== value) {
+          removeNode();
+          if (value === "GOAL") {
+            addGoalNode();
+          } else if (value === "ROUTE") {
+            addRouteNode();
+          }
         }
-
         break;
       case "info":
         selectedObj.userData.info = value;
@@ -362,21 +358,44 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     return currenteObj;
   };
 
-  const selectObject = (event: MouseEvent | TouchEvent) => {
-    const raycaster = getRaycaster(event);
-    transformControlRef.current?.detach();
-    if (!sceneRef.current || !raycaster) return;
+  const getIntersectByRaycasting = (event: MouseEvent | TouchEvent) => {
+    if (
+      !canvasRef.current ||
+      !cameraRef.current ||
+      !sceneRef.current ||
+      !transformControlRef.current
+    )
+      return null;
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
+    const pos = getCanvasRelativePosition(event);
+
+    if (!pos) return null;
+    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
+    mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, cameraRef.current);
 
     const intersects = raycaster.intersectObjects(objects.current, true);
 
+    let intersect: THREE.Object3D | null;
     if (intersects.length) {
-      let selected = intersects[0].object;
+      intersect = intersects[0].object;
+    } else {
+      intersect = null;
+    }
+
+    return intersect;
+  };
+
+  const selectObject = (intersect: THREE.Object3D | null) => {
+    transformControlRef.current?.detach();
+    if (intersect !== null) {
+      let selected = intersect;
       selected = findTopParent(selected);
-
       selectedRef.current = selected;
-
       transformControlRef.current?.attach(selected);
-
       dispatchChange();
     } else {
       selectedRef.current = null;
@@ -512,7 +531,12 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     switch (event.button) {
       case 0:
-        if (!isMouseDragged) selectObject(event);
+        // if (!isMouseDragged) selectObject(event);
+        if (!isMouseDragged) {
+          const intersect = getIntersectByRaycasting(event);
+          selectObject(intersect);
+        }
+
         break;
       default:
         break;
