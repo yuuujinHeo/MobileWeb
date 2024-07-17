@@ -296,6 +296,17 @@ export default function PropertyPanel() {
             saveAnnotation();
           }}
         />
+        <Button
+          label="Add Link"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            // saveAnnotation();
+            dispatch(createAction({ command: "ADD_LINK" }));
+          }}
+        />
       </div>
     ),
   };

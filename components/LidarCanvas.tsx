@@ -134,6 +134,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "UPDATE_PROPERTY":
         updateProperty(action.category, action.value);
         break;
+      case "ADD_LINK":
+        addLinks();
+        break;
       default:
         break;
     }
@@ -421,10 +424,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
         // e.g) Given selctedNodeRef is [1, 2, 3, 4, 5],
         // selecting node 4 will reorder it to [4, 1, 2, 3, 5]
-        // const parsed = selectedNodesRef.current.filter(
-        //   (node) => node !== topParent
-        // );
-        // selectedNodesRef.current = [topParent, ...parsed];
         const index = selectedNodesRef.current.indexOf(topParent);
         selectedNodesRef.current.splice(index, 1);
         selectedNodesRef.current.unshift(topParent);
@@ -1097,15 +1096,34 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     render();
   };
 
-  const createArrow = (
-    start: THREE.Vector3,
-    end: THREE.Vector3,
-    color = 0xffff00
-  ) => {
-    const dir = new THREE.Vector3().subVectors(end, start).normalize();
-    const length = start.distanceTo(end);
-    const arrowHelper = new THREE.ArrowHelper(dir, start, length, color);
-    sceneRef.current?.add(arrowHelper);
+  const addLinks = () => {
+    // TODO
+
+    createArrow();
+  };
+
+  const createArrow = (color = 0x0000ff) => {
+    const selectedNodes = selectedNodesRef.current;
+    if (selectedNodes.length === 2) {
+      const start = selectedNodes[0].position;
+      const end = selectedNodes[1].position;
+      const dir = new THREE.Vector3().subVectors(end, start).normalize();
+      const length = start.distanceTo(end);
+      // default color is blue
+      const arrowHelper = new THREE.ArrowHelper(dir, start, length, color);
+      sceneRef.current?.add(arrowHelper);
+    } else {
+      for (let i = 0; i < selectedNodes.length - 1; i++) {
+        const start = selectedNodes[i].position;
+        const end = selectedNodes[i + 1].position;
+
+        const dir = new THREE.Vector3().subVectors(end, start).normalize();
+        const length = start.distanceTo(end);
+        // default color is blue
+        const arrowHelper = new THREE.ArrowHelper(dir, start, length, color);
+        sceneRef.current?.add(arrowHelper);
+      }
+    }
   };
 
   return <canvas className={className} ref={canvasRef} />;
