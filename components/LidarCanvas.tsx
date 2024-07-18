@@ -1125,6 +1125,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const addLinks = () => {
+    // This function should be called before updating the links
+    // I mean, before 'Update links' logic...
+    createArrow();
+
     // Update links
     const selectedNodesArray = selectedNodesArrayRef.current;
 
@@ -1134,41 +1138,38 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
       let links: string[] = [];
       links = [...from.userData.links];
-      links.push(to.uuid);
-      from.userData.links = links;
+      if (!links.includes(to.uuid)) {
+        links.push(to.uuid);
+        from.userData.links = links;
+      }
     }
-
-    createArrow();
   };
 
   const createArrow = (color = 0x0000ff) => {
     const selectedNodes = selectedNodesArrayRef.current;
-    if (selectedNodes.length === 2) {
-      const start = selectedNodes[0];
-      const end = selectedNodes[1];
-      const startPos = start.position;
-      const endPos = end.position;
-      const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
-      const length = startPos.distanceTo(endPos);
-      // default color is blue
-      const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
-      arrowHelper.name = `arrow-${start.name}-${end.name}`;
-      sceneRef.current?.add(arrowHelper);
-    } else {
+    if (selectedNodes.length > 1) {
       for (let i = 0; i < selectedNodes.length - 1; i++) {
         const start = selectedNodes[i];
         const end = selectedNodes[i + 1];
-        const startPos = start.position;
-        const endPos = end.position;
 
-        const dir = new THREE.Vector3()
-          .subVectors(endPos, startPos)
-          .normalize();
-        const length = startPos.distanceTo(endPos);
-        // default color is blue
-        const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
-        arrowHelper.name = `arrow-${start.name}-${end.name}`;
-        sceneRef.current?.add(arrowHelper);
+        if (!start.userData.links.includes(end.uuid)) {
+          const startPos = start.position;
+          const endPos = end.position;
+
+          const dir = new THREE.Vector3()
+            .subVectors(endPos, startPos)
+            .normalize();
+          const length = startPos.distanceTo(endPos);
+          // default color is blue
+          const arrowHelper = new THREE.ArrowHelper(
+            dir,
+            startPos,
+            length,
+            color
+          );
+          arrowHelper.name = `arrow-${start.name}-${end.name}`;
+          sceneRef.current?.add(arrowHelper);
+        }
       }
     }
   };
