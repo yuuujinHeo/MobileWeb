@@ -1049,6 +1049,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     );
     raycastTargetsRef.current = filteredObjects;
 
+    // select null
+    selectObject(null);
+
     scene.remove(selectedObj);
     // Reset the selected object info
     dispatch(
