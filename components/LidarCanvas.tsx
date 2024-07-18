@@ -145,29 +145,21 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
   }, [action]);
 
-  const removeLink = (nodeId: string, deleteNodeName: string) => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    const from = scene.getObjectByProperty("uuid", nodeId);
-    const to = scene.getObjectByName(deleteNodeName);
-
-    if (!from || !to) return;
-    const targetArrow = scene.getObjectByName(`arrow-${from.name}-${to.name}`);
-    if (targetArrow) {
-      scene.remove(targetArrow);
-
-      // Update selected node's userData.links
-      let links: string[] = [];
-      links = [...from.userData.links];
-      const index = links.findIndex((link) => {
-        link === to.uuid;
-      });
-      links.splice(index, 1);
-      from.userData.links = links;
-
-      dispatchChange();
+  useEffect(() => {
+    if (className === CANVAS_CLASSES.DEFAULT) {
+      if (isMarkingMode) {
+        isMarkingModeRef.current = true;
+        toggleMarkingMode();
+      } else if (!isMarkingMode) {
+        isMarkingModeRef.current = false;
+        toggleMarkingMode();
+      }
     }
-  };
+    return () => {
+      // toggleMarkingMode(false);
+      // handleLocalizationOff();
+    };
+  }, [isMarkingMode]);
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedNodeRef.current;
@@ -212,22 +204,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     // update selected object info
     dispatchChange();
   };
-
-  useEffect(() => {
-    if (className === CANVAS_CLASSES.DEFAULT) {
-      if (isMarkingMode) {
-        isMarkingModeRef.current = true;
-        toggleMarkingMode();
-      } else if (!isMarkingMode) {
-        isMarkingModeRef.current = false;
-        toggleMarkingMode();
-      }
-    }
-    return () => {
-      // toggleMarkingMode(false);
-      // handleLocalizationOff();
-    };
-  }, [isMarkingMode]);
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
@@ -1053,18 +1029,26 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     }
     selectedNodeRef.current = null;
 
+    // ======================================================
+    // ==DO NOT CHANGE THE EXCUTION ORDER OF THE FUNCTIONS!==
+    // ======================================================
+
     // remove 3d modeling & label
     removeLabelFromNode(selectedObj);
-    scene.remove(selectedObj);
 
     // Remove the node from nodesRef
     nodes.delete(selectedObj.uuid);
+
+    // Remove links
+    removeAllLinksRelateTo(selectedObj.uuid);
+
     // Resetting the array which is used for raycasting
     const filteredObjects = raycastTargetsRef.current.filter(
       (obj) => obj.name !== selectedObj.name
     );
     raycastTargetsRef.current = filteredObjects;
 
+    scene.remove(selectedObj);
     // Reset the selected object info
     dispatch(
       changeSelectedObjectInfo({
@@ -1118,7 +1102,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
           "uuid",
           nodeUUID
         ) as THREE.Object3D;
-        return node.name;
+        if (node) return node.name;
       });
     }
 
@@ -1185,6 +1169,53 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         arrowHelper.name = `arrow-${start.name}-${end.name}`;
         sceneRef.current?.add(arrowHelper);
       }
+    }
+  };
+
+  const removeAllLinksRelateTo = (targetNodeUUID: string) => {
+    const scene = sceneRef.current;
+    const nodes = nodesRef.current;
+    if (!scene) return;
+
+    nodes.forEach((node) => {
+      node.userData.links = (node.userData.links as string[]).filter(
+        (uuid: string) => uuid !== targetNodeUUID
+      );
+    });
+
+    const target = scene.getObjectByProperty("uuid", targetNodeUUID);
+    if (target) {
+      const targetArrows = scene.children.filter((child) =>
+        child.name.includes(target.name)
+      );
+
+      targetArrows.forEach((arrow) => {
+        scene.remove(arrow);
+      });
+    }
+  };
+
+  const removeLink = (nodeId: string, deleteNodeName: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const from = scene.getObjectByProperty("uuid", nodeId);
+    const to = scene.getObjectByName(deleteNodeName);
+
+    if (!from || !to) return;
+    const targetArrow = scene.getObjectByName(`arrow-${from.name}-${to.name}`);
+    if (targetArrow) {
+      scene.remove(targetArrow);
+
+      // Update selected node's userData.links
+      let links: string[] = [];
+      links = [...from.userData.links];
+      const index = links.findIndex((link) => {
+        link === to.uuid;
+      });
+      links.splice(index, 1);
+      from.userData.links = links;
+
+      dispatchChange();
     }
   };
 
