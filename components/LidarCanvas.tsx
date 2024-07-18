@@ -46,10 +46,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
 
-  const nodes = useRef<Map<string, THREE.Object3D>>(new Map());
-  const raycastTargets = useRef<THREE.Object3D[]>([]);
-  const selectedNode = useRef<THREE.Object3D | null>(null);
-  const selectedNodesArray = useRef<THREE.Object3D[]>([]);
+  const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
+  const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
+  const selectedNodeRef = useRef<THREE.Object3D | null>(null);
+  const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
   let routeNum = useRef<number>(0);
   let goalNum = useRef<number>(0);
@@ -143,7 +143,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   }, [action]);
 
   const updateProperty = (category: string, value: string) => {
-    const selectedObj = selectedNode.current;
+    const selectedObj = selectedNodeRef.current;
     if (!selectedObj) return;
 
     switch (category) {
@@ -383,7 +383,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     raycaster.setFromCamera(mouse, cameraRef.current);
 
-    const intersects = raycaster.intersectObjects(raycastTargets.current, true);
+    const intersects = raycaster.intersectObjects(
+      raycastTargetsRef.current,
+      true
+    );
 
     let intersect: THREE.Object3D | null;
     if (intersects.length) {
@@ -401,7 +404,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       let topParent: THREE.Object3D;
       topParent = findTopParent(intersect);
 
-      selectedNode.current = topParent;
+      selectedNodeRef.current = topParent;
       transformControlRef.current?.attach(topParent);
 
       // Change box helper color to red.
@@ -415,8 +418,8 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       hilightObject(topParent, 0x0000ff);
 
       // nodes push
-      if (!selectedNodesArray.current.includes(topParent)) {
-        selectedNodesArray.current.push(topParent);
+      if (!selectedNodesArrayRef.current.includes(topParent)) {
+        selectedNodesArrayRef.current.push(topParent);
       } else {
         // if the selectedNodesRef array includes the passed intersect,
         // reorder selectedNodesRef so that the selected node move to the front.
@@ -424,14 +427,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
         // e.g) Given selctedNodeRef is [1, 2, 3, 4, 5],
         // selecting node 4 will reorder it to [4, 1, 2, 3, 5]
-        const index = selectedNodesArray.current.indexOf(topParent);
-        selectedNodesArray.current.splice(index, 1);
-        selectedNodesArray.current.unshift(topParent);
+        const index = selectedNodesArrayRef.current.indexOf(topParent);
+        selectedNodesArrayRef.current.splice(index, 1);
+        selectedNodesArrayRef.current.unshift(topParent);
       }
 
       dispatchChange();
     } else {
-      selectedNode.current = null;
+      selectedNodeRef.current = null;
 
       // Clear All box helpers
       if (sceneRef.current) {
@@ -443,7 +446,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         });
       }
 
-      selectedNodesArray.current = [];
+      selectedNodesArrayRef.current = [];
 
       dispatch(
         changeSelectedObjectInfo({
@@ -921,7 +924,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       addLabelToNode(group);
       sceneRef.current?.add(group);
 
-      raycastTargets.current.push(group);
+      raycastTargetsRef.current.push(group);
 
       selectObject(group);
     });
@@ -947,7 +950,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     addLabelToNode(route);
     sceneRef.current?.add(route);
-    raycastTargets.current.push(route);
+    raycastTargetsRef.current.push(route);
     selectObject(route);
   };
 
@@ -963,7 +966,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       node.position.set(Number(initData.x), Number(initData.y), 0);
     }
     const nodeId = node.uuid;
-    nodes.current.set(nodeId, node);
+    nodesRef.current.set(nodeId, node);
 
     if (type === "ROUTE") {
       routeNum.current += 1;
@@ -999,9 +1002,9 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const removeNode = () => {
-    const selectedObj = selectedNode.current;
+    const selectedObj = selectedNodeRef.current;
     const scene = sceneRef.current;
-    const nodes = nodes.current;
+    const nodes = nodesRef.current;
     if (!selectedObj || !scene) return;
 
     removedNodePos = {
@@ -1021,7 +1024,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     if (transformControlRef.current) {
       transformControlRef.current.detach();
     }
-    selectedNode.current = null;
+    selectedNodeRef.current = null;
 
     // remove 3d modeling & label
     removeLabelFromNode(selectedObj);
@@ -1030,10 +1033,10 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     // Remove the node from nodesRef
     nodes.delete(selectedObj.uuid);
     // Resetting the array which is used for raycasting
-    const filteredObjects = raycastTargets.current.filter(
+    const filteredObjects = raycastTargetsRef.current.filter(
       (obj) => obj.name !== selectedObj.name
     );
-    raycastTargets.current = filteredObjects;
+    raycastTargetsRef.current = filteredObjects;
 
     // Reset the selected object info
     dispatch(
@@ -1049,7 +1052,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const saveAnnotation = async (filename: string) => {
-    const nodeArr = Array.from(nodes.current, ([key, node]) => {
+    const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const pos = node.position.toArray().toString();
       const rot = node.rotation.toArray().slice(0, 3).toString();
       const pose = pos + "," + rot;
@@ -1072,7 +1075,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const dispatchChange = () => {
-    const selectedObj = selectedNode.current;
+    const selectedObj = selectedNodeRef.current;
     if (!selectedObj) return;
 
     const pos = selectedObj.position.toArray().toString();
@@ -1098,12 +1101,13 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const addLinks = () => {
     // TODO
+    console.log(1111, nodesRef.current);
 
     createArrow();
   };
 
   const createArrow = (color = 0x0000ff) => {
-    const selectedNodes = selectedNodesArray.current;
+    const selectedNodes = selectedNodesArrayRef.current;
     if (selectedNodes.length === 2) {
       const start = selectedNodes[0].position;
       const end = selectedNodes[1].position;
