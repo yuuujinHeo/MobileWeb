@@ -137,10 +137,37 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "ADD_LINK":
         addLinks();
         break;
+      case "REMOVE_LINK":
+        removeLink(action.target, action.value);
+        break;
       default:
         break;
     }
   }, [action]);
+
+  const removeLink = (nodeId: string, deleteNodeName: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    const from = scene.getObjectByProperty("uuid", nodeId);
+    const to = scene.getObjectByName(deleteNodeName);
+
+    if (!from || !to) return;
+    const targetArrow = scene.getObjectByName(`arrow-${from.name}-${to.name}`);
+    if (targetArrow) {
+      scene.remove(targetArrow);
+
+      // Update selected node's userData.links
+      let links: string[] = [];
+      links = [...from.userData.links];
+      const index = links.findIndex((link) => {
+        link === to.uuid;
+      });
+      links.splice(index, 1);
+      from.userData.links = links;
+
+      dispatchChange();
+    }
+  };
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedNodeRef.current;
@@ -1076,17 +1103,30 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const dispatchChange = () => {
     const selectedObj = selectedNodeRef.current;
-    if (!selectedObj) return;
+    const scene = sceneRef.current;
+    if (!selectedObj || !scene) return;
 
     const pos = selectedObj.position.toArray().toString();
     const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
     const pose = pos + "," + rot;
 
+    // convert node's uuid to node's name
+    let linkedNodeNames: string[] = [];
+    if (selectedObj.userData.links.length) {
+      linkedNodeNames = selectedObj.userData.links.map((nodeUUID: string) => {
+        const node = scene.getObjectByProperty(
+          "uuid",
+          nodeUUID
+        ) as THREE.Object3D;
+        return node.name;
+      });
+    }
+
     dispatch(
       changeSelectedObjectInfo({
         id: selectedObj.uuid,
         name: selectedObj.name,
-        links: selectedObj.userData.links,
+        links: linkedNodeNames,
         pose: pose,
         type: selectedObj.userData.type,
         info: selectedObj.userData.info,
@@ -1100,8 +1140,18 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const addLinks = () => {
-    // TODO
-    console.log(1111, nodesRef.current);
+    // Update links
+    const selectedNodesArray = selectedNodesArrayRef.current;
+
+    for (let i = 0; i < selectedNodesArray.length - 1; i++) {
+      const from = selectedNodesArray[i];
+      const to = selectedNodesArray[i + 1];
+
+      let links: string[] = [];
+      links = [...from.userData.links];
+      links.push(to.uuid);
+      from.userData.links = links;
+    }
 
     createArrow();
   };
@@ -1109,22 +1159,30 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const createArrow = (color = 0x0000ff) => {
     const selectedNodes = selectedNodesArrayRef.current;
     if (selectedNodes.length === 2) {
-      const start = selectedNodes[0].position;
-      const end = selectedNodes[1].position;
-      const dir = new THREE.Vector3().subVectors(end, start).normalize();
-      const length = start.distanceTo(end);
+      const start = selectedNodes[0];
+      const end = selectedNodes[1];
+      const startPos = start.position;
+      const endPos = end.position;
+      const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
+      const length = startPos.distanceTo(endPos);
       // default color is blue
-      const arrowHelper = new THREE.ArrowHelper(dir, start, length, color);
+      const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
+      arrowHelper.name = `arrow-${start.name}-${end.name}`;
       sceneRef.current?.add(arrowHelper);
     } else {
       for (let i = 0; i < selectedNodes.length - 1; i++) {
-        const start = selectedNodes[i].position;
-        const end = selectedNodes[i + 1].position;
+        const start = selectedNodes[i];
+        const end = selectedNodes[i + 1];
+        const startPos = start.position;
+        const endPos = end.position;
 
-        const dir = new THREE.Vector3().subVectors(end, start).normalize();
-        const length = start.distanceTo(end);
+        const dir = new THREE.Vector3()
+          .subVectors(endPos, startPos)
+          .normalize();
+        const length = startPos.distanceTo(endPos);
         // default color is blue
-        const arrowHelper = new THREE.ArrowHelper(dir, start, length, color);
+        const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
+        arrowHelper.name = `arrow-${start.name}-${end.name}`;
         sceneRef.current?.add(arrowHelper);
       }
     }
