@@ -14,7 +14,11 @@ export interface StatusState {
     },
     condition:{
         inlier_error: number,
-        inlier_ratio: number
+        inlier_ratio: number,
+        mapping_error: number,
+        mapping_ratio: number,
+        auto_state: string,
+        obs_state: string
     },
     motor0:{
         connection: string,
@@ -28,7 +32,8 @@ export interface StatusState {
             position: boolean,
             collision: boolean
         },
-        temperature: number
+        temperature: number,
+        current: number
     },
     motor1:{
         connection: string,
@@ -42,7 +47,29 @@ export interface StatusState {
             position: boolean,
             collision: boolean
         },
-        temperature: number
+        temperature: number,
+        current:number
+    },
+    lidar0:{
+        connection: string,
+        port: string,
+        serialnumber: string
+    },
+    lidar1:{
+        connection: string,
+        port: string,
+        serialnumber: string
+    },
+    imu:{
+        gyr_x: number,
+        gyr_y: number,
+        gyr_z: number,
+        acc_x: number,
+        acc_y: number,
+        acc_z: number,
+        imu_rx: number,
+        imu_ry: number,
+        imu_rz: number
     },
     power:{
         bat_in: number,
@@ -73,7 +100,11 @@ export const initState = {
     },
     condition:{
         inlier_error: 0,
-        inlier_ratio: 0
+        inlier_ratio: 0,
+        mapping_error: 0,
+        mapping_ratio: 0,
+        auto_state: 'stop',
+        obs_state: 'none'
     },
     motor0:{
         connection: 'false',
@@ -87,7 +118,8 @@ export const initState = {
             position: false,
             collision: false
         },
-        temperature: 0
+        temperature: 0,
+        current:0
     },
     motor1:{
         connection: 'false',
@@ -101,7 +133,29 @@ export const initState = {
             position: false,
             collision: false
         },
-        temperature: 0
+        temperature: 0,
+        current:0
+    },
+    lidar0:{
+        connection: 'false',
+        port: '',
+        serialnumber: ''
+    },
+    lidar1:{
+        connection: 'false',
+        port: '',
+        serialnumber: ''
+    },
+    imu:{
+        gyr_x: 0,
+        gyr_y: 0,
+        gyr_z: 0,
+        acc_x: 0,
+        acc_y: 0,
+        acc_z: 0,
+        imu_rx: 0,
+        imu_ry: 0,
+        imu_rz: 0
     },
     power:{
         bat_in: 0,

@@ -689,6 +689,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
             y: parseFloat(res.pose.y),
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
+          console.log(res.condition.auto_state);
           driveRobot(robotPose);
         });
       });

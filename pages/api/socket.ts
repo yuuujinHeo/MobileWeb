@@ -9,10 +9,13 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
 
     const io2 = new Server((res.socket as any).server);
     // let url = await getMobileSocketURL();
-    const url = "http://10.108.1.40:10334/";
+    const url = "http://10.108.1.10:10334/";
     let socket = io(url);
 
+    let connectedClients = [];
+
     socket.on("connect", () => {
+      console.log("??????????????????????????????");
       socket.on("mapping", (data: string[][]) => {
         console.log('mapping in');
         io2.emit("mapping", data);
@@ -21,14 +24,17 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
         io2.emit("lidar", data);
       });
       socket.on("status", (data: JSON) => {
+        // console.log("status get ",data.condition.auto_state);
         io2.emit("status", data);
       });
     });
 
-    io2.on("connection", (socket) => {
+    io2.on("connection", (newsocket) => {
       console.log(`${socket.id} connected`);
+      console.log("count : ", io2.engine.clientsCount);
 
-      io2.on("disconnect", () => {
+      io2.on("disconnect", (socket) => {
+        console.log(`${socket.id} disconnected`);
         // io.leave();
       });
     });

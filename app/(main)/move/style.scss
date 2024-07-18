@@ -1,0 +1,45 @@
+
+.p-selectbutton.discon  .p-button.p-highlight {
+    background: #e2574c;
+    border-color: #e2574c;
+    color: #ffffff;
+}
+.p-selectbutton.con  .p-button.p-highlight {
+    background: #12d27c;
+    border-color: #12d27c;
+    color: #ffffff;
+}
+
+.p-selectbutton.discon .p-button.p-highlight:hover {
+  background: #e2574c;
+  border-color: #e2574c;
+  color: #ffffff;
+}
+
+.p-selectbutton.con .p-button.p-highlight:hover {
+  background: #12d27c;
+  border-color: #12d27c;
+  color: #ffffff;
+}
+.p-selectbutton .p-button:not(.p-disabled):not(.p-highlight):hover {
+  background: #ffffff;
+  border-color: #d1d5db;
+  color: #4b5563;
+}
+
+.p-selectbutton .p-focus{
+  box-shadow: none;
+}
+.p-selectbutton .p-button{
+  min-width: 8rem;
+  max-width: 10rem;
+}
+.p-tag {
+  // background: #6366F1;
+  color: #ffffff;
+  max-height: 1.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.4rem;
+  border-radius: 6px;
+}

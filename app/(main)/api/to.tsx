@@ -21,6 +21,9 @@ export const transStatus = async(json) =>{
         power:json.power,
         state:json.state,
         time: json.time,
+        lidar0: json.lidar0,
+        lidar1: json.lidar1,
+        imu: json.imu,
         motor0:{
             connection:json.motor[0].connection,
             temperature:json.motor[0].temp,
@@ -33,7 +36,8 @@ export const transStatus = async(json) =>{
                 input:getBits(json.motor[0].status)[5]?true:false,
                 position:getBits(json.motor[0].status)[6]?true:false,
                 collision:getBits(json.motor[0].status)[7]?true:false
-            }
+            },
+            current:json.motor[0].current
         },
         motor1:{
             connection:json.motor[1].connection,
@@ -47,7 +51,8 @@ export const transStatus = async(json) =>{
                 input:getBits(json.motor[1].status)[5]?true:false,
                 position:getBits(json.motor[1].status)[6]?true:false,
                 collision:getBits(json.motor[1].status)[7]?true:false
-            }
+            },
+            current:json.motor[1].current
         }
     }
 }
