@@ -296,6 +296,17 @@ export default function PropertyPanel() {
             saveAnnotation();
           }}
         />
+        <Button
+          label="Add Link"
+          size="small"
+          severity="secondary"
+          text
+          raised
+          onClick={() => {
+            // saveAnnotation();
+            dispatch(createAction({ command: "ADD_LINK" }));
+          }}
+        />
       </div>
     ),
   };
@@ -402,6 +413,37 @@ export default function PropertyPanel() {
               optionLabel="name"
               placeholder={selectedObjectInfo.type}
             />
+          </div>
+          <div>
+            Links{" "}
+            {selectedObjectInfo.links.map((link, index) => (
+              <div
+                key={index}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  background: "#f9fafb",
+                  border: "1px solid #e5e7eb",
+                  borderRadius: "6px",
+                  padding: "0.5rem",
+                }}
+              >
+                <p style={{ textAlign: "center", margin: 0 }}>{link}</p>
+                <i
+                  className="pi pi-times"
+                  style={{ cursor: "pointer", marginLeft: "5px" }}
+                  onClick={() => {
+                    dispatch(
+                      createAction({
+                        command: "REMOVE_LINK",
+                        target: selectedObjectInfo.id,
+                        value: link,
+                      })
+                    );
+                  }}
+                ></i>
+              </div>
+            ))}
           </div>
           <div>
             Info{" "}
