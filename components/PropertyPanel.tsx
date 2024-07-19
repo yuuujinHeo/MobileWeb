@@ -64,10 +64,10 @@ export default function PropertyPanel() {
   useEffect(() => {
     if (selectedObjectInfo && selectedObjectInfo.pose) {
       setDisplayInfo({
-        x: selectedObjectInfo.pose.split(",")[0].slice(0, 6) || "0",
-        y: selectedObjectInfo.pose.split(",")[1].slice(0, 6) || "0",
-        z: selectedObjectInfo.pose.split(",")[2].slice(0, 6) || "0",
-        rz: selectedObjectInfo.pose.split(",")[5].slice(0, 6) || "0",
+        x: selectedObjectInfo.pose.split(",")[0],
+        y: selectedObjectInfo.pose.split(",")[1],
+        z: selectedObjectInfo.pose.split(",")[2],
+        rz: selectedObjectInfo.pose.split(",")[5],
       });
     }
   }, [selectedObjectInfo]);

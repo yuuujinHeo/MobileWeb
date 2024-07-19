@@ -1099,14 +1099,14 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const saveAnnotation = async (filename: string) => {
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const position = node.position.toArray();
-      const parsePos = position
+      const parsedPos = position
         .map((pos) => pos.toString().slice(0, 6))
         .toString();
       const rotation = node.rotation.toArray().slice(0, 3);
       const parsedRot = (rotation as string[])
         .map((rot) => rot.toString().slice(0, 6))
         .toString();
-      const pose = parsePos + "," + parsedRot;
+      const pose = parsedPos + "," + parsedRot;
       const linkedNodes = getLinkedNodes(node);
       const nodeData = {
         id: node.uuid,
@@ -1131,9 +1131,15 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
     const scene = sceneRef.current;
     if (!selectedNode || !scene) return;
 
-    const pos = selectedNode.position.toArray().toString();
-    const rot = selectedNode.rotation.toArray().slice(0, 3).toString();
-    const pose = pos + "," + rot;
+    const position = selectedNode.position.toArray();
+    const parsedPos = position
+      .map((pos) => pos.toString().slice(0, 6))
+      .toString();
+    const rotation = selectedNode.rotation.toArray().slice(0, 3);
+    const parsedRot = (rotation as string[])
+      .map((rot) => rot.toString().slice(0, 6))
+      .toString();
+    const pose = parsedPos + "," + parsedRot;
 
     const linkedNodes = getLinkedNodes(selectedNode);
 
