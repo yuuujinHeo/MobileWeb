@@ -22,7 +22,8 @@ import { CANVAS_CLASSES } from "@/constants";
 
 interface LidarCanvasProps {
   className: string;
-  selectedMapCloud?: string[][] | null;
+  cloudData?: string[][] | null;
+  topoData?: UserData[] | null;
 }
 
 interface UserData {
@@ -34,7 +35,7 @@ interface UserData {
   type: string;
 }
 
-const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
+const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
   const { action, isMarkingMode, initData } = useSelector(
@@ -127,7 +128,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         clearMappingPoints();
         break;
       case "DRAW_CLOUD":
-        if (selectedMapCloud) drawCloud(action.target, selectedMapCloud);
+        if (cloudData) drawCloud(action.target, cloudData);
         break;
       case "ADD_NODE":
         if (action.category === "ROUTE") {
@@ -149,10 +150,18 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
       case "REMOVE_LINK":
         removeLink(action.target, action.value);
         break;
+      case "DRAW_CLOUD_TOPO":
+        if (cloudData) drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
+        drawTopo();
+        break;
       default:
         break;
     }
   }, [action]);
+
+  const drawTopo = () => {
+    if (!topoData) return;
+  };
 
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
