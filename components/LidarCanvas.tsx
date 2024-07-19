@@ -947,10 +947,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
         }
       });
 
-      const axesHelper = new THREE.AxesHelper(2);
-      axesHelper.scale.set(1000, 1000, 1000);
-      group.add(axesHelper);
-
       addLabelToNode(group);
       sceneRef.current?.add(group);
 
@@ -1019,7 +1015,7 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
     const nodeLabel = new CSS2DObject(nodeDiv);
     nodeLabel.name = "label";
-    nodeLabel.center.set(-0.3, 1.5);
+    nodeLabel.center.set(-0.6, 1.5);
     node.add(nodeLabel);
   };
 
