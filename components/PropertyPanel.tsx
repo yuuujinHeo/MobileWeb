@@ -37,7 +37,7 @@ export default function PropertyPanel() {
   const selectedPanel = useSelector(
     (state: RootState) => state.propertyPanel.selectedPanel
   );
-  const { initData, selectedObjectInfo } = useSelector(
+  const { createHelper, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -74,13 +74,13 @@ export default function PropertyPanel() {
 
   const sendLOCRequest = async (command: string) => {
     try {
-      const r2d = (Number(initData.rz) * (180 / Math.PI)).toString();
+      const r2d = (Number(createHelper.rz) * (180 / Math.PI)).toString();
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
-        x: initData.x,
-        y: initData.y,
-        z: initData.z,
+        x: createHelper.x,
+        y: createHelper.y,
+        z: createHelper.z,
         rz: r2d,
       };
 

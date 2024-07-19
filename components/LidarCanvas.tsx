@@ -3,7 +3,10 @@
 import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
-import { updateInitData, changeSelectedObjectInfo } from "@/store/canvasSlice";
+import {
+  updateCreateHelper,
+  changeSelectedObjectInfo,
+} from "@/store/canvasSlice";
 
 // three
 import * as THREE from "three";
@@ -38,7 +41,7 @@ interface UserData {
 const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
-  const { action, isMarkingMode, initData } = useSelector(
+  const { action, isMarkingMode, createHelper } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -313,7 +316,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       const obj: THREE.Object3D | undefined = tfControl.object;
       if (obj) {
         dispatch(
-          updateInitData({
+          updateCreateHelper({
             x: obj.position.x.toString(),
             y: obj.position.y.toString(),
             z: obj.position.z.toString(),
@@ -555,7 +558,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         transformControlRef.current?.attach(group);
 
         dispatch(
-          updateInitData({
+          updateCreateHelper({
             x: group.position.x.toString(),
             y: group.position.y.toString(),
             z: group.position.z.toString(),
@@ -647,7 +650,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     const obj: THREE.Object3D | undefined = transformControlRef.current.object;
     if (obj) {
       dispatch(
-        updateInitData({
+        updateCreateHelper({
           x: obj.position.x.toString(),
           y: obj.position.y.toString(),
           z: obj.position.z.toString(),
@@ -956,7 +959,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     loader.load("amr.3MF", function (group) {
       setupNode(group, "GOAL");
       group.scale.set(0.001, 0.001, 0.001);
-      group.rotation.z = Number(initData.rz);
+      group.rotation.z = Number(createHelper.rz);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -1006,7 +1009,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       // (e.g., when a state change occurs).
       node.position.set(removedNodePos.x, removedNodePos.y, 0);
     } else {
-      node.position.set(Number(initData.x), Number(initData.y), 0);
+      node.position.set(Number(createHelper.x), Number(createHelper.y), 0);
     }
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
