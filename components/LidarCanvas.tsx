@@ -38,6 +38,14 @@ interface UserData {
   type: string;
 }
 
+interface NodePos {
+  x: number;
+  y: number;
+  z: number;
+  rz: number;
+  idx?: number;
+}
+
 const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
@@ -71,12 +79,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
-  let removedNodePos: {
-    x: number;
-    y: number;
-    z: number;
-    rz: number;
-  } | null = null;
+  let removedNodePos: NodePos | null = null;
 
   // mouse event variables
   let isMouseDown: boolean = false;
@@ -134,9 +137,17 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         if (cloudData) drawCloud(action.target, cloudData);
         break;
       case "ADD_NODE":
+        const nodePose: NodePos = {
+          x: Number(createHelper.x),
+          y: Number(createHelper.y),
+          z: Number(createHelper.z),
+          rz: Number(createHelper.rz),
+        };
         if (action.category === "ROUTE") {
-          addRouteNode();
-        } else if (action.category === "GOAL") addGoalNode();
+          addRouteNode(nodePose);
+        } else if (action.category === "GOAL") {
+          addGoalNode(nodePose);
+        }
         break;
       case "DELETE_NODE":
         removeNode();
@@ -148,7 +159,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         updateProperty(action.category, action.value);
         break;
       case "ADD_LINK":
-        addLinks();
+        const selectedNodesArray = selectedNodesArrayRef.current;
+        addLinks(selectedNodesArray[0], selectedNodesArray[1]);
         break;
       case "REMOVE_LINK":
         removeLink(action.target, action.value);
@@ -162,8 +174,61 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     }
   }, [action]);
 
-  const drawTopo = () => {
-    if (!topoData) return;
+  const drawTopo = async () => {
+    const scene = sceneRef.current;
+    if (!topoData || !scene) return;
+
+    // repaint all nodes
+    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
+
+    // Type1
+    // for (let i = 0; i < topoData.length; i++) {
+    //   // First, Create Node
+    //   const topo = topoData[i];
+    //   const poseArr = topo.pose.split(",");
+    //   const nodePos: NodePos = {
+    //     x: Number(poseArr[0]),
+    //     y: Number(poseArr[1]),
+    //     z: Number(poseArr[2]),
+    //     rz: Number(poseArr[5]),
+    //     idx: i,
+    //   };
+    //   if (topo.type === "GOAL") {
+    //     await addGoalNode(nodePos);
+    //   } else if (topo.type === "ROUTE") {
+    //     await addRouteNode(nodePos);
+    //   }
+    // }
+
+    // Type 2
+    const tasks = topoData.map((topo, i) => {
+      const poseArr = topo.pose.split(",");
+
+      const nodePos: NodePos = {
+        x: Number(poseArr[0]),
+        y: Number(poseArr[1]),
+        z: Number(poseArr[2]),
+        rz: Number(poseArr[5]),
+        idx: i,
+      };
+      if (topo.type === "GOAL") {
+        return addGoalNode(nodePos);
+      } else if (topo.type === "ROUTE") {
+        return addRouteNode(nodePos);
+      }
+    });
+
+    await Promise.all(tasks);
+
+    // After repaint all nodes, link nodes
+    topoData.forEach((node) => {
+      const from = scene.getObjectByName(node.name);
+
+      node.links.forEach((link) => {
+        const to = scene.getObjectByName(link);
+        if (from && to) addLinks(from, to);
+      });
+    });
   };
 
   useEffect(() => {
@@ -209,9 +274,9 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         if (selectedObj.userData.type !== value) {
           removeNode();
           if (value === "GOAL") {
-            addGoalNode();
+            addGoalNode(removedNodePos as NodePos);
           } else if (value === "ROUTE") {
-            addRouteNode();
+            addRouteNode(removedNodePos as NodePos);
           }
         }
         break;
@@ -954,29 +1019,38 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
-  const addGoalNode = () => {
+  // Returns "Promise" because it includes a callback method.
+  const addGoalNode = (nodePos: NodePos): Promise<void> => {
     const loader = new ThreeMFLoader();
-    loader.load("amr.3MF", function (group) {
-      setupNode(group, "GOAL");
-      group.scale.set(0.001, 0.001, 0.001);
-      group.rotation.z = Number(createHelper.rz);
+    return new Promise((resolve, reject) => {
+      try {
+        loader.load("amr.3MF", function (group) {
+          setupNode(group, "GOAL", nodePos);
+          group.scale.set(0.001, 0.001, 0.001);
+          // group.rotation.z = Number(createHelper.rz);
 
-      group.traverse((obj) => {
-        if (obj instanceof THREE.Mesh) {
-          obj.material.color.set(new THREE.Color(0x33ff52));
-        }
-      });
+          group.traverse((obj) => {
+            if (obj instanceof THREE.Mesh) {
+              obj.material.color.set(new THREE.Color(0x33ff52));
+            }
+          });
 
-      addLabelToNode(group);
-      sceneRef.current?.add(group);
+          addLabelToNode(group);
+          sceneRef.current?.add(group);
 
-      raycastTargetsRef.current.push(group);
+          raycastTargetsRef.current.push(group);
 
-      selectObject(group);
+          selectObject(group);
+          console.log("add goal end");
+          resolve();
+        });
+      } catch (e) {
+        reject(e);
+      }
     });
   };
 
-  const addRouteNode = () => {
+  const addRouteNode = async (nodePos: NodePos) => {
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
@@ -992,15 +1066,16 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     plane.visible = false;
     route.add(plane);
 
-    setupNode(route, "ROUTE");
+    setupNode(route, "ROUTE", nodePos);
 
     addLabelToNode(route);
     sceneRef.current?.add(route);
     raycastTargetsRef.current.push(route);
     selectObject(route);
+    console.log("add route end");
   };
 
-  const setupNode = (node: THREE.Object3D, type: string) => {
+  const setupNode = (node: THREE.Object3D, type: string, nodePos: NodePos) => {
     // Set node position
     if (removedNodePos) {
       // The removedNodePos variable is always null,
@@ -1008,23 +1083,35 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       // This is because it is initialized when the component is refreshed.
       // (e.g., when a state change occurs).
       node.position.set(removedNodePos.x, removedNodePos.y, 0);
+      node.rotation.z = removedNodePos.rz;
     } else {
-      node.position.set(Number(createHelper.x), Number(createHelper.y), 0);
+      node.position.set(nodePos.x, nodePos.y, 0);
+      node.rotation.z = nodePos.rz;
     }
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
-    if (type === "ROUTE") {
-      routeNum.current += 1;
-      node.name = `route-${routeNum.current}`;
-    } else if (type === "GOAL") {
-      goalNum.current += 1;
-      node.name = `goal-${goalNum.current}`;
-    }
+    // called from drawTopo
+    if (topoData && topoData.length && nodePos.idx && nodePos.idx >= 0) {
+      const topo = topoData[nodePos.idx];
+      node.name = topo.name;
+      node.userData.info = topo.info;
+      // [TEMP]
+      node.userData.links = [];
+      node.userData.type = topo.type;
+    } else {
+      if (type === "ROUTE") {
+        routeNum.current += 1;
+        node.name = `route-${routeNum.current}`;
+      } else if (type === "GOAL") {
+        goalNum.current += 1;
+        node.name = `goal-${goalNum.current}`;
+      }
 
-    node.userData.info = "";
-    node.userData.links = [];
-    node.userData.type = type;
+      node.userData.info = "";
+      node.userData.links = [];
+      node.userData.type = type;
+    }
   };
 
   const addLabelToNode = (node: THREE.Object3D) => {
@@ -1171,7 +1258,10 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     const scene = sceneRef.current;
     if (!scene) return null;
     let linkedNodes: string[] = [];
-    if ((node.userData as UserData).links.length) {
+    if (
+      (node.userData as UserData).links &&
+      (node.userData as UserData).links.length
+    ) {
       linkedNodes = (node.userData as UserData).links
         .map((uuid: string) => {
           const linkedNode = scene.getObjectByProperty("uuid", uuid);
@@ -1188,53 +1278,76 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     render();
   };
 
-  const addLinks = () => {
+  const addLinks = (from: THREE.Object3D, to: THREE.Object3D) => {
+    if (!from || !to) return;
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
-    createArrow();
+    createArrow(from, to);
 
     // Update links
-    const selectedNodesArray = selectedNodesArrayRef.current;
-
-    for (let i = 0; i < selectedNodesArray.length - 1; i++) {
-      const from = selectedNodesArray[i];
-      const to = selectedNodesArray[i + 1];
-
-      let links: string[] = [];
-      links = [...from.userData.links];
-      if (!links.includes(to.uuid)) {
-        links.push(to.uuid);
-        from.userData.links = links;
-      }
+    // const selectedNodesArray = selectedNodesArrayRef.current;
+    //
+    // for (let i = 0; i < selectedNodesArray.length - 1; i++) {
+    //   const from = selectedNodesArray[i];
+    //   const to = selectedNodesArray[i + 1];
+    //
+    //   let links: string[] = [];
+    //   links = [...from.userData.links];
+    //   if (!links.includes(to.uuid)) {
+    //     links.push(to.uuid);
+    //     from.userData.links = links;
+    //   }
+    // }
+    let links: string[] = [];
+    links = [...from.userData.links];
+    if (!links.includes(to.uuid)) {
+      links.push(to.uuid);
+      from.userData.links = links;
     }
   };
 
-  const createArrow = (color = 0x0000ff) => {
-    const selectedNodes = selectedNodesArrayRef.current;
-    if (selectedNodes.length > 1) {
-      for (let i = 0; i < selectedNodes.length - 1; i++) {
-        const start = selectedNodes[i];
-        const end = selectedNodes[i + 1];
+  const createArrow = (
+    from: THREE.Object3D,
+    to: THREE.Object3D,
+    color = 0x0000ff
+  ) => {
+    // const selectedNodes = selectedNodesArrayRef.current;
+    // if (selectedNodes.length > 1) {
+    //   for (let i = 0; i < selectedNodes.length - 1; i++) {
+    //     const start = selectedNodes[i];
+    //     const end = selectedNodes[i + 1];
+    //
+    //     if (!start.userData.links.includes(end.uuid)) {
+    //       const startPos = start.position;
+    //       const endPos = end.position;
+    //
+    //       const dir = new THREE.Vector3()
+    //         .subVectors(endPos, startPos)
+    //         .normalize();
+    //       const length = startPos.distanceTo(endPos);
+    //       // default color is blue
+    //       const arrowHelper = new THREE.ArrowHelper(
+    //         dir,
+    //         startPos,
+    //         length,
+    //         color
+    //       );
+    //       arrowHelper.name = `arrow-${start.name}-${end.name}`;
+    //       sceneRef.current?.add(arrowHelper);
+    //     }
+    //   }
+    // }
 
-        if (!start.userData.links.includes(end.uuid)) {
-          const startPos = start.position;
-          const endPos = end.position;
+    if (!from.userData.links.includes(to.uuid)) {
+      const startPos = from.position;
+      const endPos = to.position;
 
-          const dir = new THREE.Vector3()
-            .subVectors(endPos, startPos)
-            .normalize();
-          const length = startPos.distanceTo(endPos);
-          // default color is blue
-          const arrowHelper = new THREE.ArrowHelper(
-            dir,
-            startPos,
-            length,
-            color
-          );
-          arrowHelper.name = `arrow-${start.name}-${end.name}`;
-          sceneRef.current?.add(arrowHelper);
-        }
-      }
+      const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
+      const length = startPos.distanceTo(endPos);
+      // default color is blue
+      const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
+      arrowHelper.name = `arrow-${from.name}-${to.name}`;
+      sceneRef.current?.add(arrowHelper);
     }
   };
 
