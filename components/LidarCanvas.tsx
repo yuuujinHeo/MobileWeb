@@ -25,6 +25,15 @@ interface LidarCanvasProps {
   selectedMapCloud?: string[][] | null;
 }
 
+interface UserData {
+  id: string;
+  info: string;
+  links: string[];
+  name: string;
+  pose: string;
+  type: string;
+}
+
 const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
@@ -771,7 +780,6 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
             y: parseFloat(res.pose.y),
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
-          console.log(res.condition.auto_state);
           driveRobot(robotPose);
         });
       });
@@ -1090,15 +1098,22 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
 
   const saveAnnotation = async (filename: string) => {
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
-      const pos = node.position.toArray().toString();
-      const rot = node.rotation.toArray().slice(0, 3).toString();
-      const pose = pos + "," + rot;
+      const position = node.position.toArray();
+      const parsePos = position
+        .map((pos) => pos.toString().slice(0, 6))
+        .toString();
+      const rotation = node.rotation.toArray().slice(0, 3);
+      const parsedRot = (rotation as string[])
+        .map((rot) => rot.toString().slice(0, 6))
+        .toString();
+      const pose = parsePos + "," + parsedRot;
+      const linkedNodes = getLinkedNodes(node);
       const nodeData = {
         id: node.uuid,
         name: node.name,
         pose: pose,
         info: node.userData.info,
-        links: node.userData.links,
+        links: linkedNodes,
         type: node.userData.type,
       };
       return nodeData;
@@ -1112,36 +1127,42 @@ const LidarCanvas = ({ className, selectedMapCloud }: LidarCanvasProps) => {
   };
 
   const dispatchChange = () => {
-    const selectedObj = selectedNodeRef.current;
+    const selectedNode = selectedNodeRef.current;
     const scene = sceneRef.current;
-    if (!selectedObj || !scene) return;
+    if (!selectedNode || !scene) return;
 
-    const pos = selectedObj.position.toArray().toString();
-    const rot = selectedObj.rotation.toArray().slice(0, 3).toString();
+    const pos = selectedNode.position.toArray().toString();
+    const rot = selectedNode.rotation.toArray().slice(0, 3).toString();
     const pose = pos + "," + rot;
 
-    // convert node's uuid to node's name
-    let linkedNodeNames: string[] = [];
-    if (selectedObj.userData.links.length) {
-      linkedNodeNames = selectedObj.userData.links.map((nodeUUID: string) => {
-        const node = scene.getObjectByProperty(
-          "uuid",
-          nodeUUID
-        ) as THREE.Object3D;
-        if (node) return node.name;
-      });
-    }
+    const linkedNodes = getLinkedNodes(selectedNode);
 
     dispatch(
       changeSelectedObjectInfo({
-        id: selectedObj.uuid,
-        name: selectedObj.name,
-        links: linkedNodeNames,
+        id: selectedNode.uuid,
+        name: selectedNode.name,
+        links: linkedNodes,
         pose: pose,
-        type: selectedObj.userData.type,
-        info: selectedObj.userData.info,
+        type: selectedNode.userData.type,
+        info: selectedNode.userData.info,
       })
     );
+  };
+
+  const getLinkedNodes = (node: THREE.Object3D): string[] | null => {
+    const scene = sceneRef.current;
+    if (!scene) return null;
+    let linkedNodes: string[] = [];
+    if ((node.userData as UserData).links.length) {
+      linkedNodes = (node.userData as UserData).links
+        .map((uuid: string) => {
+          const linkedNode = scene.getObjectByProperty("uuid", uuid);
+          if (linkedNode) return linkedNode.name;
+          // undefined is returned implicitly
+        })
+        .filter((name): name is string => name !== undefined);
+    }
+    return linkedNodes;
   };
 
   const handleTransformChange = () => {
