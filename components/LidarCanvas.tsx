@@ -689,7 +689,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         if (!plane) return;
 
         const intersects = raycaster.intersectObject(plane, true);
-        if (!intersects) return;
+        if (!intersects.length) return;
 
         const v3 = intersects[0].point;
         const angle = Math.atan2(
