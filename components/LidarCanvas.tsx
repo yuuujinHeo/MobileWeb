@@ -259,7 +259,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedNodeRef.current;
-    if (!selectedObj) return;
+    const currSelectionBox = currSelectionBoxRef.current;
+    if (!selectedObj || !currSelectionBox) return;
 
     switch (category) {
       case "name":
@@ -298,6 +299,10 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       default:
         break;
     }
+
+    // selection box
+    if (transformControlRef.current?.object)
+      currSelectionBox.setFromObject(transformControlRef.current.object);
 
     // update selected object info
     dispatchChange();
