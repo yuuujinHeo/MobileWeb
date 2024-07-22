@@ -37,7 +37,7 @@ export default function PropertyPanel() {
   const selectedPanel = useSelector(
     (state: RootState) => state.propertyPanel.selectedPanel
   );
-  const { initData, selectedObjectInfo } = useSelector(
+  const { createHelper, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -64,23 +64,23 @@ export default function PropertyPanel() {
   useEffect(() => {
     if (selectedObjectInfo && selectedObjectInfo.pose) {
       setDisplayInfo({
-        x: selectedObjectInfo.pose.split(",")[0].slice(0, 6) || "0",
-        y: selectedObjectInfo.pose.split(",")[1].slice(0, 6) || "0",
-        z: selectedObjectInfo.pose.split(",")[2].slice(0, 6) || "0",
-        rz: selectedObjectInfo.pose.split(",")[5].slice(0, 6) || "0",
+        x: selectedObjectInfo.pose.split(",")[0],
+        y: selectedObjectInfo.pose.split(",")[1],
+        z: selectedObjectInfo.pose.split(",")[2],
+        rz: selectedObjectInfo.pose.split(",")[5],
       });
     }
   }, [selectedObjectInfo]);
 
   const sendLOCRequest = async (command: string) => {
     try {
-      const r2d = (Number(initData.rz) * (180 / Math.PI)).toString();
+      const r2d = (Number(createHelper.rz) * (180 / Math.PI)).toString();
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
-        x: initData.x,
-        y: initData.y,
-        z: initData.z,
+        x: createHelper.x,
+        y: createHelper.y,
+        z: createHelper.z,
         rz: r2d,
       };
 

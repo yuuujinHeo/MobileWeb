@@ -37,6 +37,15 @@ interface MapData {
   list: ListData[];
 }
 
+interface UserData {
+  id: string;
+  name: string;
+  pose: string;
+  info: string;
+  links: string[];
+  type: string;
+}
+
 const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
@@ -52,9 +61,9 @@ const Map: React.FC = () => {
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
   const [mapList, setMapList] = useState([]);
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
-  const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
-    null
-  );
+  const [cloudData, setCloudData] = useState<string[][] | null>(null);
+  const [topoData, setTopoData] = useState<UserData[] | null>(null);
+
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const dialItems = [
@@ -95,7 +104,8 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     if (selectedMap) {
-      getMapCloud(selectedMap.name);
+      getMapData(selectedMap.name);
+      getTopoData(selectedMap.name);
     }
   }, [selectedMap]);
 
@@ -108,15 +118,25 @@ const Map: React.FC = () => {
     }
   };
 
-  const getMapCloud = async (name: string) => {
+  const getMapData = async (name: string) => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
-      setSelectedMapCloud(res.data);
+      setCloudData(res.data);
       dispatch(
         createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
       );
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const getTopoData = async (name: string) => {
+    try {
+      const res = await axios.get(url + `/map/topo/${name}`);
+      setTopoData(res.data);
+    } catch (e) {
+      setTopoData(null);
+      console.error("Failed to get topo data...", e);
     }
   };
 
@@ -126,10 +146,7 @@ const Map: React.FC = () => {
 
   const handleLoadMap = () => {
     // Draw cloud points to lidar canvas
-    dispatch(
-      createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
-    );
-
+    dispatch(createAction({ command: "DRAW_CLOUD_TOPO" }));
     // Hide dialogue
     setIsDialogVisible(false);
 
@@ -142,7 +159,7 @@ const Map: React.FC = () => {
 
     // reset
     setSelectedMap(null);
-    setSelectedMapCloud(null);
+    setCloudData(null);
   };
 
   const sendSelectedMapToSLAM = async () => {
@@ -160,7 +177,8 @@ const Map: React.FC = () => {
     <div id="map">
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
-        selectedMapCloud={selectedMapCloud}
+        cloudData={cloudData}
+        topoData={topoData}
       />
       <div style={{ position: "absolute" }}>
         <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
@@ -203,7 +221,7 @@ const Map: React.FC = () => {
             </div>
             <LidarCanvas
               className={CANVAS_CLASSES.OVERLAY}
-              selectedMapCloud={selectedMapCloud}
+              cloudData={cloudData}
             />
             <Button
               label="Load"

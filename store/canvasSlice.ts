@@ -32,7 +32,7 @@ const initialState = {
     value: "",
     timestamp: 0,
   },
-  initData: {
+  createHelper: {
     x: "",
     y: "",
     z: "",
@@ -59,11 +59,11 @@ const canvasSlice = createSlice({
       if (action.payload.target) state.action.target = action.payload.target;
       state.action.timestamp = Date.now();
     },
-    updateInitData(state, action: PayloadAction<Init>) {
-      state.initData.x = action.payload.x;
-      state.initData.y = action.payload.y;
-      state.initData.z = action.payload.z;
-      state.initData.rz = action.payload.rz;
+    updateCreateHelper(state, action: PayloadAction<Init>) {
+      state.createHelper.x = action.payload.x;
+      state.createHelper.y = action.payload.y;
+      state.createHelper.z = action.payload.z;
+      state.createHelper.rz = action.payload.rz;
     },
     toggleMarkingMode(state, action) {
       state.isMarkingMode = action.payload.isMarkingMode;
@@ -76,7 +76,7 @@ const canvasSlice = createSlice({
 
 export const {
   handleMapping,
-  updateInitData,
+  updateCreateHelper,
   toggleMarkingMode,
   createAction,
   changeSelectedObjectInfo,
