@@ -66,6 +66,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
+  const currSelectionBoxRef = useRef<THREE.BoxHelper>();
+  const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
@@ -257,7 +259,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
   const updateProperty = (category: string, value: string) => {
     const selectedObj = selectedNodeRef.current;
-    if (!selectedObj) return;
+    const currSelectionBox = currSelectionBoxRef.current;
+    if (!selectedObj || !currSelectionBox) return;
 
     switch (category) {
       case "name":
@@ -296,6 +299,10 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       default:
         break;
     }
+
+    // selection box
+    if (transformControlRef.current?.object)
+      currSelectionBox.setFromObject(transformControlRef.current.object);
 
     // update selected object info
     dispatchChange();
@@ -404,6 +411,24 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
+
+    // Selection Box
+    currSelectionBoxRef.current = new THREE.BoxHelper(
+      new THREE.Object3D(),
+      0x0000ff
+    );
+    currSelectionBoxRef.current.material.depthTest = false;
+    currSelectionBoxRef.current.visible = false;
+
+    prevSelectionBoxRef.current = new THREE.BoxHelper(
+      new THREE.Object3D(),
+      0xff0000
+    );
+    prevSelectionBoxRef.current.material.depthTest = false;
+    prevSelectionBoxRef.current.visible = false;
+
+    scene.add(currSelectionBoxRef.current);
+    scene.add(prevSelectionBoxRef.current);
 
     isInitializedRef.current = true;
 
@@ -550,7 +575,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     } else {
       selectedNodeRef.current = null;
       selectedNodesArrayRef.current = [];
-      clearAllBoxHelpers();
+      hideSelectionHelpers();
 
       dispatch(
         changeSelectedObjectInfo({
@@ -568,28 +593,29 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const hilightObject = () => {
     const scene = sceneRef.current;
     const selectedNodesArray = selectedNodesArrayRef.current;
-    if (!scene) return;
+    const currSelectionBox = currSelectionBoxRef.current;
+    const prevSelectionBox = prevSelectionBoxRef.current;
+    const tfControl = transformControlRef.current;
+    if (!scene || !currSelectionBox || !prevSelectionBox || !tfControl) return;
 
-    clearAllBoxHelpers();
+    hideSelectionHelpers();
 
-    for (let i = 0; i < selectedNodesArray.length; i++) {
-      const obj = selectedNodesArray[i];
-      const color = i === 1 ? 0x0000ff : 0xff0000;
-      const newBoxHelper = new THREE.BoxHelper(obj.children[0], color);
-      newBoxHelper.name = `box-${obj.uuid}`;
-      scene.add(newBoxHelper);
+    if (tfControl.object) {
+      currSelectionBox.setFromObject(tfControl.object);
+      currSelectionBox.visible = true;
+    }
+    if (selectedNodesArray.length > 1) {
+      prevSelectionBox.setFromObject(selectedNodesArray[0]);
+      prevSelectionBox.visible = true;
     }
   };
 
-  const clearAllBoxHelpers = () => {
-    if (sceneRef.current) {
-      const boxHelpers = sceneRef.current.children.filter(
-        (child) => child instanceof THREE.BoxHelper
-      );
-      boxHelpers.forEach((boxHelper) => {
-        sceneRef.current?.remove(boxHelper);
-      });
-    }
+  const hideSelectionHelpers = () => {
+    const currSelectionBox = currSelectionBoxRef.current;
+    const prevSelectionBox = prevSelectionBoxRef.current;
+    if (!currSelectionBox || !prevSelectionBox) return;
+    currSelectionBox.visible = false;
+    prevSelectionBox.visible = false;
   };
 
   const createNodeHelper = (event: MouseEvent | TouchEvent) => {
@@ -689,7 +715,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         if (!plane) return;
 
         const intersects = raycaster.intersectObject(plane, true);
-        if (!intersects) return;
+        if (!intersects.length) return;
 
         const v3 = intersects[0].point;
         const angle = Math.atan2(
