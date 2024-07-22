@@ -105,6 +105,7 @@ const Map: React.FC = () => {
   useEffect(() => {
     if (selectedMap) {
       getMapData(selectedMap.name);
+      getTopoData(selectedMap.name);
     }
   }, [selectedMap]);
 
@@ -124,11 +125,18 @@ const Map: React.FC = () => {
       dispatch(
         createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
       );
-
-      const topo = await axios.get(url + `/map/topo/${name}`);
-      setTopoData(topo.data);
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const getTopoData = async (name: string) => {
+    try {
+      const res = await axios.get(url + `/map/topo/${name}`);
+      setTopoData(res.data);
+    } catch (e) {
+      setTopoData(null);
+      console.error("Failed to get topo data...", e);
     }
   };
 

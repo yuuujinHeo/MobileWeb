@@ -131,9 +131,12 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         // }
         break;
       case "MAPPING_STOP":
-        clearMappingPoints();
+        clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
         break;
       case "DRAW_CLOUD":
+        // Reset before draw.
+        resetCamera();
+        clearMappingPoints(CANVAS_CLASSES.OVERLAY);
         if (cloudData) drawCloud(action.target, cloudData);
         break;
       case "ADD_NODE":
@@ -150,7 +153,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         }
         break;
       case "DELETE_NODE":
-        removeNode();
+        const selectedObject = selectedNodeRef.current;
+        if (selectedObject) removeNode(selectedObject);
         break;
       case "SAVE_ANNOTATION":
         saveAnnotation(action.name);
@@ -166,6 +170,10 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         removeLink(action.target, action.value);
         break;
       case "DRAW_CLOUD_TOPO":
+        // Reset before draw.
+        resetCamera();
+        clearMappingPoints(CANVAS_CLASSES.DEFAULT);
+        clearNodes();
         if (cloudData) drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
         drawTopo();
         break;
@@ -272,7 +280,9 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         break;
       case "type":
         if (selectedObj.userData.type !== value) {
-          removeNode();
+          const selectedObj = selectedNodeRef.current;
+          if (selectedObj) removeNode(selectedObj);
+
           if (value === "GOAL") {
             addGoalNode(removedNodePos as NodePos);
           } else if (value === "ROUTE") {
@@ -945,12 +955,6 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     if (!isInitializedRef.current) return;
     if (className !== targetCanvas) return;
 
-    // Reset before draw.
-    if (targetCanvas === CANVAS_CLASSES.OVERLAY) {
-      resetCamera();
-      clearMappingPoints();
-    }
-
     if (cloud) {
       const geo = new THREE.BufferGeometry();
 
@@ -990,7 +994,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     }
   };
 
-  const clearMappingPoints = () => {
+  const clearMappingPoints = (targetCanvas: string) => {
+    if (className !== targetCanvas) return;
     // clear socket
     if (socketRef.current) {
       socketRef.current.off("mapping");
@@ -1002,6 +1007,20 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       if (points) sceneRef.current.remove(points);
     }
     mappingPointsArr.current = [];
+  };
+
+  const clearNodes = () => {
+    const scene = sceneRef.current;
+    const nodes = nodesRef.current;
+    if (!scene) return;
+
+    const nodeIds = Array.from(nodes.keys());
+    for (const id of nodeIds) {
+      const node = scene.getObjectByProperty("uuid", id);
+      if (node) {
+        removeNode(node);
+      }
+    }
   };
 
   const resetCamera = () => {
@@ -1041,7 +1060,6 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
           raycastTargetsRef.current.push(group);
 
           selectObject(group);
-          console.log("add goal end");
           resolve();
         });
       } catch (e) {
@@ -1050,7 +1068,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     });
   };
 
-  const addRouteNode = async (nodePos: NodePos) => {
+  const addRouteNode = (nodePos: NodePos) => {
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
@@ -1072,28 +1090,18 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     sceneRef.current?.add(route);
     raycastTargetsRef.current.push(route);
     selectObject(route);
-    console.log("add route end");
   };
 
   const setupNode = (node: THREE.Object3D, type: string, nodePos: NodePos) => {
     // Set node position
-    if (removedNodePos) {
-      // The removedNodePos variable is always null,
-      // except when the node type changes.
-      // This is because it is initialized when the component is refreshed.
-      // (e.g., when a state change occurs).
-      node.position.set(removedNodePos.x, removedNodePos.y, 0);
-      node.rotation.z = removedNodePos.rz;
-    } else {
-      node.position.set(nodePos.x, nodePos.y, 0);
-      node.rotation.z = nodePos.rz;
-    }
+    node.position.set(nodePos.x, nodePos.y, 0);
+    node.rotation.z = nodePos.rz;
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
     // called from drawTopo
-    if (topoData && topoData.length && nodePos.idx && nodePos.idx >= 0) {
-      const topo = topoData[nodePos.idx];
+    if (topoData && topoData.length && (nodePos.idx as number) >= 0) {
+      const topo = topoData[nodePos.idx as number];
       node.name = topo.name;
       node.userData.info = topo.info;
       // [TEMP]
@@ -1134,17 +1142,16 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     if (label) node.remove(label);
   };
 
-  const removeNode = () => {
-    const selectedObj = selectedNodeRef.current;
+  const removeNode = (target: THREE.Object3D) => {
     const scene = sceneRef.current;
     const nodes = nodesRef.current;
-    if (!selectedObj || !scene) return;
+    if (!scene) return;
 
     removedNodePos = {
-      x: selectedObj.position.x,
-      y: selectedObj.position.y,
-      z: selectedObj.position.z,
-      rz: selectedObj.rotation.z,
+      x: target.position.x,
+      y: target.position.y,
+      z: target.position.z,
+      rz: target.rotation.z,
     };
 
     // Num update
@@ -1164,24 +1171,24 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     // ======================================================
 
     // remove 3d modeling & label
-    removeLabelFromNode(selectedObj);
+    removeLabelFromNode(target);
 
     // Remove the node from nodesRef
-    nodes.delete(selectedObj.uuid);
+    nodes.delete(target.uuid);
 
     // Remove links
-    removeAllLinksRelateTo(selectedObj.uuid);
+    removeAllLinksRelateTo(target.uuid);
 
     // Resetting the array which is used for raycasting
     const filteredObjects = raycastTargetsRef.current.filter(
-      (obj) => obj.name !== selectedObj.name
+      (obj) => obj.name !== target.name
     );
     raycastTargetsRef.current = filteredObjects;
 
     // select null
     selectObject(null);
 
-    scene.remove(selectedObj);
+    scene.remove(target);
     // Reset the selected object info
     dispatch(
       changeSelectedObjectInfo({
