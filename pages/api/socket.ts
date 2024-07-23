@@ -9,7 +9,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
 
     const io2 = new Server((res.socket as any).server);
     // let url = await getMobileSocketURL();
-    const url = "http://10.108.1.10:10334/";
+    const url = "http://10.108.1.40:10334/";
     let socket = io(url);
 
     let connectedClients = [];
@@ -17,7 +17,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
     socket.on("connect", () => {
       console.log("??????????????????????????????");
       socket.on("mapping", (data: string[][]) => {
-        console.log('mapping in');
+        console.log("mapping in");
         io2.emit("mapping", data);
       });
       socket.on("lidar", (data: string[][]) => {

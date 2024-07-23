@@ -184,63 +184,6 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     }
   }, [action]);
 
-  const drawTopo = async () => {
-    const scene = sceneRef.current;
-    if (!topoData || !scene) return;
-
-    // repaint all nodes
-    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
-
-    // Type1
-    // for (let i = 0; i < topoData.length; i++) {
-    //   // First, Create Node
-    //   const topo = topoData[i];
-    //   const poseArr = topo.pose.split(",");
-    //   const nodePos: NodePos = {
-    //     x: Number(poseArr[0]),
-    //     y: Number(poseArr[1]),
-    //     z: Number(poseArr[2]),
-    //     rz: Number(poseArr[5]),
-    //     idx: i,
-    //   };
-    //   if (topo.type === "GOAL") {
-    //     await addGoalNode(nodePos);
-    //   } else if (topo.type === "ROUTE") {
-    //     await addRouteNode(nodePos);
-    //   }
-    // }
-
-    // Type 2
-    const tasks = topoData.map((topo, i) => {
-      const poseArr = topo.pose.split(",");
-
-      const nodePos: NodePos = {
-        x: Number(poseArr[0]),
-        y: Number(poseArr[1]),
-        z: Number(poseArr[2]),
-        rz: Number(poseArr[5]),
-        idx: i,
-      };
-      if (topo.type === "GOAL") {
-        return addGoalNode(nodePos);
-      } else if (topo.type === "ROUTE") {
-        return addRouteNode(nodePos);
-      }
-    });
-
-    await Promise.all(tasks);
-
-    // After repaint all nodes, link nodes
-    topoData.forEach((node) => {
-      const from = scene.getObjectByName(node.name);
-
-      node.links.forEach((link) => {
-        const to = scene.getObjectByName(link);
-        if (from && to) addLinks(from, to);
-      });
-    });
-  };
-
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
       if (isMarkingMode) {
@@ -1020,6 +963,63 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     }
   };
 
+  const drawTopo = async () => {
+    const scene = sceneRef.current;
+    if (!topoData || !scene) return;
+
+    // repaint all nodes
+    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
+
+    // Type1
+    // for (let i = 0; i < topoData.length; i++) {
+    //   // First, Create Node
+    //   const topo = topoData[i];
+    //   const poseArr = topo.pose.split(",");
+    //   const nodePos: NodePos = {
+    //     x: Number(poseArr[0]),
+    //     y: Number(poseArr[1]),
+    //     z: Number(poseArr[2]),
+    //     rz: Number(poseArr[5]),
+    //     idx: i,
+    //   };
+    //   if (topo.type === "GOAL") {
+    //     await addGoalNode(nodePos);
+    //   } else if (topo.type === "ROUTE") {
+    //     await addRouteNode(nodePos);
+    //   }
+    // }
+
+    // Type 2
+    const tasks = topoData.map((topo, i) => {
+      const poseArr = topo.pose.split(",");
+
+      const nodePos: NodePos = {
+        x: Number(poseArr[0]),
+        y: Number(poseArr[1]),
+        z: Number(poseArr[2]),
+        rz: Number(poseArr[5]),
+        idx: i,
+      };
+      if (topo.type === "GOAL") {
+        return addGoalNode(nodePos);
+      } else if (topo.type === "ROUTE") {
+        return addRouteNode(nodePos);
+      }
+    });
+
+    await Promise.all(tasks);
+
+    // After repaint all nodes, link nodes
+    topoData.forEach((node) => {
+      const from = scene.getObjectByName(node.name);
+
+      node.links.forEach((link) => {
+        const to = scene.getObjectByName(link);
+        if (from && to) addLinks(from, to);
+      });
+    });
+  };
+
   const clearMappingPoints = (targetCanvas: string) => {
     if (className !== targetCanvas) return;
     // clear socket
@@ -1130,7 +1130,6 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       const topo = topoData[nodePos.idx as number];
       node.name = topo.name;
       node.userData.info = topo.info;
-      // [TEMP]
       node.userData.links = [];
       node.userData.type = topo.type;
     } else {
@@ -1245,7 +1244,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
         name: node.name,
         pose: pose,
         info: node.userData.info,
-        links: linkedNodes,
+        // links: linkedNodes,
+        links: node.userData.links,
         type: node.userData.type,
       };
       return nodeData;
