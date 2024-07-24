@@ -46,7 +46,11 @@ interface NodePos {
   idx?: number;
 }
 
-const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
+const LidarCanvas = ({
+  className,
+  cloudData = null,
+  topoData,
+}: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
   const { action, isMarkingMode, createHelper } = useSelector(
@@ -78,6 +82,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const routes = useRef<number[]>(new Array(10000).fill(0));
 
   const isMarkingModeRef = useRef<boolean>(false);
+  const timeStampRef = useRef<number>(0);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -125,63 +130,56 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   }, []);
 
   useEffect(() => {
-    switch (action.command) {
-      case "MAPPING_START":
-        // if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
-        //   socketRef.current.on("mapping", (data) => {
-        //     drawCloud(CANVAS_CLASSES.SIDEBAR, data);
-        //   });
-        // }
-        break;
-      case "MAPPING_STOP":
-        clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
-        break;
-      case "DRAW_CLOUD":
-        // Reset before draw.
-        resetCamera();
-        clearMappingPoints(CANVAS_CLASSES.OVERLAY);
-        if (cloudData) drawCloud(action.target, cloudData);
-        break;
-      case "ADD_NODE":
-        const nodePose: NodePos = {
-          x: Number(createHelper.x),
-          y: Number(createHelper.y),
-          z: Number(createHelper.z),
-          rz: Number(createHelper.rz),
-        };
-        if (action.category === "ROUTE") {
-          addRouteNode(nodePose);
-        } else if (action.category === "GOAL") {
-          addGoalNode(nodePose);
-        }
-        break;
-      case "DELETE_NODE":
-        const selectedObject = selectedNodeRef.current;
-        if (selectedObject) removeNode(selectedObject);
-        break;
-      case "SAVE_ANNOTATION":
-        saveAnnotation(action.name);
-        break;
-      case "UPDATE_PROPERTY":
-        updateProperty(action.category, action.value);
-        break;
-      case "ADD_LINK":
-        const selectedNodesArray = selectedNodesArrayRef.current;
-        addLinks(selectedNodesArray[0], selectedNodesArray[1]);
-        break;
-      case "REMOVE_LINK":
-        removeLink(action.target, action.value);
-        break;
-      case "DRAW_CLOUD_TOPO":
-        // Reset before draw.
-        resetCamera();
-        clearMappingPoints(CANVAS_CLASSES.DEFAULT);
-        clearNodes();
-        if (cloudData) drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
-        drawTopo();
-        break;
-      default:
-        break;
+    if (action.command === "DRAW_CLOUD") {
+      drawCloud(action.target, cloudData);
+    } else if (className === CANVAS_CLASSES.DEFAULT) {
+      switch (action.command) {
+        case "ADD_NODE":
+          if (className !== CANVAS_CLASSES.DEFAULT) break;
+          const nodePose: NodePos = {
+            x: Number(createHelper.x),
+            y: Number(createHelper.y),
+            z: Number(createHelper.z),
+            rz: Number(createHelper.rz),
+          };
+          if (action.category === "ROUTE") {
+            addRouteNode(nodePose);
+          } else if (action.category === "GOAL") {
+            addGoalNode(nodePose);
+          }
+          break;
+        case "DELETE_NODE":
+          const selectedObject = selectedNodeRef.current;
+          if (selectedObject) removeNode(selectedObject);
+          break;
+        case "SAVE_ANNOTATION":
+          saveAnnotation(action.name);
+          break;
+        case "UPDATE_PROPERTY":
+          updateProperty(action.category, action.value);
+          break;
+        case "ADD_LINK":
+          const selectedNodesArray = selectedNodesArrayRef.current;
+          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          break;
+        case "REMOVE_LINK":
+          removeLink(action.target, action.value);
+          break;
+        case "DRAW_CLOUD_TOPO":
+          drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
+          drawTopo();
+          break;
+        default:
+          break;
+      }
+    } else if (className === CANVAS_CLASSES.SIDEBAR) {
+      switch (action.command) {
+        case "MAPPING_STOP":
+          clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
+          break;
+        default:
+          break;
+      }
     }
   }, [action]);
 
@@ -208,12 +206,22 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
     switch (category) {
       case "name":
-        // [TODO] validate
+        let isDuplicatedName: boolean = false;
+        const nodes = Array.from(nodesRef.current.values());
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].name === value) {
+            isDuplicatedName = true;
+            break;
+          }
+        }
+        // TODO If isDuplicatedName is true. Warn!
+        if (!isDuplicatedName) {
+          selectedObj.name = value;
+          // update label
+          removeLabelFromNode(selectedObj);
+          addLabelToNode(selectedObj);
+        }
 
-        selectedObj.name = value;
-        // update label
-        removeLabelFromNode(selectedObj);
-        addLabelToNode(selectedObj);
         break;
       case "pose-x":
         selectedObj.position.x = Number(value);
@@ -923,9 +931,12 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     sceneRef.current?.add(points);
   };
 
-  const drawCloud = (targetCanvas: string, cloud: string[][]) => {
-    if (!isInitializedRef.current) return;
+  const drawCloud = (targetCanvas: string, cloud: string[][] | null) => {
+    if (!isInitializedRef.current || !cloud) return;
     if (className !== targetCanvas) return;
+
+    resetCamera();
+    clearMappingPoints(className);
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
@@ -970,6 +981,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     const scene = sceneRef.current;
     if (!topoData || !scene) return;
 
+    clearAllNodes();
     // repaint all nodes
     // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
 
@@ -1038,7 +1050,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     mappingPointsArr.current = [];
   };
 
-  const clearNodes = () => {
+  const clearAllNodes = () => {
     const scene = sceneRef.current;
     const nodes = nodesRef.current;
     if (!scene) return;
