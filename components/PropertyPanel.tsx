@@ -44,6 +44,7 @@ export default function PropertyPanel() {
   // state
   const [selectBtn, setSelectBtn] = useState<string>("Off");
   const [displayInfo, setDisplayInfo] = useState({
+    name: "",
     x: "0",
     y: "0",
     z: "0",
@@ -64,6 +65,7 @@ export default function PropertyPanel() {
   useEffect(() => {
     if (selectedObjectInfo && selectedObjectInfo.pose) {
       setDisplayInfo({
+        name: selectedObjectInfo.name,
         x: selectedObjectInfo.pose.split(",")[0],
         y: selectedObjectInfo.pose.split(",")[1],
         z: selectedObjectInfo.pose.split(",")[2],
@@ -160,19 +162,32 @@ export default function PropertyPanel() {
     const updatedInfo = { ...displayInfo, [target]: input };
     setDisplayInfo(updatedInfo);
 
-    const isInputValidate = getIsInputValidate(input);
+    let isInputValidate: boolean = false;
+    isInputValidate =
+      target === "name"
+        ? getIsStrInputValidate(input)
+        : getIsNumInputValidate(input);
     if (isInputValidate) {
       dispatch(
         createAction({
           command: "UPDATE_PROPERTY",
-          category: `pose-${target}`,
+          category: target === "name" ? target : `pose-${target}`,
           value: input,
         })
       );
     }
   };
+  const getIsStrInputValidate = (input: string) => {
+    if (
+      input === "" ||
+      input.endsWith(".") ||
+      input.endsWith(" " || input.includes(" "))
+    )
+      return false;
+    return true;
+  };
 
-  const getIsInputValidate = (input: string) => {
+  const getIsNumInputValidate = (input: string) => {
     // Do not dispatch when the input value is "" or ends with "."
     // This allows InputText to display a value such as "" or "1."
     if (input === "" || input.endsWith(".")) return false;
@@ -333,16 +348,10 @@ export default function PropertyPanel() {
           <div>
             NAME
             <InputText
-              value={selectedObjectInfo.name}
+              value={displayInfo.name}
               className="p-inputtext-sm"
               onChange={(e) => {
-                dispatch(
-                  createAction({
-                    command: "UPDATE_PROPERTY",
-                    category: "name",
-                    value: e.target.value,
-                  })
-                );
+                handleInputChange(e.target.value, "name");
               }}
             />
           </div>

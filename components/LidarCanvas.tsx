@@ -74,8 +74,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
-  const goals = useRef<number[]>(new Array(100).fill(0));
-  const routes = useRef<number[]>(new Array(100).fill(0));
+  const goals = useRef<number[]>(new Array(10000).fill(0));
+  const routes = useRef<number[]>(new Array(10000).fill(0));
 
   const isMarkingModeRef = useRef<boolean>(false);
 
