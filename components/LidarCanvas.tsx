@@ -46,7 +46,11 @@ interface NodePos {
   idx?: number;
 }
 
-const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
+const LidarCanvas = ({
+  className,
+  cloudData = null,
+  topoData,
+}: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
   const { action, isMarkingMode, createHelper } = useSelector(
@@ -74,9 +78,11 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
-  let routeNum = useRef<number>(0);
-  let goalNum = useRef<number>(0);
-  let isMarkingModeRef = useRef<boolean>(false);
+  const goals = useRef<number[]>(new Array(10000).fill(0));
+  const routes = useRef<number[]>(new Array(10000).fill(0));
+
+  const isMarkingModeRef = useRef<boolean>(false);
+  const timeStampRef = useRef<number>(0);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -124,122 +130,58 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   }, []);
 
   useEffect(() => {
-    switch (action.command) {
-      case "MAPPING_START":
-        // if (className === CANVAS_CLASSES.SIDEBAR && socketRef.current) {
-        //   socketRef.current.on("mapping", (data) => {
-        //     drawCloud(CANVAS_CLASSES.SIDEBAR, data);
-        //   });
-        // }
-        break;
-      case "MAPPING_STOP":
-        clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
-        break;
-      case "DRAW_CLOUD":
-        // Reset before draw.
-        resetCamera();
-        clearMappingPoints(CANVAS_CLASSES.OVERLAY);
-        if (cloudData) drawCloud(action.target, cloudData);
-        break;
-      case "ADD_NODE":
-        const nodePose: NodePos = {
-          x: Number(createHelper.x),
-          y: Number(createHelper.y),
-          z: Number(createHelper.z),
-          rz: Number(createHelper.rz),
-        };
-        if (action.category === "ROUTE") {
-          addRouteNode(nodePose);
-        } else if (action.category === "GOAL") {
-          addGoalNode(nodePose);
-        }
-        break;
-      case "DELETE_NODE":
-        const selectedObject = selectedNodeRef.current;
-        if (selectedObject) removeNode(selectedObject);
-        break;
-      case "SAVE_ANNOTATION":
-        saveAnnotation(action.name);
-        break;
-      case "UPDATE_PROPERTY":
-        updateProperty(action.category, action.value);
-        break;
-      case "ADD_LINK":
-        const selectedNodesArray = selectedNodesArrayRef.current;
-        addLinks(selectedNodesArray[0], selectedNodesArray[1]);
-        break;
-      case "REMOVE_LINK":
-        removeLink(action.target, action.value);
-        break;
-      case "DRAW_CLOUD_TOPO":
-        // Reset before draw.
-        resetCamera();
-        clearMappingPoints(CANVAS_CLASSES.DEFAULT);
-        clearNodes();
-        if (cloudData) drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
-        drawTopo();
-        break;
-      default:
-        break;
+    if (action.command === "DRAW_CLOUD") {
+      drawCloud(action.target, cloudData);
+    } else if (className === CANVAS_CLASSES.DEFAULT) {
+      switch (action.command) {
+        case "ADD_NODE":
+          if (className !== CANVAS_CLASSES.DEFAULT) break;
+          const nodePose: NodePos = {
+            x: Number(createHelper.x),
+            y: Number(createHelper.y),
+            z: Number(createHelper.z),
+            rz: Number(createHelper.rz),
+          };
+          if (action.category === "ROUTE") {
+            addRouteNode(nodePose);
+          } else if (action.category === "GOAL") {
+            addGoalNode(nodePose);
+          }
+          break;
+        case "DELETE_NODE":
+          const selectedObject = selectedNodeRef.current;
+          if (selectedObject) removeNode(selectedObject);
+          break;
+        case "SAVE_ANNOTATION":
+          saveAnnotation(action.name);
+          break;
+        case "UPDATE_PROPERTY":
+          updateProperty(action.category, action.value);
+          break;
+        case "ADD_LINK":
+          const selectedNodesArray = selectedNodesArrayRef.current;
+          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          break;
+        case "REMOVE_LINK":
+          removeLink(action.target, action.value);
+          break;
+        case "DRAW_CLOUD_TOPO":
+          drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
+          drawTopo();
+          break;
+        default:
+          break;
+      }
+    } else if (className === CANVAS_CLASSES.SIDEBAR) {
+      switch (action.command) {
+        case "MAPPING_STOP":
+          clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
+          break;
+        default:
+          break;
+      }
     }
   }, [action]);
-
-  const drawTopo = async () => {
-    const scene = sceneRef.current;
-    if (!topoData || !scene) return;
-
-    // repaint all nodes
-    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
-
-    // Type1
-    // for (let i = 0; i < topoData.length; i++) {
-    //   // First, Create Node
-    //   const topo = topoData[i];
-    //   const poseArr = topo.pose.split(",");
-    //   const nodePos: NodePos = {
-    //     x: Number(poseArr[0]),
-    //     y: Number(poseArr[1]),
-    //     z: Number(poseArr[2]),
-    //     rz: Number(poseArr[5]),
-    //     idx: i,
-    //   };
-    //   if (topo.type === "GOAL") {
-    //     await addGoalNode(nodePos);
-    //   } else if (topo.type === "ROUTE") {
-    //     await addRouteNode(nodePos);
-    //   }
-    // }
-
-    // Type 2
-    const tasks = topoData.map((topo, i) => {
-      const poseArr = topo.pose.split(",");
-
-      const nodePos: NodePos = {
-        x: Number(poseArr[0]),
-        y: Number(poseArr[1]),
-        z: Number(poseArr[2]),
-        rz: Number(poseArr[5]),
-        idx: i,
-      };
-      if (topo.type === "GOAL") {
-        return addGoalNode(nodePos);
-      } else if (topo.type === "ROUTE") {
-        return addRouteNode(nodePos);
-      }
-    });
-
-    await Promise.all(tasks);
-
-    // After repaint all nodes, link nodes
-    topoData.forEach((node) => {
-      const from = scene.getObjectByName(node.name);
-
-      node.links.forEach((link) => {
-        const to = scene.getObjectByName(link);
-        if (from && to) addLinks(from, to);
-      });
-    });
-  };
 
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
@@ -264,10 +206,22 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
     switch (category) {
       case "name":
-        selectedObj.name = value;
-        // update label
-        removeLabelFromNode(selectedObj);
-        addLabelToNode(selectedObj);
+        let isDuplicatedName: boolean = false;
+        const nodes = Array.from(nodesRef.current.values());
+        for (let i = 0; i < nodes.length; i++) {
+          if (nodes[i].name === value) {
+            isDuplicatedName = true;
+            break;
+          }
+        }
+        // TODO If isDuplicatedName is true. Warn!
+        if (!isDuplicatedName) {
+          selectedObj.name = value;
+          // update label
+          removeLabelFromNode(selectedObj);
+          addLabelToNode(selectedObj);
+        }
+
         break;
       case "pose-x":
         selectedObj.position.x = Number(value);
@@ -977,9 +931,12 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     sceneRef.current?.add(points);
   };
 
-  const drawCloud = (targetCanvas: string, cloud: string[][]) => {
-    if (!isInitializedRef.current) return;
+  const drawCloud = (targetCanvas: string, cloud: string[][] | null) => {
+    if (!isInitializedRef.current || !cloud) return;
     if (className !== targetCanvas) return;
+
+    resetCamera();
+    clearMappingPoints(className);
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
@@ -1020,6 +977,64 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     }
   };
 
+  const drawTopo = async () => {
+    const scene = sceneRef.current;
+    if (!topoData || !scene) return;
+
+    clearAllNodes();
+    // repaint all nodes
+    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
+
+    // Type1
+    // for (let i = 0; i < topoData.length; i++) {
+    //   // First, Create Node
+    //   const topo = topoData[i];
+    //   const poseArr = topo.pose.split(",");
+    //   const nodePos: NodePos = {
+    //     x: Number(poseArr[0]),
+    //     y: Number(poseArr[1]),
+    //     z: Number(poseArr[2]),
+    //     rz: Number(poseArr[5]),
+    //     idx: i,
+    //   };
+    //   if (topo.type === "GOAL") {
+    //     await addGoalNode(nodePos);
+    //   } else if (topo.type === "ROUTE") {
+    //     await addRouteNode(nodePos);
+    //   }
+    // }
+
+    // Type 2
+    const tasks = topoData.map((topo, i) => {
+      const poseArr = topo.pose.split(",");
+
+      const nodePos: NodePos = {
+        x: Number(poseArr[0]),
+        y: Number(poseArr[1]),
+        z: Number(poseArr[2]),
+        rz: Number(poseArr[5]),
+        idx: i,
+      };
+      if (topo.type === "GOAL") {
+        return addGoalNode(nodePos);
+      } else if (topo.type === "ROUTE") {
+        return addRouteNode(nodePos);
+      }
+    });
+
+    await Promise.all(tasks);
+
+    // After repaint all nodes, link nodes
+    topoData.forEach((node) => {
+      const from = scene.getObjectByName(node.name);
+
+      node.links.forEach((link) => {
+        const to = scene.getObjectByName(link);
+        if (from && to) addLinks(from, to);
+      });
+    });
+  };
+
   const clearMappingPoints = (targetCanvas: string) => {
     if (className !== targetCanvas) return;
     // clear socket
@@ -1035,7 +1050,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     mappingPointsArr.current = [];
   };
 
-  const clearNodes = () => {
+  const clearAllNodes = () => {
     const scene = sceneRef.current;
     const nodes = nodesRef.current;
     if (!scene) return;
@@ -1125,26 +1140,26 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
+    const nodes = type === "GOAL" ? goals.current : routes.current;
+    const prefix = type === "GOAL" ? "goal" : "route";
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i] === 0) {
+        nodes[i] = 1;
+        node.name = `${prefix}-${formatNumber(i + 1)}`;
+        node.userData.index = i;
+        node.userData.links = [];
+        node.userData.type = type;
+        node.userData.info = "";
+        break;
+      }
+    }
+
     // called from drawTopo
     if (topoData && topoData.length && (nodePos.idx as number) >= 0) {
       const topo = topoData[nodePos.idx as number];
+      // update userdata
       node.name = topo.name;
       node.userData.info = topo.info;
-      // [TEMP]
-      node.userData.links = [];
-      node.userData.type = topo.type;
-    } else {
-      if (type === "ROUTE") {
-        routeNum.current += 1;
-        node.name = `route-${routeNum.current}`;
-      } else if (type === "GOAL") {
-        goalNum.current += 1;
-        node.name = `goal-${goalNum.current}`;
-      }
-
-      node.userData.info = "";
-      node.userData.links = [];
-      node.userData.type = type;
     }
   };
 
@@ -1181,11 +1196,11 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     };
 
     // Num update
-    // if (selectedObj.userData.type === "GOAL") {
-    //   goalNum.current -= 1;
-    // } else if (selectedObj.userData.type === "ROUTE") {
-    //   routeNum.current -= 1;
-    // }
+    if (target.userData.type === "GOAL") {
+      goals.current[target.userData.index] = 0;
+    } else if (target.userData.type === "ROUTE") {
+      routes.current[target.userData.index] = 0;
+    }
 
     if (transformControlRef.current) {
       transformControlRef.current.detach();
@@ -1241,7 +1256,7 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       const pose = parsedPos + "," + parsedRot;
       const linkedNodes = getLinkedNodes(node);
       const nodeData = {
-        id: node.uuid,
+        id: node.name,
         name: node.name,
         pose: pose,
         info: node.userData.info,
@@ -1431,6 +1446,13 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
       dispatchChange();
     }
+  };
+
+  const formatNumber = (num: number): string => {
+    if (num < 1 || num > 99) {
+      throw new Error("Input number must be between 1 and 99");
+    }
+    return num < 10 ? `0${num}` : `${num}`;
   };
 
   return <canvas className={className} ref={canvasRef} />;
