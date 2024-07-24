@@ -74,9 +74,10 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
-  let routeNum = useRef<number>(0);
-  let goalNum = useRef<number>(0);
-  let isMarkingModeRef = useRef<boolean>(false);
+  const goals = useRef<number[]>(new Array(100).fill(0));
+  const routes = useRef<number[]>(new Array(100).fill(0));
+
+  const isMarkingModeRef = useRef<boolean>(false);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -207,6 +208,8 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
     switch (category) {
       case "name":
+        // [TODO] validate
+
         selectedObj.name = value;
         // update label
         removeLabelFromNode(selectedObj);
@@ -1125,25 +1128,26 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
+    const nodes = type === "GOAL" ? goals.current : routes.current;
+    const prefix = type === "GOAL" ? "goal" : "route";
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i] === 0) {
+        nodes[i] = 1;
+        node.name = `${prefix}-${formatNumber(i + 1)}`;
+        node.userData.index = i;
+        node.userData.links = [];
+        node.userData.type = type;
+        node.userData.info = "";
+        break;
+      }
+    }
+
     // called from drawTopo
     if (topoData && topoData.length && (nodePos.idx as number) >= 0) {
       const topo = topoData[nodePos.idx as number];
+      // update userdata
       node.name = topo.name;
       node.userData.info = topo.info;
-      node.userData.links = [];
-      node.userData.type = topo.type;
-    } else {
-      if (type === "ROUTE") {
-        routeNum.current += 1;
-        node.name = `route-${routeNum.current}`;
-      } else if (type === "GOAL") {
-        goalNum.current += 1;
-        node.name = `goal-${goalNum.current}`;
-      }
-
-      node.userData.info = "";
-      node.userData.links = [];
-      node.userData.type = type;
     }
   };
 
@@ -1180,11 +1184,11 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
     };
 
     // Num update
-    // if (selectedObj.userData.type === "GOAL") {
-    //   goalNum.current -= 1;
-    // } else if (selectedObj.userData.type === "ROUTE") {
-    //   routeNum.current -= 1;
-    // }
+    if (target.userData.type === "GOAL") {
+      goals.current[target.userData.index] = 0;
+    } else if (target.userData.type === "ROUTE") {
+      routes.current[target.userData.index] = 0;
+    }
 
     if (transformControlRef.current) {
       transformControlRef.current.detach();
@@ -1240,12 +1244,11 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
       const pose = parsedPos + "," + parsedRot;
       const linkedNodes = getLinkedNodes(node);
       const nodeData = {
-        id: node.uuid,
+        id: node.name,
         name: node.name,
         pose: pose,
         info: node.userData.info,
-        // links: linkedNodes,
-        links: node.userData.links,
+        links: linkedNodes,
         type: node.userData.type,
       };
       return nodeData;
@@ -1431,6 +1434,13 @@ const LidarCanvas = ({ className, cloudData, topoData }: LidarCanvasProps) => {
 
       dispatchChange();
     }
+  };
+
+  const formatNumber = (num: number): string => {
+    if (num < 1 || num > 99) {
+      throw new Error("Input number must be between 1 and 99");
+    }
+    return num < 10 ? `0${num}` : `${num}`;
   };
 
   return <canvas className={className} ref={canvasRef} />;
