@@ -21,7 +21,7 @@ import {
 import { io } from "socket.io-client";
 import axios from "axios";
 
-import { CANVAS_CLASSES } from "@/constants";
+import { CANVAS_CLASSES, CANVAS_ACTION, NODE_TYPE } from "@/constants";
 
 interface LidarCanvasProps {
   className: string;
@@ -82,7 +82,6 @@ const LidarCanvas = ({
   const routes = useRef<number[]>(new Array(10000).fill(0));
 
   const isMarkingModeRef = useRef<boolean>(false);
-  const timeStampRef = useRef<number>(0);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -130,11 +129,11 @@ const LidarCanvas = ({
   }, []);
 
   useEffect(() => {
-    if (action.command === "DRAW_CLOUD") {
+    if (action.command === CANVAS_ACTION.DRAW_CLOUD) {
       drawCloud(action.target, cloudData);
     } else if (className === CANVAS_CLASSES.DEFAULT) {
       switch (action.command) {
-        case "ADD_NODE":
+        case CANVAS_ACTION.ADD_NODE:
           if (className !== CANVAS_CLASSES.DEFAULT) break;
           const nodePose: NodePos = {
             x: Number(createHelper.x),
@@ -142,30 +141,30 @@ const LidarCanvas = ({
             z: Number(createHelper.z),
             rz: Number(createHelper.rz),
           };
-          if (action.category === "ROUTE") {
+          if (action.category === NODE_TYPE.ROUTE) {
             addRouteNode(nodePose);
-          } else if (action.category === "GOAL") {
+          } else if (action.category === NODE_TYPE.GOAL) {
             addGoalNode(nodePose);
           }
           break;
-        case "DELETE_NODE":
+        case CANVAS_ACTION.DELETE_NODE:
           const selectedObject = selectedNodeRef.current;
           if (selectedObject) removeNode(selectedObject);
           break;
-        case "SAVE_ANNOTATION":
+        case CANVAS_ACTION.SAVE_ANNOTATION:
           saveAnnotation(action.name);
           break;
-        case "UPDATE_PROPERTY":
+        case CANVAS_ACTION.UPDATE_PROPERTY:
           updateProperty(action.category, action.value);
           break;
-        case "ADD_LINK":
+        case CANVAS_ACTION.ADD_LINK:
           const selectedNodesArray = selectedNodesArrayRef.current;
           addLinks(selectedNodesArray[0], selectedNodesArray[1]);
           break;
-        case "REMOVE_LINK":
+        case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
           break;
-        case "DRAW_CLOUD_TOPO":
+        case CANVAS_ACTION.DRAW_CLOUD_TOPO:
           drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
           drawTopo();
           break;
@@ -174,7 +173,7 @@ const LidarCanvas = ({
       }
     } else if (className === CANVAS_CLASSES.SIDEBAR) {
       switch (action.command) {
-        case "MAPPING_STOP":
+        case CANVAS_ACTION.MAPPING_STOP:
           clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
           break;
         default:
@@ -240,9 +239,9 @@ const LidarCanvas = ({
           const selectedObj = selectedNodeRef.current;
           if (selectedObj) removeNode(selectedObj);
 
-          if (value === "GOAL") {
+          if (value === NODE_TYPE.GOAL) {
             addGoalNode(removedNodePos as NodePos);
-          } else if (value === "ROUTE") {
+          } else if (value === NODE_TYPE.ROUTE) {
             addRouteNode(removedNodePos as NodePos);
           }
         }
@@ -1015,9 +1014,9 @@ const LidarCanvas = ({
         rz: Number(poseArr[5]),
         idx: i,
       };
-      if (topo.type === "GOAL") {
+      if (topo.type === NODE_TYPE.GOAL) {
         return addGoalNode(nodePos);
-      } else if (topo.type === "ROUTE") {
+      } else if (topo.type === NODE_TYPE.ROUTE) {
         return addRouteNode(nodePos);
       }
     });
@@ -1085,7 +1084,7 @@ const LidarCanvas = ({
     return new Promise((resolve, reject) => {
       try {
         loader.load("amr.3MF", function (group) {
-          setupNode(group, "GOAL", nodePos);
+          setupNode(group, NODE_TYPE.GOAL, nodePos);
           group.scale.set(0.001, 0.001, 0.001);
           // group.rotation.z = Number(createHelper.rz);
 
@@ -1125,7 +1124,7 @@ const LidarCanvas = ({
     plane.visible = false;
     route.add(plane);
 
-    setupNode(route, "ROUTE", nodePos);
+    setupNode(route, NODE_TYPE.ROUTE, nodePos);
 
     addLabelToNode(route);
     sceneRef.current?.add(route);
@@ -1140,8 +1139,8 @@ const LidarCanvas = ({
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
-    const nodes = type === "GOAL" ? goals.current : routes.current;
-    const prefix = type === "GOAL" ? "goal" : "route";
+    const nodes = type === NODE_TYPE.GOAL ? goals.current : routes.current;
+    const prefix = type === NODE_TYPE.GOAL ? "goal" : "route";
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i] === 0) {
         nodes[i] = 1;
@@ -1196,9 +1195,9 @@ const LidarCanvas = ({
     };
 
     // Num update
-    if (target.userData.type === "GOAL") {
+    if (target.userData.type === NODE_TYPE.GOAL) {
       goals.current[target.userData.index] = 0;
-    } else if (target.userData.type === "ROUTE") {
+    } else if (target.userData.type === NODE_TYPE.ROUTE) {
       routes.current[target.userData.index] = 0;
     }
 

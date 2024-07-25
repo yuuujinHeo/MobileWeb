@@ -18,6 +18,8 @@ import { InputText } from "primereact/inputtext";
 import { Dropdown } from "primereact/dropdown";
 import { Divider } from "primereact/divider";
 
+import { CANVAS_ACTION, NODE_TYPE } from "@/constants";
+
 import axios from "axios";
 
 interface LocReqPayload {
@@ -63,8 +65,8 @@ export default function PropertyPanel() {
 
   const [selectedType, setSelectedType] = useState<string>("");
   const nodeTypes = [
-    { name: "GOAL", code: "G" },
-    { name: "ROUTE", code: "R" },
+    { name: NODE_TYPE.GOAL, code: "G" },
+    { name: NODE_TYPE.ROUTE, code: "R" },
   ];
 
   useEffect(() => {
@@ -120,7 +122,7 @@ export default function PropertyPanel() {
       try {
         dispatch(
           createAction({
-            command: "SAVE_ANNOTATION",
+            command: CANVAS_ACTION.SAVE_ANNOTATION,
             name: filenameRef.current,
           })
         );
@@ -156,7 +158,7 @@ export default function PropertyPanel() {
   const deleteNode = () => {
     dispatch(
       createAction({
-        command: "DELETE_NODE",
+        command: CANVAS_ACTION.DELETE_NODE,
       })
     );
   };
@@ -173,7 +175,7 @@ export default function PropertyPanel() {
     if (isInputValidate) {
       dispatch(
         createAction({
-          command: "UPDATE_PROPERTY",
+          command: CANVAS_ACTION.UPDATE_PROPERTY,
           category: target === "name" ? target : `pose-${target}`,
           value: input,
         })
@@ -260,7 +262,10 @@ export default function PropertyPanel() {
               raised
               onClick={() => {
                 dispatch(
-                  createAction({ command: "ADD_NODE", category: "ROUTE" })
+                  createAction({
+                    command: CANVAS_ACTION.ADD_NODE,
+                    category: NODE_TYPE.ROUTE,
+                  })
                 );
               }}
             />
@@ -272,7 +277,10 @@ export default function PropertyPanel() {
               raised
               onClick={() => {
                 dispatch(
-                  createAction({ command: "ADD_NODE", category: "GOAL" })
+                  createAction({
+                    command: CANVAS_ACTION.ADD_NODE,
+                    category: NODE_TYPE.GOAL,
+                  })
                 );
               }}
             />
@@ -294,7 +302,7 @@ export default function PropertyPanel() {
               raised
               onClick={() => {
                 // saveAnnotation();
-                dispatch(createAction({ command: "ADD_LINK" }));
+                dispatch(createAction({ command: CANVAS_ACTION.ADD_LINK }));
               }}
             />
           </div>
@@ -334,7 +342,7 @@ export default function PropertyPanel() {
                   setSelectedType(e.value.name);
                   dispatch(
                     createAction({
-                      command: "UPDATE_PROPERTY",
+                      command: CANVAS_ACTION.UPDATE_PROPERTY,
                       category: "type",
                       value: e.value.name,
                     })
@@ -365,7 +373,7 @@ export default function PropertyPanel() {
                       onClick={() => {
                         dispatch(
                           createAction({
-                            command: "REMOVE_LINK",
+                            command: CANVAS_ACTION.REMOVE_LINK,
                             target: selectedObjectInfo.id,
                             value: link,
                           })
@@ -383,7 +391,7 @@ export default function PropertyPanel() {
                   onChange={(e) => {
                     dispatch(
                       createAction({
-                        command: "UPDATE_PROPERTY",
+                        command: CANVAS_ACTION.UPDATE_PROPERTY,
                         category: "info",
                         value: e.target.value,
                       })
