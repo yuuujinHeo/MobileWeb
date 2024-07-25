@@ -18,7 +18,7 @@ import { InputSwitch } from "primereact/inputswitch";
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
 
-import { CANVAS_CLASSES } from "@/constants";
+import { CANVAS_CLASSES, CANVAS_ACTION } from "@/constants";
 
 import axios from "axios";
 
@@ -137,7 +137,10 @@ const Map: React.FC = () => {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setCloudData(res.data);
       dispatch(
-        createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
+        createAction({
+          command: CANVAS_ACTION.DRAW_CLOUD,
+          target: CANVAS_CLASSES.OVERLAY,
+        })
       );
     } catch (e) {
       console.error(e);
@@ -160,7 +163,7 @@ const Map: React.FC = () => {
 
   const handleLoadMap = () => {
     // Draw cloud points to lidar canvas
-    dispatch(createAction({ command: "DRAW_CLOUD_TOPO" }));
+    dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
     // Hide dialogue
     setIsDialogVisible(false);
 
