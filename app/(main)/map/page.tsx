@@ -3,9 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { createAction } from "@/store/canvasSlice";
-import { selectPanel } from "@/store/propertyPanelSlices";
+import { createAction, toggleMarkingMode } from "@/store/canvasSlice";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
@@ -14,6 +12,8 @@ import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
+import { Menubar } from "primereact/menubar";
+import { SelectButton } from "primereact/selectbutton";
 
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
@@ -24,7 +24,6 @@ import axios from "axios";
 
 // components
 import LidarCanvas from "@/components/LidarCanvas";
-import { SpeedDial } from "primereact/speeddial";
 
 interface ListData {
   name: string;
@@ -51,11 +50,6 @@ const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 const Map: React.FC = () => {
   const dispatch = useDispatch();
 
-  // root state
-  const selectedPanel = useSelector(
-    (state: RootState) => state.propertyPanel.selectedPanel
-  );
-
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
@@ -63,40 +57,56 @@ const Map: React.FC = () => {
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
   const [cloudData, setCloudData] = useState<string[][] | null>(null);
   const [topoData, setTopoData] = useState<UserData[] | null>(null);
+  const [selectBtn, setSelectBtn] = useState<string>("Off");
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-  const dialItems = [
+  const menuItems = [
     {
-      label: "Mapping",
+      label: "File",
+      icon: "pi pi-folder",
+      items: [
+        {
+          label: "Open",
+          icon: "pi pi-download",
+          command: () => {
+            setIsDialogVisible(true);
+            getMapList();
+          },
+        },
+        {
+          label: "Save",
+          icon: "pi pi-save",
+        },
+      ],
+    },
+    {
+      label: "Map",
       icon: "pi pi-map",
       command: () => {
         setIsSidebarVisible(true);
       },
     },
-    {
-      label: "Localization",
-      icon: "pi pi-compass",
-      command: () => {
-        dispatch(selectPanel({ selectedPanel: "localization" }));
-      },
-    },
-    {
-      label: "Annotation",
-      icon: "pi pi-flag",
-      command: () => {
-        dispatch(selectPanel({ selectedPanel: "annotation" }));
-      },
-    },
-    {
-      label: "Load",
-      icon: "pi pi-download",
-      command: () => {
-        setIsDialogVisible(true);
-        getMapList();
-      },
-    },
   ];
+
+  const end = (
+    <div id="switch-container">
+      <span>Marking Mode</span>
+      <SelectButton
+        value={selectBtn}
+        options={["On", "Off"]}
+        onChange={(e) => {
+          if (e.value !== null) {
+            setSelectBtn(e.value);
+            let isMarkingMode: boolean = false;
+            if (e.value === "On") isMarkingMode = true;
+            else if (e.value === "Off") isMarkingMode = false;
+            dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
+          }
+        }}
+      />
+    </div>
+  );
 
   useEffect(() => {
     getMapList();
@@ -182,14 +192,7 @@ const Map: React.FC = () => {
       />
       <div style={{ position: "absolute" }}>
         <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
-        <SpeedDial
-          model={dialItems}
-          direction="down"
-          className="speeddial-top-right"
-          showIcon="pi pi-bars"
-          hideIcon="pi pi-times"
-          style={{ left: 15, top: 15 }}
-        ></SpeedDial>
+        <Menubar model={menuItems} end={end} />
       </div>
 
       <div id="property-container">

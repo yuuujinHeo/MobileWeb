@@ -6,6 +6,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
 import { toggleMarkingMode, createAction } from "@/store/canvasSlice";
 
+import { TabMenu } from "primereact/tabmenu";
 import { Panel } from "primereact/panel";
 import { Toast } from "primereact/toast";
 import { SelectButton } from "primereact/selectbutton";
@@ -50,9 +51,16 @@ export default function PropertyPanel() {
     z: "0",
     rz: "0",
   });
+  const [activeIndex, setActiveIndex] = useState<number>(0);
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
+
+  const items = [
+    { label: "Mapping", icon: "pi pi-spinner-dotted" },
+    { label: "Localization", icon: "pi pi-chart-line" },
+    { label: "Annotation", icon: "pi pi-map-marker" },
+  ];
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -194,25 +202,9 @@ export default function PropertyPanel() {
     return !isNaN(Number(input));
   };
 
-  const panelContents = {
-    localization: (
+  const renderLocalization = () => {
+    return (
       <div id="loc-container">
-        <div id="switch-container">
-          <span>Marking Mode</span>
-          <SelectButton
-            value={selectBtn}
-            options={["On", "Off"]}
-            onChange={(e) => {
-              if (e.value !== null) {
-                setSelectBtn(e.value);
-                let isMarkingMode: boolean = false;
-                if (e.value === "On") isMarkingMode = true;
-                else if (e.value === "Off") isMarkingMode = false;
-                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
-              }
-            }}
-          />
-        </div>
         <ButtonGroup>
           <Button
             label="INIT"
@@ -260,27 +252,14 @@ export default function PropertyPanel() {
           />
         </ButtonGroup>
       </div>
-    ),
-    annotation: (
+    );
+  };
+
+  const renderAnnotation = () => {
+    return (
       <div id="annotation-container">
         <ConfirmDialog />
         <Toast ref={toast} />
-        <div id="switch-container">
-          <span>Marking Mode</span>
-          <SelectButton
-            value={selectBtn}
-            options={["On", "Off"]}
-            onChange={(e) => {
-              if (e.value !== null) {
-                setSelectBtn(e.value);
-                let isMarkingMode: boolean = false;
-                if (e.value === "On") isMarkingMode = true;
-                else if (e.value === "Off") isMarkingMode = false;
-                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
-              }
-            }}
-          />
-        </div>
         <Button
           label="Add Route"
           size="small"
@@ -323,12 +302,19 @@ export default function PropertyPanel() {
           }}
         />
       </div>
-    ),
+    );
   };
 
   return (
-    <Panel header={selectedPanel}>
-      {panelContents[selectedPanel]}
+    <Panel header={"Properties"}>
+      <TabMenu
+        model={items}
+        activeIndex={activeIndex}
+        onTabChange={(e) => setActiveIndex(e.index)}
+      />
+      {activeIndex === 0 && "Nothing"}
+      {activeIndex === 1 && renderLocalization()}
+      {activeIndex === 2 && renderAnnotation()}
       <Divider />
       {selectedObjectInfo.name !== "" ? (
         <div id="selected-info">
