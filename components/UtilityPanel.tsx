@@ -8,7 +8,6 @@ import { Menu } from "primereact/menu";
 import { Toast } from "primereact/toast";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { InputText } from "primereact/inputtext";
-import { FloatLabel } from "primereact/floatlabel";
 
 import axios from "axios";
 
@@ -79,15 +78,13 @@ const UtilityPanel = () => {
     confirmDialog({
       message: (
         <div>
-          <FloatLabel>
-            <InputText
-              id="filename"
-              onChange={(e) => {
-                filenameRef.current = e.target.value;
-              }}
-            />
-            <label htmlFor="filename">Filename</label>
-          </FloatLabel>
+          <InputText
+            id="filename"
+            placeholder="File name"
+            onChange={(e) => {
+              filenameRef.current = e.target.value;
+            }}
+          />
         </div>
       ),
       header: "Save",

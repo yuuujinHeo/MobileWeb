@@ -13,7 +13,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Menubar } from "primereact/menubar";
-import { SelectButton } from "primereact/selectbutton";
+import { InputSwitch } from "primereact/inputswitch";
 
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
@@ -58,6 +58,8 @@ const Map: React.FC = () => {
   const [cloudData, setCloudData] = useState<string[][] | null>(null);
   const [topoData, setTopoData] = useState<UserData[] | null>(null);
   const [selectBtn, setSelectBtn] = useState<string>("Off");
+  //
+  const [isMarkingMode, setIsMarkingMode] = useState<boolean>(false);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -81,7 +83,7 @@ const Map: React.FC = () => {
       ],
     },
     {
-      label: "Map",
+      label: "Mapping",
       icon: "pi pi-map",
       command: () => {
         setIsSidebarVisible(true);
@@ -89,22 +91,24 @@ const Map: React.FC = () => {
     },
   ];
 
+  const handleMarkingModeChange = (isMarkingMode: boolean) => {
+    setIsMarkingMode(isMarkingMode);
+    dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
+  };
+
   const end = (
     <div id="switch-container">
-      <span>Marking Mode</span>
-      <SelectButton
-        value={selectBtn}
-        options={["On", "Off"]}
-        onChange={(e) => {
-          if (e.value !== null) {
-            setSelectBtn(e.value);
-            let isMarkingMode: boolean = false;
-            if (e.value === "On") isMarkingMode = true;
-            else if (e.value === "Off") isMarkingMode = false;
-            dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
-          }
-        }}
-      />
+      <i className="pi pi-map-marker "></i>
+      <div>
+        Marking
+        <br />
+        Mode
+      </div>
+      <InputSwitch
+        checked={isMarkingMode}
+        onChange={(e) => handleMarkingModeChange(e.value)}
+      ></InputSwitch>
+      <Tooltip target=".marking-mode" />
     </div>
   );
 
@@ -191,7 +195,6 @@ const Map: React.FC = () => {
         topoData={topoData}
       />
       <div style={{ position: "absolute" }}>
-        <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
         <Menubar model={menuItems} end={end} />
       </div>
 

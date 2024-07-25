@@ -35,9 +35,17 @@
   flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
-  margin-bottom: 1rem;
-  .p-selectbutton {
+  justify-content: space-between;
+  // margin-bottom: 1rem;
+  .p {
+    margin: 1px 0 !important;
+  }
+  .p-inputswitch-slider {
     margin-left: 0.5rem;
+  }
+  div {
+    margin-left: 5px;
+    margin-right: 3px;
   }
 }
 
