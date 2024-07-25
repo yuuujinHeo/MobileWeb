@@ -303,7 +303,7 @@ export default function PropertyPanel() {
       <Divider />
       {selectedObjectInfo.name && (
         <>
-          <Accordion>
+          <Accordion multiple activeIndex={[0]}>
             <AccordionTab header="Data">
               <div
                 style={{
