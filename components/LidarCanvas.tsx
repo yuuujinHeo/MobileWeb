@@ -263,11 +263,10 @@ const LidarCanvas = ({
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
-
     // scene
     const scene = new THREE.Scene();
 
-    const color = new THREE.Color(0xffffff);
+    const color = new THREE.Color(0x1f2939);
     scene.background = color;
     sceneRef.current = scene;
 
@@ -283,14 +282,14 @@ const LidarCanvas = ({
 
     // camera
     const camera = new THREE.PerspectiveCamera(
-      60,
+      30,
       canvasRef.current.clientWidth / canvasRef.current.clientHeight,
       1,
       1000
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 0, 25);
+    camera.position.set(0, 0, 15);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -785,6 +784,13 @@ const LidarCanvas = ({
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.material.color.set(new THREE.Color(0x0087fc));
+          const edges = new THREE.EdgesGeometry(obj.geometry);
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            linewidth: 1,
+          });
+          const line = new THREE.LineSegments(edges, lineMaterial);
+          obj.add(line);
         }
       });
 
@@ -887,9 +893,6 @@ const LidarCanvas = ({
     data: string[][],
     pose: { x: number; y: number; rz: number }
   ) => {
-    // Is it necessary?
-    if (!isInitializedRef.current) return;
-
     if (lidarPoints.current) {
       const lidarPointsObj = sceneRef.current?.getObjectById(
         lidarPoints.current
@@ -920,8 +923,8 @@ const LidarCanvas = ({
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.05,
-      color: 0xff0000,
+      size: 0.1,
+      color: 0xff355e,
     });
 
     const points = new THREE.Points(geo, material);
@@ -965,7 +968,7 @@ const LidarCanvas = ({
 
       const material = new THREE.PointsMaterial({
         size: 0.07,
-        color: 0x00be00,
+        color: 0x74ff24,
       });
 
       const points = new THREE.Points(geo, material);
@@ -1066,7 +1069,7 @@ const LidarCanvas = ({
   const resetCamera = () => {
     if (!cameraRef.current || !controlRef.current) return;
     cameraRef.current.up.set(0, 1, 0);
-    cameraRef.current.position.set(0, 0, 25);
+    cameraRef.current.position.set(0, 0, 15);
     cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
     cameraRef.current.updateProjectionMatrix();
     controlRef.current.target.set(0, 0, 0);
@@ -1085,12 +1088,24 @@ const LidarCanvas = ({
       try {
         loader.load("amr.3MF", function (group) {
           setupNode(group, NODE_TYPE.GOAL, nodePos);
-          group.scale.set(0.001, 0.001, 0.001);
+          group.scale.set(0.0009, 0.0009, 0.0009);
           // group.rotation.z = Number(createHelper.rz);
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
-              obj.material.color.set(new THREE.Color(0x33ff52));
+              // obj.material.color.set(new THREE.Color(0x33ff52));
+              obj.material.color.set(new THREE.Color(0xf7ff00));
+
+              obj.material.transparent = true;
+              obj.material.opacity = 0.95;
+
+              const edges = new THREE.EdgesGeometry(obj.geometry);
+              const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                linewidth: 2,
+              });
+              const line = new THREE.LineSegments(edges, lineMaterial);
+              obj.add(line);
             }
           });
 
@@ -1166,6 +1181,7 @@ const LidarCanvas = ({
     const nodeDiv = document.createElement("div");
     nodeDiv.className = "label";
     nodeDiv.textContent = node.name;
+    nodeDiv.style.color = "white";
     nodeDiv.style.backgroundColor = "transparent";
 
     const nodeLabel = new CSS2DObject(nodeDiv);
