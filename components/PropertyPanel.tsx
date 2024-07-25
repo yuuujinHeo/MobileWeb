@@ -4,16 +4,17 @@ import { useState, useRef, useEffect } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store/store";
-import { toggleMarkingMode, createAction } from "@/store/canvasSlice";
+import { createAction } from "@/store/canvasSlice";
 
+import { TabView } from "primereact/tabview";
+import { TabPanel } from "primereact/tabview";
 import { Panel } from "primereact/panel";
 import { Toast } from "primereact/toast";
-import { SelectButton } from "primereact/selectbutton";
-import { ButtonGroup } from "primereact/buttongroup";
+import { Accordion } from "primereact/accordion";
+import { AccordionTab } from "primereact/accordion";
 import { Button } from "primereact/button";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { InputText } from "primereact/inputtext";
-import { FloatLabel } from "primereact/floatlabel";
 import { Dropdown } from "primereact/dropdown";
 import { Divider } from "primereact/divider";
 
@@ -42,7 +43,6 @@ export default function PropertyPanel() {
   );
 
   // state
-  const [selectBtn, setSelectBtn] = useState<string>("Off");
   const [displayInfo, setDisplayInfo] = useState({
     name: "",
     x: "0",
@@ -53,6 +53,11 @@ export default function PropertyPanel() {
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
+
+  // const items = [
+  //   { label: "Localization", icon: "pi pi-compass" },
+  //   { label: "Annotation", icon: "pi pi-map-marker" },
+  // ];
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -132,15 +137,13 @@ export default function PropertyPanel() {
     confirmDialog({
       message: (
         <div>
-          <FloatLabel>
-            <InputText
-              id="filename"
-              onChange={(e) => {
-                filenameRef.current = e.target.value;
-              }}
-            />
-            <label htmlFor="filename">Filename</label>
-          </FloatLabel>
+          <InputText
+            id="filename"
+            placeholder="File name"
+            onChange={(e) => {
+              filenameRef.current = e.target.value;
+            }}
+          />
         </div>
       ),
       header: "Save",
@@ -194,282 +197,252 @@ export default function PropertyPanel() {
     return !isNaN(Number(input));
   };
 
-  const panelContents = {
-    localization: (
-      <div id="loc-container">
-        <div id="switch-container">
-          <span>Marking Mode</span>
-          <SelectButton
-            value={selectBtn}
-            options={["On", "Off"]}
-            onChange={(e) => {
-              if (e.value !== null) {
-                setSelectBtn(e.value);
-                let isMarkingMode: boolean = false;
-                if (e.value === "On") isMarkingMode = true;
-                else if (e.value === "Off") isMarkingMode = false;
-                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
-              }
-            }}
-          />
-        </div>
-        <ButtonGroup>
-          <Button
-            label="INIT"
-            size="small"
-            severity="secondary"
-            text
-            raised
-            onClick={(e) => {
-              sendLOCRequest("init");
-              e.stopPropagation();
-            }}
-          />
-          <Button
-            label="AUTO INIT"
-            size="small"
-            severity="secondary"
-            text
-            raised
-            onClick={(e) => {
-              sendLOCRequest("autoinit");
-              e.stopPropagation();
-            }}
-          />
-          <Button
-            label="LOC START"
-            size="small"
-            severity="secondary"
-            text
-            raised
-            onClick={(e) => {
-              sendLOCRequest("start");
-              e.stopPropagation();
-            }}
-          />
-          <Button
-            label="LOC STOP"
-            size="small"
-            severity="secondary"
-            text
-            raised
-            onClick={(e) => {
-              sendLOCRequest("stop");
-              e.stopPropagation();
-            }}
-          />
-        </ButtonGroup>
-      </div>
-    ),
-    annotation: (
-      <div id="annotation-container">
-        <ConfirmDialog />
-        <Toast ref={toast} />
-        <div id="switch-container">
-          <span>Marking Mode</span>
-          <SelectButton
-            value={selectBtn}
-            options={["On", "Off"]}
-            onChange={(e) => {
-              if (e.value !== null) {
-                setSelectBtn(e.value);
-                let isMarkingMode: boolean = false;
-                if (e.value === "On") isMarkingMode = true;
-                else if (e.value === "Off") isMarkingMode = false;
-                dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
-              }
-            }}
-          />
-        </div>
-        <Button
-          label="Add Route"
-          size="small"
-          severity="secondary"
-          text
-          raised
-          onClick={() => {
-            dispatch(createAction({ command: "ADD_NODE", category: "ROUTE" }));
-          }}
-        />
-        <Button
-          label="Add Goal"
-          size="small"
-          severity="secondary"
-          text
-          raised
-          onClick={() => {
-            dispatch(createAction({ command: "ADD_NODE", category: "GOAL" }));
-          }}
-        />
-        <Button
-          label="Save"
-          size="small"
-          severity="secondary"
-          text
-          raised
-          onClick={() => {
-            saveAnnotation();
-          }}
-        />
-        <Button
-          label="Add Link"
-          size="small"
-          severity="secondary"
-          text
-          raised
-          onClick={() => {
-            // saveAnnotation();
-            dispatch(createAction({ command: "ADD_LINK" }));
-          }}
-        />
-      </div>
-    ),
-  };
-
   return (
-    <Panel header={selectedPanel}>
-      {panelContents[selectedPanel]}
-      <Divider />
-      {selectedObjectInfo.name !== "" ? (
-        <div id="selected-info">
-          <h5>Selected Object </h5>
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-            }}
-          >
-            ID
-            <InputText
-              value={selectedObjectInfo.id}
-              className="p-inputtext-sm"
+    <Panel>
+      <TabView>
+        <TabPanel header="Localization" leftIcon="pi pi-compass">
+          <div id="loc-container">
+            <Button
+              label="INIT"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={(e) => {
+                sendLOCRequest("init");
+                e.stopPropagation();
+              }}
             />
-          </div>
-          <div>
-            NAME
-            <InputText
-              value={displayInfo.name}
-              className="p-inputtext-sm"
-              onChange={(e) => {
-                handleInputChange(e.target.value, "name");
+            <Button
+              label="AUTO INIT"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={(e) => {
+                sendLOCRequest("autoinit");
+                e.stopPropagation();
+              }}
+            />
+            <Button
+              label="LOC START"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={(e) => {
+                sendLOCRequest("start");
+                e.stopPropagation();
+              }}
+            />
+            <Button
+              label="LOC STOP"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={(e) => {
+                sendLOCRequest("stop");
+                e.stopPropagation();
               }}
             />
           </div>
-          <div>
-            <p>POSE</p>
-            <p>
-              X
-              <InputText
-                value={displayInfo.x}
-                className="p-inputtext-sm"
-                keyfilter={"num"}
-                onChange={(e) => {
-                  handleInputChange(e.target.value, "x");
-                }}
-              />
-            </p>
-
-            <p>
-              Y{" "}
-              <InputText
-                value={displayInfo.y}
-                className="p-inputtext-sm"
-                keyfilter={"num"}
-                onChange={(e) => {
-                  handleInputChange(e.target.value, "y");
-                }}
-              />
-            </p>
-            <p>
-              Z{" "}
-              <InputText
-                value={displayInfo.z}
-                className="p-inputtext-sm"
-                keyfilter={"num"}
-                disabled
-                onChange={(e) => {
-                  handleInputChange(e.target.value, "z");
-                }}
-              />
-            </p>
-            <p>
-              RZ{" "}
-              <InputText
-                value={displayInfo.rz}
-                className="p-inputtext-sm"
-                keyfilter={"num"}
-                onChange={(e) => {
-                  handleInputChange(e.target.value, "rz");
-                }}
-              />
-            </p>
-          </div>
-          <div>
-            Type
-            <Dropdown
-              value={selectedType}
-              onChange={(e) => {
-                setSelectedType(e.value.name);
+        </TabPanel>
+        <TabPanel header="Annotation" leftIcon="pi pi-map-marker">
+          <div id="annotation-container">
+            <ConfirmDialog />
+            <Toast ref={toast} />
+            <Button
+              label="Add Route"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
                 dispatch(
-                  createAction({
-                    command: "UPDATE_PROPERTY",
-                    category: "type",
-                    value: e.value.name,
-                  })
+                  createAction({ command: "ADD_NODE", category: "ROUTE" })
                 );
               }}
-              options={nodeTypes}
-              optionLabel="name"
-              placeholder={selectedObjectInfo.type}
+            />
+            <Button
+              label="Add Goal"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                dispatch(
+                  createAction({ command: "ADD_NODE", category: "GOAL" })
+                );
+              }}
+            />
+            <Button
+              label="Save"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                saveAnnotation();
+              }}
+            />
+            <Button
+              label="Add Link"
+              size="small"
+              severity="secondary"
+              text
+              raised
+              onClick={() => {
+                // saveAnnotation();
+                dispatch(createAction({ command: "ADD_LINK" }));
+              }}
             />
           </div>
-          <div>
-            Links{" "}
-            {selectedObjectInfo.links.map((link, index) => (
+        </TabPanel>
+      </TabView>
+      <Divider />
+      {selectedObjectInfo.name && (
+        <>
+          <Accordion multiple activeIndex={[0]}>
+            <AccordionTab header="Data">
               <div
-                key={index}
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: "6px",
-                  padding: "0.5rem",
                 }}
               >
-                <p style={{ textAlign: "center", margin: 0 }}>{link}</p>
-                <i
-                  className="pi pi-times"
-                  style={{ cursor: "pointer", marginLeft: "5px" }}
-                  onClick={() => {
+                ID
+                <InputText
+                  value={selectedObjectInfo.id}
+                  className="p-inputtext-sm"
+                />
+              </div>
+              <div>
+                NAME
+                <InputText
+                  value={displayInfo.name}
+                  className="p-inputtext-sm"
+                  onChange={(e) => {
+                    handleInputChange(e.target.value, "name");
+                  }}
+                />
+              </div>
+              Type
+              <Dropdown
+                value={selectedType}
+                onChange={(e) => {
+                  setSelectedType(e.value.name);
+                  dispatch(
+                    createAction({
+                      command: "UPDATE_PROPERTY",
+                      category: "type",
+                      value: e.value.name,
+                    })
+                  );
+                }}
+                options={nodeTypes}
+                optionLabel="name"
+                placeholder={selectedObjectInfo.type}
+              />
+              <div>
+                Links{" "}
+                {selectedObjectInfo.links.map((link, index) => (
+                  <div
+                    key={index}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "6px",
+                      padding: "0.5rem",
+                    }}
+                  >
+                    <p style={{ textAlign: "center", margin: 0 }}>{link}</p>
+                    <i
+                      className="pi pi-times"
+                      style={{ cursor: "pointer", marginLeft: "5px" }}
+                      onClick={() => {
+                        dispatch(
+                          createAction({
+                            command: "REMOVE_LINK",
+                            target: selectedObjectInfo.id,
+                            value: link,
+                          })
+                        );
+                      }}
+                    ></i>
+                  </div>
+                ))}
+              </div>
+              <div>
+                Info{" "}
+                <InputText
+                  value={selectedObjectInfo.info}
+                  className="p-inputtext-sm"
+                  onChange={(e) => {
                     dispatch(
                       createAction({
-                        command: "REMOVE_LINK",
-                        target: selectedObjectInfo.id,
-                        value: link,
+                        command: "UPDATE_PROPERTY",
+                        category: "info",
+                        value: e.target.value,
                       })
                     );
                   }}
-                ></i>
+                />
               </div>
-            ))}
-          </div>
-          <div>
-            Info{" "}
-            <InputText
-              value={selectedObjectInfo.info}
-              className="p-inputtext-sm"
-              onChange={(e) => {
-                dispatch(
-                  createAction({
-                    command: "UPDATE_PROPERTY",
-                    category: "info",
-                    value: e.target.value,
-                  })
-                );
-              }}
-            />
-          </div>
+            </AccordionTab>
+            <AccordionTab header="Transformation">
+              <p>Position</p>
+              <p>
+                X
+                <InputText
+                  value={displayInfo.x}
+                  className="p-inputtext-sm"
+                  keyfilter={"num"}
+                  onChange={(e) => {
+                    handleInputChange(e.target.value, "x");
+                  }}
+                />
+              </p>
+
+              <p>
+                Y{" "}
+                <InputText
+                  value={displayInfo.y}
+                  className="p-inputtext-sm"
+                  keyfilter={"num"}
+                  onChange={(e) => {
+                    handleInputChange(e.target.value, "y");
+                  }}
+                />
+              </p>
+              <p>
+                Z{" "}
+                <InputText
+                  value={displayInfo.z}
+                  className="p-inputtext-sm"
+                  keyfilter={"num"}
+                  disabled
+                  onChange={(e) => {
+                    handleInputChange(e.target.value, "z");
+                  }}
+                />
+              </p>
+              <p>Rotation</p>
+              <p>
+                RZ{" "}
+                <InputText
+                  value={displayInfo.rz}
+                  className="p-inputtext-sm"
+                  keyfilter={"num"}
+                  onChange={(e) => {
+                    handleInputChange(e.target.value, "rz");
+                  }}
+                />
+              </p>
+            </AccordionTab>
+          </Accordion>
           <Button
             label="Delete Node"
             size="small"
@@ -478,9 +451,7 @@ export default function PropertyPanel() {
             raised
             onClick={deleteNode}
           />
-        </div>
-      ) : (
-        <h5>Nothing selected</h5>
+        </>
       )}
     </Panel>
   );

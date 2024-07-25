@@ -1,4 +1,3 @@
-import { CommandProps } from "@/types/layout";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface CommandData {

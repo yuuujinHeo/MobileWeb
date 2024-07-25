@@ -35,9 +35,14 @@
   flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
-  margin-bottom: 1rem;
-  .p-selectbutton {
-    margin-left: 0.5rem;
+  justify-content: space-between;
+  // margin-bottom: 1rem;
+  .p {
+    margin: 1px 0 !important;
+  }
+  div {
+    margin-left: 5px;
+    margin-right: 3px;
   }
 }
 
