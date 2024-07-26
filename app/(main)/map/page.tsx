@@ -99,11 +99,7 @@ const Map: React.FC = () => {
   const end = (
     <div id="switch-container">
       <i className="pi pi-map-marker "></i>
-      <div>
-        Marking
-        <br />
-        Mode
-      </div>
+      <div>Marker</div>
       <InputSwitch
         checked={isMarkingMode}
         onChange={(e) => handleMarkingModeChange(e.value)}
