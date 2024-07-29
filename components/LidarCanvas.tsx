@@ -1198,7 +1198,7 @@ const LidarCanvas = ({
 
     const nodeLabel = new CSS2DObject(nodeDiv);
     nodeLabel.name = "label";
-    nodeLabel.center.set(-0.6, 1.5);
+    nodeLabel.center.set(-0.2, 1.5);
     node.add(nodeLabel);
   };
 
@@ -1425,8 +1425,15 @@ const LidarCanvas = ({
       const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
       const length = startPos.distanceTo(endPos);
       // default color is blue
-      const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
+      // 0.45 is one-half the length of the model diagonal.
+      const arrowHelper = new THREE.ArrowHelper(
+        dir,
+        startPos,
+        length - 0.45,
+        color
+      );
       arrowHelper.name = `arrow-${from.name}-${to.name}`;
+      arrowHelper.setLength(length - 0.45, 0.5, 0.22);
       sceneRef.current?.add(arrowHelper);
     }
   };
