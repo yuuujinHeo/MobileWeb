@@ -263,11 +263,10 @@ const LidarCanvas = ({
 
   const init3DScene = () => {
     if (!canvasRef.current) return;
-
     // scene
     const scene = new THREE.Scene();
 
-    const color = new THREE.Color(0xffffff);
+    const color = new THREE.Color(0x1f2939);
     scene.background = color;
     sceneRef.current = scene;
 
@@ -283,14 +282,14 @@ const LidarCanvas = ({
 
     // camera
     const camera = new THREE.PerspectiveCamera(
-      60,
+      30,
       canvasRef.current.clientWidth / canvasRef.current.clientHeight,
       1,
       1000
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 0, 25);
+    camera.position.set(0, 0, 15);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -334,22 +333,24 @@ const LidarCanvas = ({
     control.maxDistance = 300;
 
     // transform control
-    const tfControl: TransformControls = new TransformControls(
+    const transformControl: TransformControls = new TransformControls(
       camera,
       renderer.domElement
     );
-    transformControlRef.current = tfControl;
-    tfControl.mode = "rotate";
-    tfControl.showX = false;
-    tfControl.showY = false;
-    tfControl.size = 0.5;
-    tfControl.addEventListener("change", handleTransformChange);
-    tfControl.addEventListener("dragging-changed", (event) => {
+    transformControlRef.current = transformControl;
+    // transformControl.mode = "rotate";
+    // tfControl.showX = false;
+    // tfControl.showY = false;
+    transformControl.showZ = false;
+    // transformControl.size = 0.8;
+    transformControl.addEventListener("change", handleTransformChange);
+    transformControl.addEventListener("dragging-changed", (event) => {
       control.enabled = !event.value;
     });
-    tfControl.addEventListener("mouseUp", () => {
-      const obj: THREE.Object3D | undefined = tfControl.object;
-      if (obj) {
+    transformControl.addEventListener("mouseUp", () => {
+      // selection box
+      if (transformControl.object) {
+        const obj: THREE.Object3D | undefined = transformControl.object;
         dispatch(
           updateCreateHelper({
             x: obj.position.x.toString(),
@@ -360,7 +361,7 @@ const LidarCanvas = ({
         );
       }
     });
-    scene.add(tfControl);
+    scene.add(transformControl);
 
     // Light
     scene.add(new THREE.AmbientLight(0xffffff, 1.6));
@@ -368,7 +369,7 @@ const LidarCanvas = ({
     // Selection Box
     currSelectionBoxRef.current = new THREE.BoxHelper(
       new THREE.Object3D(),
-      0x0000ff
+      0xf3ff00
     );
     currSelectionBoxRef.current.material.depthTest = false;
     currSelectionBoxRef.current.visible = false;
@@ -548,13 +549,14 @@ const LidarCanvas = ({
     const selectedNodesArray = selectedNodesArrayRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
     const prevSelectionBox = prevSelectionBoxRef.current;
-    const tfControl = transformControlRef.current;
-    if (!scene || !currSelectionBox || !prevSelectionBox || !tfControl) return;
+    const transformControl = transformControlRef.current;
+    if (!scene || !currSelectionBox || !prevSelectionBox || !transformControl)
+      return;
 
     hideSelectionHelpers();
 
-    if (tfControl.object) {
-      currSelectionBox.setFromObject(tfControl.object);
+    if (transformControl.object) {
+      currSelectionBox.setFromObject(transformControl.object);
       currSelectionBox.visible = true;
     }
     if (selectedNodesArray.length > 1) {
@@ -581,10 +583,10 @@ const LidarCanvas = ({
     const intersects = raycaster.intersectObject(plane, true);
 
     if (intersects.length > 0) {
-      // remove prev initpoint
-      const prevInit = sceneRef.current.getObjectByName("initpoint");
-      if (prevInit) {
-        sceneRef.current.remove(prevInit);
+      // remove prev craeteHelper
+      const prevHelper = sceneRef.current.getObjectByName("createHelper");
+      if (prevHelper) {
+        sceneRef.current.remove(prevHelper);
       }
 
       const intersect = intersects[0];
@@ -594,7 +596,7 @@ const LidarCanvas = ({
       loader.load("amr.3MF", function (group) {
         group.scale.set(0.001, 0.001, 0.001);
         group.position.set(intersect.point.x, intersect.point.y, 0);
-        group.name = "initpoint";
+        group.name = "createHelper";
 
         group.traverse((obj) => {
           if (obj instanceof THREE.Mesh) {
@@ -609,7 +611,7 @@ const LidarCanvas = ({
         group.add(axesHelper);
 
         sceneRef.current?.add(group);
-        transformControlRef.current?.attach(group);
+        // transformControlRef.current?.attach(group);
 
         dispatch(
           updateCreateHelper({
@@ -630,7 +632,10 @@ const LidarCanvas = ({
 
     switch (event.button) {
       case 2:
-        if (isMarkingModeRef.current) createNodeHelper(event);
+        if (isMarkingModeRef.current) {
+          selectObject(null);
+          createNodeHelper(event);
+        }
         break;
       default:
         break;
@@ -644,11 +649,16 @@ const LidarCanvas = ({
 
   const handleMouseMove = (event: MouseEvent) => {
     isMouseDragged = true;
-    if (isMouseDown && pressedMouseBtn === 2) {
-      const marker: THREE.Object3D | undefined =
-        transformControlRef.current?.object;
+    if (isMarkingModeRef.current && isMouseDown && pressedMouseBtn === 2) {
+      let targetObj: THREE.Object3D | undefined = undefined;
+      if (selectedNodeRef.current) {
+        targetObj = selectedNodeRef.current;
+      } else {
+        const createHelper = sceneRef.current?.getObjectByName("createHelper");
+        if (createHelper) targetObj = createHelper;
+      }
       if (
-        marker &&
+        targetObj &&
         canvasRef.current &&
         cameraRef.current &&
         sceneRef.current
@@ -672,10 +682,10 @@ const LidarCanvas = ({
 
         const v3 = intersects[0].point;
         const angle = Math.atan2(
-          v3.y - marker.position.y,
-          v3.x - marker.position.x
+          v3.y - targetObj.position.y,
+          v3.x - targetObj.position.x
         );
-        marker.rotation.z = angle;
+        targetObj.rotation.z = angle;
       }
     }
   };
@@ -701,14 +711,15 @@ const LidarCanvas = ({
     }
 
     if (!transformControlRef.current || event.button !== 2) return;
-    const obj: THREE.Object3D | undefined = transformControlRef.current.object;
-    if (obj) {
+    const createHelepr: THREE.Object3D | undefined =
+      sceneRef.current?.getObjectByName("createHelper");
+    if (createHelepr) {
       dispatch(
         updateCreateHelper({
-          x: obj.position.x.toString(),
-          y: obj.position.y.toString(),
-          z: obj.position.z.toString(),
-          rz: obj.rotation.z.toString(),
+          x: createHelepr.position.x.toString(),
+          y: createHelepr.position.y.toString(),
+          z: createHelepr.position.z.toString(),
+          rz: createHelepr.rotation.z.toString(),
         })
       );
     }
@@ -785,6 +796,13 @@ const LidarCanvas = ({
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.material.color.set(new THREE.Color(0x0087fc));
+          const edges = new THREE.EdgesGeometry(obj.geometry);
+          const lineMaterial = new THREE.LineBasicMaterial({
+            color: 0xffffff,
+            linewidth: 1,
+          });
+          const line = new THREE.LineSegments(edges, lineMaterial);
+          obj.add(line);
         }
       });
 
@@ -887,9 +905,6 @@ const LidarCanvas = ({
     data: string[][],
     pose: { x: number; y: number; rz: number }
   ) => {
-    // Is it necessary?
-    if (!isInitializedRef.current) return;
-
     if (lidarPoints.current) {
       const lidarPointsObj = sceneRef.current?.getObjectById(
         lidarPoints.current
@@ -920,8 +935,8 @@ const LidarCanvas = ({
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.05,
-      color: 0xff0000,
+      size: 0.09,
+      color: 0xff355e,
     });
 
     const points = new THREE.Points(geo, material);
@@ -965,7 +980,7 @@ const LidarCanvas = ({
 
       const material = new THREE.PointsMaterial({
         size: 0.07,
-        color: 0x00be00,
+        color: 0x74ff24,
       });
 
       const points = new THREE.Points(geo, material);
@@ -1066,7 +1081,7 @@ const LidarCanvas = ({
   const resetCamera = () => {
     if (!cameraRef.current || !controlRef.current) return;
     cameraRef.current.up.set(0, 1, 0);
-    cameraRef.current.position.set(0, 0, 25);
+    cameraRef.current.position.set(0, 0, 15);
     cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
     cameraRef.current.updateProjectionMatrix();
     controlRef.current.target.set(0, 0, 0);
@@ -1085,12 +1100,24 @@ const LidarCanvas = ({
       try {
         loader.load("amr.3MF", function (group) {
           setupNode(group, NODE_TYPE.GOAL, nodePos);
-          group.scale.set(0.001, 0.001, 0.001);
+          group.scale.set(0.0009, 0.0009, 0.0009);
           // group.rotation.z = Number(createHelper.rz);
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
-              obj.material.color.set(new THREE.Color(0x33ff52));
+              // obj.material.color.set(new THREE.Color(0x33ff52));
+              obj.material.color.set(new THREE.Color(0xf7ff00));
+
+              obj.material.transparent = true;
+              obj.material.opacity = 0.95;
+
+              const edges = new THREE.EdgesGeometry(obj.geometry);
+              const lineMaterial = new THREE.LineBasicMaterial({
+                color: 0xffffff,
+                linewidth: 2,
+              });
+              const line = new THREE.LineSegments(edges, lineMaterial);
+              obj.add(line);
             }
           });
 
@@ -1166,11 +1193,12 @@ const LidarCanvas = ({
     const nodeDiv = document.createElement("div");
     nodeDiv.className = "label";
     nodeDiv.textContent = node.name;
+    nodeDiv.style.color = "white";
     nodeDiv.style.backgroundColor = "transparent";
 
     const nodeLabel = new CSS2DObject(nodeDiv);
     nodeLabel.name = "label";
-    nodeLabel.center.set(-0.6, 1.5);
+    nodeLabel.center.set(-0.2, 1.5);
     node.add(nodeLabel);
   };
 
@@ -1321,6 +1349,11 @@ const LidarCanvas = ({
   };
 
   const handleTransformChange = () => {
+    const currSelectionBox = currSelectionBoxRef.current;
+    const transformControl = transformControlRef.current;
+    if (currSelectionBox && transformControl && transformControl.object) {
+      currSelectionBox.setFromObject(transformControl.object);
+    }
     dispatchChange();
     render();
   };
@@ -1356,7 +1389,7 @@ const LidarCanvas = ({
   const createArrow = (
     from: THREE.Object3D,
     to: THREE.Object3D,
-    color = 0x0000ff
+    color = 0x00f7ff
   ) => {
     // const selectedNodes = selectedNodesArrayRef.current;
     // if (selectedNodes.length > 1) {
@@ -1392,8 +1425,15 @@ const LidarCanvas = ({
       const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
       const length = startPos.distanceTo(endPos);
       // default color is blue
-      const arrowHelper = new THREE.ArrowHelper(dir, startPos, length, color);
+      // 0.45 is one-half the length of the model diagonal.
+      const arrowHelper = new THREE.ArrowHelper(
+        dir,
+        startPos,
+        length - 0.45,
+        color
+      );
       arrowHelper.name = `arrow-${from.name}-${to.name}`;
+      arrowHelper.setLength(length - 0.45, 0.5, 0.22);
       sceneRef.current?.add(arrowHelper);
     }
   };
