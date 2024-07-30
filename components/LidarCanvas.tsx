@@ -268,31 +268,6 @@ const LidarCanvas = ({
     dispatchChange();
   };
 
-  // Update a ArrowHelper to point to a correct location.
-  const updateLinks = (selectedObj: THREE.Object3D) => {
-    const scene = sceneRef.current;
-    if (!scene || !selectedObj) return;
-
-    let tempLinks = [...selectedObj.userData.links];
-    selectedObj.userData.links = [];
-
-    for (const link of tempLinks) {
-      const to = scene.getObjectByProperty("uuid", link);
-      if (to) {
-        addLinks(selectedObj, to);
-      }
-    }
-    tempLinks = [...selectedObj.userData.links_from];
-    selectedObj.userData.links_from = [];
-
-    for (const link of tempLinks) {
-      const from = scene.getObjectByProperty("uuid", link);
-      if (from) {
-        addLinks(from, selectedObj);
-      }
-    }
-  };
-
   const init3DScene = () => {
     if (!canvasRef.current) return;
     // scene
@@ -1542,6 +1517,31 @@ const LidarCanvas = ({
       to.userData.links_from = links;
 
       dispatchChange();
+    }
+  };
+
+  // Update a ArrowHelper to point to a correct location.
+  const updateLinks = (selectedObj: THREE.Object3D) => {
+    const scene = sceneRef.current;
+    if (!scene || !selectedObj) return;
+
+    let tempLinks = [...selectedObj.userData.links];
+    selectedObj.userData.links = [];
+
+    for (const link of tempLinks) {
+      const to = scene.getObjectByProperty("uuid", link);
+      if (to) {
+        addLinks(selectedObj, to);
+      }
+    }
+    tempLinks = [...selectedObj.userData.links_from];
+    selectedObj.userData.links_from = [];
+
+    for (const link of tempLinks) {
+      const from = scene.getObjectByProperty("uuid", link);
+      if (from) {
+        addLinks(from, selectedObj);
+      }
     }
   };
 
