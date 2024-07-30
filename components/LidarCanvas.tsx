@@ -33,6 +33,7 @@ interface UserData {
   id: string;
   info: string;
   links: string[];
+  links_from?: string[];
   name: string;
   pose: string;
   type: string;
@@ -199,9 +200,10 @@ const LidarCanvas = ({
   }, [isMarkingMode]);
 
   const updateProperty = (category: string, value: string) => {
+    const scene = sceneRef.current;
     const selectedObj = selectedNodeRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
-    if (!selectedObj || !currSelectionBox) return;
+    if (!scene || !selectedObj || !currSelectionBox) return;
 
     switch (category) {
       case "name":
@@ -224,13 +226,18 @@ const LidarCanvas = ({
         break;
       case "pose-x":
         selectedObj.position.x = Number(value);
+        removeAllLinksRelateTo(selectedObj.uuid);
+        updateLinks(selectedObj);
         break;
       case "pose-y":
         selectedObj.position.y = Number(value);
+        removeAllLinksRelateTo(selectedObj.uuid);
+        updateLinks(selectedObj);
         break;
-      case "pose-z":
-        selectedObj.position.z = Number(value);
-        break;
+      // case "pose-z":
+      //   selectedObj.position.z = Number(value);
+      //   updateLinks(selectedObj)
+      //   break;
       case "pose-rz":
         selectedObj.rotation.z = Number(value);
         break;
@@ -489,6 +496,7 @@ const LidarCanvas = ({
 
       selectedNodeRef.current = topParent;
       transformControl.attach(topParent);
+      // console.log("selected Object: ", topParent);
 
       // nodes push
       // if (!selectedNodesArray.includes(topParent)) {
@@ -1174,6 +1182,7 @@ const LidarCanvas = ({
         node.name = `${prefix}-${formatNumber(i + 1)}`;
         node.userData.index = i;
         node.userData.links = [];
+        node.userData.links_from = [];
         node.userData.type = type;
         node.userData.info = "";
         break;
@@ -1354,6 +1363,11 @@ const LidarCanvas = ({
     if (currSelectionBox && transformControl && transformControl.object) {
       currSelectionBox.setFromObject(transformControl.object);
     }
+    if (selectedNodeRef.current) {
+      removeAllLinksRelateTo(selectedNodeRef.current.uuid);
+      updateLinks(selectedNodeRef.current);
+    }
+
     dispatchChange();
     render();
   };
@@ -1381,8 +1395,15 @@ const LidarCanvas = ({
     let links: string[] = [];
     links = [...from.userData.links];
     if (!links.includes(to.uuid)) {
+      // Add uuid of the pointing node
       links.push(to.uuid);
       from.userData.links = links;
+    }
+    links = [...to.userData.links_from];
+    if (!links.includes(from.uuid)) {
+      // Add uuid of the node that points to itself
+      links.push(from.uuid);
+      to.userData.links_from = links;
     }
   };
 
@@ -1443,9 +1464,12 @@ const LidarCanvas = ({
     const nodes = nodesRef.current;
     if (!scene) return;
 
-    // Update all nodes userdata(expecially, links)
+    // Update all nodes userdata(expecially, links) except itself.
     nodes.forEach((node) => {
-      node.userData.links = (node.userData.links as string[]).filter(
+      node.userData.links = (node.userData as UserData).links.filter(
+        (uuid: string) => uuid !== targetNodeUUID
+      );
+      node.userData.links_from = (node.userData.links_from as string[]).filter(
         (uuid: string) => uuid !== targetNodeUUID
       );
     });
@@ -1453,8 +1477,9 @@ const LidarCanvas = ({
     // Because an arrow's name convention is `arrow-startNodeName-endNodeName`
     const target = scene.getObjectByProperty("uuid", targetNodeUUID);
     if (target) {
-      const targetArrows = scene.children.filter((child) =>
-        child.name.includes(target.name)
+      const targetArrows = scene.children.filter(
+        (child) =>
+          child.name.includes(target.name) && child.type === "ArrowHelper"
       );
 
       targetArrows.forEach((arrow) => {
@@ -1463,11 +1488,11 @@ const LidarCanvas = ({
     }
   };
 
-  const removeLink = (nodeId: string, deleteNodeName: string) => {
+  const removeLink = (fromUUID: string, toNodeName: string) => {
     const scene = sceneRef.current;
     if (!scene) return;
-    const from = scene.getObjectByProperty("uuid", nodeId);
-    const to = scene.getObjectByName(deleteNodeName);
+    const from = scene.getObjectByProperty("uuid", fromUUID);
+    const to = scene.getObjectByName(toNodeName);
 
     if (!from || !to) return;
     const targetArrow = scene.getObjectByName(`arrow-${from.name}-${to.name}`);
@@ -1477,13 +1502,46 @@ const LidarCanvas = ({
       // Update selected node's userData.links
       let links: string[] = [];
       links = [...from.userData.links];
-      const index = links.findIndex((link) => {
+      let index = links.findIndex((link) => {
         link === to.uuid;
       });
       links.splice(index, 1);
       from.userData.links = links;
 
+      // Update from data
+      links = [...to.userData.links_from];
+      index = links.findIndex((link) => {
+        link === from.uuid;
+      });
+      links.splice(index, 1);
+      to.userData.links_from = links;
+
       dispatchChange();
+    }
+  };
+
+  // Update a ArrowHelper to point to a correct location.
+  const updateLinks = (selectedObj: THREE.Object3D) => {
+    const scene = sceneRef.current;
+    if (!scene || !selectedObj) return;
+
+    let tempLinks = [...selectedObj.userData.links];
+    selectedObj.userData.links = [];
+
+    for (const link of tempLinks) {
+      const to = scene.getObjectByProperty("uuid", link);
+      if (to) {
+        addLinks(selectedObj, to);
+      }
+    }
+    tempLinks = [...selectedObj.userData.links_from];
+    selectedObj.userData.links_from = [];
+
+    for (const link of tempLinks) {
+      const from = scene.getObjectByProperty("uuid", link);
+      if (from) {
+        addLinks(from, selectedObj);
+      }
     }
   };
 
