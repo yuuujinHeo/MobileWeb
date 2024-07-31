@@ -291,12 +291,12 @@ const LidarCanvas = ({
     const camera = new THREE.PerspectiveCamera(
       30,
       canvasRef.current.clientWidth / canvasRef.current.clientHeight,
-      1,
-      1000
+      0.01,
+      9999
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 0, 15);
+    camera.position.set(0, 0, 500);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -336,8 +336,8 @@ const LidarCanvas = ({
 
     control.screenSpacePanning = true;
 
-    control.minDistance = 5;
-    control.maxDistance = 300;
+    control.minDistance = 0.1;
+    control.maxDistance = 9999;
 
     // transform control
     const transformControl: TransformControls = new TransformControls(
@@ -449,7 +449,9 @@ const LidarCanvas = ({
     return currenteObj;
   };
 
-  const getIntersectByRaycasting = (event: MouseEvent | TouchEvent) => {
+  const getIntersectByRaycasting = (
+    event: MouseEvent | TouchEvent
+  ): THREE.Object3D | null => {
     if (
       !canvasRef.current ||
       !cameraRef.current ||
@@ -457,22 +459,46 @@ const LidarCanvas = ({
       !transformControlRef.current
     )
       return null;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    const pos = getCanvasRelativePosition(event);
-
-    if (!pos) return null;
-    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-    mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, cameraRef.current);
+    const raycaster = getRaycaster(event);
+    if (!raycaster) return null;
 
     const intersects = raycaster.intersectObjects(
       raycastTargetsRef.current,
       true
     );
 
+    // The code below is the code that clears a polint.
+
+    // const pointCloud: THREE.Object3D | undefined =
+    //   sceneRef.current.getObjectByName("PointCloud");
+    // if (!pointCloud) return null;
+    //
+    // const intersects2 = raycaster.intersectObjects([pointCloud], false);
+    // if (intersects2.length > 0) {
+    //   const intersectPoint = intersects2[0];
+    //
+    //   const index = intersectPoint.index;
+    //
+    //   if (index !== undefined) {
+    //     const points = sceneRef.current.getObjectByName(
+    //       "PointCloud"
+    //     ) as THREE.Points;
+    //
+    //     const positions = points.geometry.attributes.position.array;
+    //     const indexToRemove = index * 3;
+    //
+    //     const newPositions = new Float32Array(positions.length - 3);
+    //     newPositions.set(positions.slice(0, indexToRemove), 0);
+    //     newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
+    //
+    //     points.geometry.setAttribute(
+    //       "position",
+    //       new THREE.Float32BufferAttribute(newPositions, 3)
+    //     );
+    //     points.geometry.attributes.position.needsUpdate = true;
+    //   }
+    // }
+    //
     let intersect: THREE.Object3D | null;
     if (intersects.length) {
       intersect = intersects[0].object;
@@ -602,7 +628,7 @@ const LidarCanvas = ({
       const loader = new ThreeMFLoader();
 
       loader.load("amr.3MF", function (group) {
-        group.scale.set(0.001, 0.001, 0.001);
+        group.scale.set(0.0315, 0.0315, 0.0315);
         group.position.set(intersect.point.x, intersect.point.y, 0);
         group.name = "createHelper";
 
@@ -799,7 +825,7 @@ const LidarCanvas = ({
 
     loader.load("amr_texture.3MF", function (group) {
       group.name = "amr";
-      group.scale.set(0.001, 0.001, 0.001);
+      group.scale.set(0.0315, 0.0315, 0.0315);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -943,11 +969,12 @@ const LidarCanvas = ({
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.09,
+      size: 3,
       color: 0xff355e,
     });
 
     const points = new THREE.Points(geo, material);
+    points.scale.set(31.5, 31.5, 31.5);
     lidarPoints.current = points.id;
 
     sceneRef.current?.add(points);
@@ -987,11 +1014,13 @@ const LidarCanvas = ({
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
-        size: 0.07,
+        size: 2.5,
         color: 0x74ff24,
       });
 
       const points = new THREE.Points(geo, material);
+      points.name = "PointCloud";
+      points.scale.set(31.5, 31.5, 31.5);
 
       mappingPointsArr.current.push(points.id);
 
@@ -1089,7 +1118,7 @@ const LidarCanvas = ({
   const resetCamera = () => {
     if (!cameraRef.current || !controlRef.current) return;
     cameraRef.current.up.set(0, 1, 0);
-    cameraRef.current.position.set(0, 0, 15);
+    cameraRef.current.position.set(0, 0, 500);
     cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
     cameraRef.current.updateProjectionMatrix();
     controlRef.current.target.set(0, 0, 0);
@@ -1108,7 +1137,7 @@ const LidarCanvas = ({
       try {
         loader.load("amr.3MF", function (group) {
           setupNode(group, NODE_TYPE.GOAL, nodePos);
-          group.scale.set(0.0009, 0.0009, 0.0009);
+          group.scale.set(0.02835, 0.02835, 0.02835);
           // group.rotation.z = Number(createHelper.rz);
 
           group.traverse((obj) => {
@@ -1147,7 +1176,7 @@ const LidarCanvas = ({
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
-    route.scale.set(0.02, 0.02, 0.02);
+    route.scale.set(0.63, 0.63, 0.63);
 
     const geo = new THREE.PlaneGeometry(1, 1);
     const mat = new THREE.MeshBasicMaterial({
@@ -1155,7 +1184,7 @@ const LidarCanvas = ({
       side: THREE.DoubleSide,
     });
     const plane = new THREE.Mesh(geo, mat);
-    plane.scale.set(30, 30, 1);
+    plane.scale.set(945, 945, 1);
     plane.visible = false;
     route.add(plane);
 
