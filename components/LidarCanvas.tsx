@@ -450,8 +450,10 @@ const LidarCanvas = ({
   };
 
   const getIntersectByRaycasting = (
-    event: MouseEvent | TouchEvent
-  ): THREE.Object3D | null => {
+    event: MouseEvent | TouchEvent,
+    target: THREE.Object3D[],
+    recursive: boolean = true
+  ): THREE.Intersection | null => {
     if (
       !canvasRef.current ||
       !cameraRef.current ||
@@ -462,10 +464,25 @@ const LidarCanvas = ({
     const raycaster = getRaycaster(event);
     if (!raycaster) return null;
 
-    const intersects = raycaster.intersectObjects(
-      raycastTargetsRef.current,
-      true
-    );
+    const intersects = raycaster.intersectObjects(target, recursive);
+
+    let intersect: THREE.Object3D | THREE.Intersection | null;
+    // if (document.body.classList.contains("eraser-cursor")) {
+    //   intersect = intersects[0];
+    // } else {
+    //   console.log("Eraser mode is not active");
+    //   if (intersects.length) {
+    //     intersect = intersects[0].object;
+    //   } else {
+    //     intersect = null;
+    //   }
+    // }
+
+    if (intersects.length) {
+      intersect = intersects[0];
+    } else {
+      intersect = null;
+    }
 
     // The code below is the code that clears a polint.
 
@@ -499,12 +516,6 @@ const LidarCanvas = ({
     //   }
     // }
     //
-    let intersect: THREE.Object3D | null;
-    if (intersects.length) {
-      intersect = intersects[0].object;
-    } else {
-      intersect = null;
-    }
 
     return intersect;
   };
@@ -728,15 +739,59 @@ const LidarCanvas = ({
     isTouchDragging = true;
   };
 
+  const erasePoint = (point: THREE.Intersection | null) => {
+    if (!point) return;
+
+    const index = point.index;
+
+    if (index !== undefined) {
+      const points = sceneRef.current?.getObjectByName(
+        "PointCloud"
+      ) as THREE.Points;
+
+      const positions = points.geometry.attributes.position.array;
+      const indexToRemove = index * 3;
+
+      const newPositions = new Float32Array(positions.length - 3);
+      newPositions.set(positions.slice(0, indexToRemove), 0);
+      newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
+
+      points.geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(newPositions, 3)
+      );
+      points.geometry.attributes.position.needsUpdate = true;
+    }
+  };
+
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
     pressedMouseBtn = null;
 
     switch (event.button) {
       case 0:
-        if (!isMouseDragged) {
-          const intersect = getIntersectByRaycasting(event);
-          selectObject(intersect);
+        // Normal cursor
+        if (!document.body.classList.contains("eraser-cursor")) {
+          const intersect = getIntersectByRaycasting(
+            event,
+            raycastTargetsRef.current
+          );
+          if (intersect !== null) {
+            selectObject(intersect.object);
+          } else if (!isMouseDragged) {
+            selectObject(null);
+          }
+        } else {
+          // Eraser cursor
+          const pointCloud: THREE.Object3D | undefined =
+            sceneRef.current?.getObjectByName("PointCloud");
+          if (!pointCloud) return null;
+          const intersect = getIntersectByRaycasting(
+            event,
+            [pointCloud],
+            false
+          );
+          erasePoint(intersect);
         }
 
         break;
@@ -1184,7 +1239,7 @@ const LidarCanvas = ({
       side: THREE.DoubleSide,
     });
     const plane = new THREE.Mesh(geo, mat);
-    plane.scale.set(945, 945, 1);
+    plane.scale.set(30, 30, 1);
     plane.visible = false;
     route.add(plane);
 

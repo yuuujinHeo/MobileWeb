@@ -20,13 +20,35 @@
 
 #property-container {
   position: relative;
-  right: 1rem;
-  top: 1rem;
+  // right: 1rem;
+  // top: 1rem;
   .p-panel {
     position: absolute;
-    max-width: 20vw;
-    min-width: 15vw;
+    // max-width: 20vw;
+    // min-width: 15vw;
     right: 0;
+  }
+  .p-panel-content {
+    border-radius: 6px;
+    padding: 0.2rem;
+    // margin: 1rem;
+  }
+  .p-tabview-panels {
+    padding: 0;
+  }
+  .p-accordion-header-link {
+    border: none;
+    background: #ffffff;
+  }
+  .p-accordion-content {
+    border: none;
+    padding: 0 1.25rem;
+    .accordion-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 0.15rem;
+    }
   }
 }
 
