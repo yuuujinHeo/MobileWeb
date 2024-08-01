@@ -56,11 +56,6 @@ export default function PropertyPanel() {
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
 
-  // const items = [
-  //   { label: "Localization", icon: "pi pi-compass" },
-  //   { label: "Annotation", icon: "pi pi-map-marker" },
-  // ];
-
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   const [selectedType, setSelectedType] = useState<string>("");
@@ -453,7 +448,6 @@ export default function PropertyPanel() {
                   text
                   raised
                   onClick={() => {
-                    // saveAnnotation();
                     dispatch(createAction({ command: CANVAS_ACTION.ADD_LINK }));
                   }}
                 />

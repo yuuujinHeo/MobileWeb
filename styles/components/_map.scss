@@ -1,16 +1,3 @@
-/* 기본 Speed Dial 아이템 스타일 */
-// .p-speeddial-item .p-speeddial-action {
-//   background-color: #6366f1; /* 원하는 배경색으로 변경 */
-// }
-
-/* 각 아이템별 개별 배경색 지정 */
-// .p-speeddial-item:nth-child(1) .p-speeddial-action {
-//   background-color: #ff6f61; /* 첫 번째 아이템 배경색 */
-// }
-//
-// .p-speeddial-item:nth-child(2) .p-speeddial-action {
-//   background-color: #66bb6a; /* 두 번째 아이템 배경색 */
-// }
 #map {
   display: flex;
   position: relative;
@@ -20,18 +7,13 @@
 
 #property-container {
   position: relative;
-  // right: 1rem;
-  // top: 1rem;
   .p-panel {
     position: absolute;
-    // max-width: 20vw;
-    // min-width: 15vw;
     right: 0;
   }
   .p-panel-content {
     border-radius: 6px;
     padding: 0.2rem;
-    // margin: 1rem;
   }
   .p-tabview-panels {
     padding: 0;
@@ -58,7 +40,6 @@
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  // margin-bottom: 1rem;
   .p {
     margin: 1px 0 !important;
   }

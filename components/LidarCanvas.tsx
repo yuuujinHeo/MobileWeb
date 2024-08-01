@@ -466,56 +466,13 @@ const LidarCanvas = ({
 
     const intersects = raycaster.intersectObjects(target, recursive);
 
-    let intersect: THREE.Object3D | THREE.Intersection | null;
-    // if (document.body.classList.contains("eraser-cursor")) {
-    //   intersect = intersects[0];
-    // } else {
-    //   console.log("Eraser mode is not active");
-    //   if (intersects.length) {
-    //     intersect = intersects[0].object;
-    //   } else {
-    //     intersect = null;
-    //   }
-    // }
+    let intersect: THREE.Intersection | null;
 
     if (intersects.length) {
       intersect = intersects[0];
     } else {
       intersect = null;
     }
-
-    // The code below is the code that clears a polint.
-
-    // const pointCloud: THREE.Object3D | undefined =
-    //   sceneRef.current.getObjectByName("PointCloud");
-    // if (!pointCloud) return null;
-    //
-    // const intersects2 = raycaster.intersectObjects([pointCloud], false);
-    // if (intersects2.length > 0) {
-    //   const intersectPoint = intersects2[0];
-    //
-    //   const index = intersectPoint.index;
-    //
-    //   if (index !== undefined) {
-    //     const points = sceneRef.current.getObjectByName(
-    //       "PointCloud"
-    //     ) as THREE.Points;
-    //
-    //     const positions = points.geometry.attributes.position.array;
-    //     const indexToRemove = index * 3;
-    //
-    //     const newPositions = new Float32Array(positions.length - 3);
-    //     newPositions.set(positions.slice(0, indexToRemove), 0);
-    //     newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
-    //
-    //     points.geometry.setAttribute(
-    //       "position",
-    //       new THREE.Float32BufferAttribute(newPositions, 3)
-    //     );
-    //     points.geometry.attributes.position.needsUpdate = true;
-    //   }
-    // }
-    //
 
     return intersect;
   };
