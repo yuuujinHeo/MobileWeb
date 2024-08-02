@@ -1,31 +1,26 @@
 import { Server } from "socket.io";
 import io from "socket.io-client";
 import type { NextApiRequest, NextApiResponse } from "next";
-// import { getMobileSocketURL } from "@/app/(main)/api/url";
 
 async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
-    console.log("*First use, starting socket.io");
+    // First use, starting socket.io
 
-    const io2 = new Server((res.socket as any).server);
-    // let url = await getMobileSocketURL();
+
+    const ioServer = new Server((res.socket as any).server);
     const url = "http://10.108.1.131:10334/";
-    let socket = io(url);
-
+    const socket = io(url);
     let connectedClients = [];
 
     socket.on("connect", () => {
-      console.log("??????????????????????????????");
       socket.on("mapping", (data: string[][]) => {
-        console.log('mapping in');
-        io2.emit("mapping", data);
+        ioServer.emit("mapping", data);
       });
       socket.on("lidar", (data: string[][]) => {
-        io2.emit("lidar", data);
+        ioServer.emit("lidar", data);
       });
       socket.on("status", (data: JSON) => {
-        // console.log("status get ",data.condition.auto_state);
-        io2.emit("status", data);
+        ioServer.emit("status", data);
       });
       socket.on("move",(data:JSON) =>{
         io2.emit("move", data);
@@ -40,18 +35,17 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       })
     });
 
-    io2.on("connection", (newsocket) => {
+    ioServer.on("connection", (newsocket) => {
       console.log(`${newsocket.id} connected`);
-      console.log("count : ", io2.engine.clientsCount);
+      console.log("count : ", ioServer.engine.clientsCount);
 
-      io2.on("disconnect", (socket) => {
-        console.log(`${socket.id} disconnected`);
-        // io.leave();
+      newsocket.on("disconnect", () => {
+        console.log(`${newsocket.id} disconnected`);
       });
     });
-    (res.socket as any).server.io = io2;
+    (res.socket as any).server.io = ioServer;
   } else {
-    console.log("socket.io already running");
+    console.warn("socket.io already running");
   }
   res.end();
 }

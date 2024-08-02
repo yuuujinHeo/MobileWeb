@@ -3,9 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { createAction } from "@/store/canvasSlice";
-import { selectPanel } from "@/store/propertyPanelSlices";
+import { createAction, toggleMarkingMode } from "@/store/canvasSlice";
 
 // prime
 import { Sidebar } from "primereact/sidebar";
@@ -14,17 +12,18 @@ import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
+import { Menubar } from "primereact/menubar";
+import { InputSwitch } from "primereact/inputswitch";
 
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
 
-import { CANVAS_CLASSES } from "@/constants";
+import { CANVAS_CLASSES, CANVAS_ACTION } from "@/constants";
 
 import axios from "axios";
 
 // components
 import LidarCanvas from "@/components/LidarCanvas";
-import { SpeedDial } from "primereact/speeddial";
 
 interface ListData {
   name: string;
@@ -37,27 +36,52 @@ interface MapData {
   list: ListData[];
 }
 
+interface UserData {
+  id: string;
+  name: string;
+  pose: string;
+  info: string;
+  links: string[];
+  type: string;
+}
+
 const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 
 const Map: React.FC = () => {
   const dispatch = useDispatch();
-
-  // root state
-  const selectedPanel = useSelector(
-    (state: RootState) => state.propertyPanel.selectedPanel
-  );
 
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
   const [mapList, setMapList] = useState([]);
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
-  const [selectedMapCloud, setSelectedMapCloud] = useState<string[][] | null>(
-    null
-  );
+  const [cloudData, setCloudData] = useState<string[][] | null>(null);
+  const [topoData, setTopoData] = useState<UserData[] | null>(null);
+  const [selectBtn, setSelectBtn] = useState<string>("Off");
+  //
+  const [isMarkingMode, setIsMarkingMode] = useState<boolean>(false);
+
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-  const dialItems = [
+  const menuItems = [
+    {
+      label: "File",
+      icon: "pi pi-folder",
+      items: [
+        {
+          label: "Open",
+          icon: "pi pi-download",
+          command: () => {
+            setIsDialogVisible(true);
+            getMapList();
+          },
+        },
+        {
+          label: "Save",
+          icon: "pi pi-save",
+        },
+      ],
+    },
     {
       label: "Mapping",
       icon: "pi pi-map",
@@ -65,29 +89,24 @@ const Map: React.FC = () => {
         setIsSidebarVisible(true);
       },
     },
-    {
-      label: "Localization",
-      icon: "pi pi-compass",
-      command: () => {
-        dispatch(selectPanel({ selectedPanel: "localization" }));
-      },
-    },
-    {
-      label: "Annotation",
-      icon: "pi pi-flag",
-      command: () => {
-        dispatch(selectPanel({ selectedPanel: "annotation" }));
-      },
-    },
-    {
-      label: "Load",
-      icon: "pi pi-download",
-      command: () => {
-        setIsDialogVisible(true);
-        getMapList();
-      },
-    },
   ];
+
+  const handleMarkingModeChange = (isMarkingMode: boolean) => {
+    setIsMarkingMode(isMarkingMode);
+    dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
+  };
+
+  const end = (
+    <div id="switch-container">
+      <i className="pi pi-map-marker "></i>
+      <div>Marker</div>
+      <InputSwitch
+        checked={isMarkingMode}
+        onChange={(e) => handleMarkingModeChange(e.value)}
+      ></InputSwitch>
+      <Tooltip target=".marking-mode" />
+    </div>
+  );
 
   useEffect(() => {
     getMapList();
@@ -95,7 +114,8 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     if (selectedMap) {
-      getMapCloud(selectedMap.name);
+      getMapData(selectedMap.name);
+      getTopoData(selectedMap.name);
     }
   }, [selectedMap]);
 
@@ -108,15 +128,28 @@ const Map: React.FC = () => {
     }
   };
 
-  const getMapCloud = async (name: string) => {
+  const getMapData = async (name: string) => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
-      setSelectedMapCloud(res.data);
+      setCloudData(res.data);
       dispatch(
-        createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.OVERLAY })
+        createAction({
+          command: CANVAS_ACTION.DRAW_CLOUD,
+          target: CANVAS_CLASSES.OVERLAY,
+        })
       );
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const getTopoData = async (name: string) => {
+    try {
+      const res = await axios.get(url + `/map/topo/${name}`);
+      setTopoData(res.data);
+    } catch (e) {
+      setTopoData(null);
+      console.error("Failed to get topo data...", e);
     }
   };
 
@@ -126,10 +159,7 @@ const Map: React.FC = () => {
 
   const handleLoadMap = () => {
     // Draw cloud points to lidar canvas
-    dispatch(
-      createAction({ command: "DRAW_CLOUD", target: CANVAS_CLASSES.DEFAULT })
-    );
-
+    dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
     // Hide dialogue
     setIsDialogVisible(false);
 
@@ -142,7 +172,7 @@ const Map: React.FC = () => {
 
     // reset
     setSelectedMap(null);
-    setSelectedMapCloud(null);
+    setCloudData(null);
   };
 
   const sendSelectedMapToSLAM = async () => {
@@ -160,18 +190,11 @@ const Map: React.FC = () => {
     <div id="map">
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
-        selectedMapCloud={selectedMapCloud}
+        cloudData={cloudData}
+        topoData={topoData}
       />
       <div style={{ position: "absolute" }}>
-        <Tooltip target={".speeddial-top-right .p-speeddial-action"} />
-        <SpeedDial
-          model={dialItems}
-          direction="down"
-          className="speeddial-top-right"
-          showIcon="pi pi-bars"
-          hideIcon="pi pi-times"
-          style={{ left: 15, top: 15 }}
-        ></SpeedDial>
+        <Menubar model={menuItems} end={end} />
       </div>
 
       <div id="property-container">
@@ -203,7 +226,7 @@ const Map: React.FC = () => {
             </div>
             <LidarCanvas
               className={CANVAS_CLASSES.OVERLAY}
-              selectedMapCloud={selectedMapCloud}
+              cloudData={cloudData}
             />
             <Button
               label="Load"
