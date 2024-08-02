@@ -291,12 +291,12 @@ const LidarCanvas = ({
     const camera = new THREE.PerspectiveCamera(
       30,
       canvasRef.current.clientWidth / canvasRef.current.clientHeight,
-      1,
-      1000
+      0.01,
+      9999
     );
     cameraRef.current = camera;
     camera.up.set(0, 1, 0);
-    camera.position.set(0, 0, 15);
+    camera.position.set(0, 0, 500);
 
     // renderer
     const renderer = new THREE.WebGLRenderer({
@@ -336,8 +336,8 @@ const LidarCanvas = ({
 
     control.screenSpacePanning = true;
 
-    control.minDistance = 5;
-    control.maxDistance = 300;
+    control.minDistance = 0.1;
+    control.maxDistance = 9999;
 
     // transform control
     const transformControl: TransformControls = new TransformControls(
@@ -449,7 +449,11 @@ const LidarCanvas = ({
     return currenteObj;
   };
 
-  const getIntersectByRaycasting = (event: MouseEvent | TouchEvent) => {
+  const getIntersectByRaycasting = (
+    event: MouseEvent | TouchEvent,
+    target: THREE.Object3D[],
+    recursive: boolean = true
+  ): THREE.Intersection | null => {
     if (
       !canvasRef.current ||
       !cameraRef.current ||
@@ -457,25 +461,15 @@ const LidarCanvas = ({
       !transformControlRef.current
     )
       return null;
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
+    const raycaster = getRaycaster(event);
+    if (!raycaster) return null;
 
-    const pos = getCanvasRelativePosition(event);
+    const intersects = raycaster.intersectObjects(target, recursive);
 
-    if (!pos) return null;
-    mouse.x = (pos.x / canvasRef.current.width) * 2 - 1;
-    mouse.y = -(pos.y / canvasRef.current.height) * 2 + 1;
+    let intersect: THREE.Intersection | null;
 
-    raycaster.setFromCamera(mouse, cameraRef.current);
-
-    const intersects = raycaster.intersectObjects(
-      raycastTargetsRef.current,
-      true
-    );
-
-    let intersect: THREE.Object3D | null;
     if (intersects.length) {
-      intersect = intersects[0].object;
+      intersect = intersects[0];
     } else {
       intersect = null;
     }
@@ -602,7 +596,7 @@ const LidarCanvas = ({
       const loader = new ThreeMFLoader();
 
       loader.load("amr.3MF", function (group) {
-        group.scale.set(0.001, 0.001, 0.001);
+        group.scale.set(0.0315, 0.0315, 0.0315);
         group.position.set(intersect.point.x, intersect.point.y, 0);
         group.name = "createHelper";
 
@@ -702,15 +696,59 @@ const LidarCanvas = ({
     isTouchDragging = true;
   };
 
+  const erasePoint = (point: THREE.Intersection | null) => {
+    if (!point) return;
+
+    const index = point.index;
+
+    if (index !== undefined) {
+      const points = sceneRef.current?.getObjectByName(
+        "PointCloud"
+      ) as THREE.Points;
+
+      const positions = points.geometry.attributes.position.array;
+      const indexToRemove = index * 3;
+
+      const newPositions = new Float32Array(positions.length - 3);
+      newPositions.set(positions.slice(0, indexToRemove), 0);
+      newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
+
+      points.geometry.setAttribute(
+        "position",
+        new THREE.Float32BufferAttribute(newPositions, 3)
+      );
+      points.geometry.attributes.position.needsUpdate = true;
+    }
+  };
+
   const handleMouseUp = (event: MouseEvent) => {
     isMouseDown = false;
     pressedMouseBtn = null;
 
     switch (event.button) {
       case 0:
-        if (!isMouseDragged) {
-          const intersect = getIntersectByRaycasting(event);
-          selectObject(intersect);
+        // Normal cursor
+        if (!document.body.classList.contains("eraser-cursor")) {
+          const intersect = getIntersectByRaycasting(
+            event,
+            raycastTargetsRef.current
+          );
+          if (intersect !== null) {
+            selectObject(intersect.object);
+          } else if (!isMouseDragged) {
+            selectObject(null);
+          }
+        } else {
+          // Eraser cursor
+          const pointCloud: THREE.Object3D | undefined =
+            sceneRef.current?.getObjectByName("PointCloud");
+          if (!pointCloud) return null;
+          const intersect = getIntersectByRaycasting(
+            event,
+            [pointCloud],
+            false
+          );
+          erasePoint(intersect);
         }
 
         break;
@@ -799,7 +837,7 @@ const LidarCanvas = ({
 
     loader.load("amr_texture.3MF", function (group) {
       group.name = "amr";
-      group.scale.set(0.001, 0.001, 0.001);
+      group.scale.set(0.0315, 0.0315, 0.0315);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
@@ -943,11 +981,12 @@ const LidarCanvas = ({
     geo.computeBoundingSphere();
 
     const material = new THREE.PointsMaterial({
-      size: 0.09,
+      size: 3,
       color: 0xff355e,
     });
 
     const points = new THREE.Points(geo, material);
+    points.scale.set(31.5, 31.5, 31.5);
     lidarPoints.current = points.id;
 
     sceneRef.current?.add(points);
@@ -987,11 +1026,13 @@ const LidarCanvas = ({
       geo.computeBoundingSphere();
 
       const material = new THREE.PointsMaterial({
-        size: 0.07,
+        size: 2.5,
         color: 0x74ff24,
       });
 
       const points = new THREE.Points(geo, material);
+      points.name = "PointCloud";
+      points.scale.set(31.5, 31.5, 31.5);
 
       mappingPointsArr.current.push(points.id);
 
@@ -1089,7 +1130,7 @@ const LidarCanvas = ({
   const resetCamera = () => {
     if (!cameraRef.current || !controlRef.current) return;
     cameraRef.current.up.set(0, 1, 0);
-    cameraRef.current.position.set(0, 0, 15);
+    cameraRef.current.position.set(0, 0, 500);
     cameraRef.current.lookAt(new THREE.Vector3(0, 0, 0));
     cameraRef.current.updateProjectionMatrix();
     controlRef.current.target.set(0, 0, 0);
@@ -1108,7 +1149,7 @@ const LidarCanvas = ({
       try {
         loader.load("amr.3MF", function (group) {
           setupNode(group, NODE_TYPE.GOAL, nodePos);
-          group.scale.set(0.0009, 0.0009, 0.0009);
+          group.scale.set(0.02835, 0.02835, 0.02835);
           // group.rotation.z = Number(createHelper.rz);
 
           group.traverse((obj) => {
@@ -1147,7 +1188,7 @@ const LidarCanvas = ({
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
-    route.scale.set(0.02, 0.02, 0.02);
+    route.scale.set(0.63, 0.63, 0.63);
 
     const geo = new THREE.PlaneGeometry(1, 1);
     const mat = new THREE.MeshBasicMaterial({
@@ -1446,15 +1487,15 @@ const LidarCanvas = ({
       const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
       const length = startPos.distanceTo(endPos);
       // default color is blue
-      // 0.45 is one-half the length of the model diagonal.
+      // 14.17 is one-half the length of the model diagonal.
       const arrowHelper = new THREE.ArrowHelper(
         dir,
         startPos,
-        length - 0.45,
+        length - 14.17,
         color
       );
       arrowHelper.name = `arrow-${from.name}-${to.name}`;
-      arrowHelper.setLength(length - 0.45, 0.5, 0.22);
+      arrowHelper.setLength(length - 14.17, 10, 4.4);
       sceneRef.current?.add(arrowHelper);
     }
   };
