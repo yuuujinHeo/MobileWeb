@@ -84,12 +84,16 @@ export default function PropertyPanel() {
   const sendLOCRequest = async (command: string) => {
     try {
       const r2d = (Number(createHelper.rz) * (180 / Math.PI)).toString();
+      // [TEMP]
+      const scaledX = Number(createHelper.x) / 31.5;
+      const scaledY = Number(createHelper.y) / 31.5;
+      const scaledZ = Number(createHelper.z) / 31.5;
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
-        x: createHelper.x,
-        y: createHelper.y,
-        z: createHelper.z,
+        x: scaledX.toString(),
+        y: scaledY.toString(),
+        z: scaledZ.toString(),
         rz: r2d,
       };
 
@@ -201,13 +205,7 @@ export default function PropertyPanel() {
 
   async function moveGoal() {
     try {
-      console.log("moveGoal");
-
-      const currentTime = new Date()
-        .toISOString()
-        .replace("T", " ")
-        .replace("Z", "");
-
+      const currentTime = getCurrentTime();
       const json = JSON.stringify({
         command: "goal",
         id: goalID,
@@ -221,7 +219,6 @@ export default function PropertyPanel() {
           "Content-Type": "application/json",
         },
       });
-      console.log("response : ", response);
 
       if (response.data.result == "accept") {
         toast.current?.show({
@@ -231,8 +228,6 @@ export default function PropertyPanel() {
         });
 
         const response = await axios.get(url + "/control/move");
-
-        console.log("response : ", response);
 
         if (response.data.result == "success") {
           toast.current?.show({
@@ -256,7 +251,96 @@ export default function PropertyPanel() {
           life: 3000,
         });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function movePause() {
+    try {
+      const currentTime = getCurrentTime();
+      const json = JSON.stringify({ command: "pause", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.result == "accept") {
+        toast.current?.show({
+          severity: "success",
+          summary: "Move Paused",
+          life: 3000,
+        });
+      } else {
+        toast.current?.show({
+          severity: "error",
+          summary: "Move Paused Fail",
+          detail: response.data.message,
+          life: 3000,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function moveResume() {
+    try {
+      const currentTime = getCurrentTime();
+      const json = JSON.stringify({ command: "resume", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.result == "accept") {
+        toast.current?.show({
+          severity: "success",
+          summary: "Move Resumed",
+          life: 3000,
+        });
+      } else {
+        toast.current?.show({
+          severity: "error",
+          summary: "Move Resumed Fail",
+          detail: response.data.message,
+          life: 3000,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function moveStop() {
+    try {
+      const currentTime = getCurrentTime();
+      const json = JSON.stringify({ command: "stop", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.data.result == "accept") {
+        toast.current?.show({
+          severity: "success",
+          summary: "Move Stopped",
+          life: 3000,
+        });
+      } else {
+        toast.current?.show({
+          severity: "error",
+          summary: "Move Stopped Fail",
+          detail: response.data.message,
+          life: 3000,
+        });
+      }
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   return (
@@ -466,6 +550,7 @@ export default function PropertyPanel() {
               </div>
             </AccordionTab>
             <AccordionTab header="Move">
+              <h5>Goal Move</h5>
               <div className="accordion-item">
                 Goal
                 <InputText
@@ -492,6 +577,23 @@ export default function PropertyPanel() {
                 label="GO"
                 className="w-full move-button__goal"
                 onClick={moveGoal}
+              />
+              <Divider />
+              <h5>Command</h5>
+              <Button
+                label="PAUSE"
+                className="w-full move-button__goal"
+                onClick={movePause}
+              />
+              <Button
+                label="RESUME"
+                className="w-full move-button__goal"
+                onClick={moveResume}
+              />
+              <Button
+                label="STOP"
+                className="w-full move-button__goal"
+                onClick={moveStop}
               />
             </AccordionTab>
           </Accordion>
