@@ -20,7 +20,9 @@ const AppMenu = () => {
             items: [
                 { label: 'State', icon: 'pi pi-fw pi-eye', to: '/state', badge: 'NEW' },
                 { label: 'Map', icon: 'pi pi-fw pi-map', to: '/map', badge: 'NEW' },
-                { label: 'MoveTest', icon: 'pi pi-fw pi-wifi', to: '/move' }
+                { label: 'MoveTest', icon: 'pi pi-fw pi-forward', to: '/move' },
+                { label: 'Task', icon: 'pi pi-fw pi-sitemap', to: '/task' },
+                { label: 'Run', icon: 'pi pi-fw pi-directions', to: '/run' }
             ]
         },
         {

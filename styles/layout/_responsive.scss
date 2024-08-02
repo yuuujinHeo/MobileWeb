@@ -6,7 +6,7 @@
     }
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1200px) {
     .layout-wrapper {
         &.layout-overlay {
             .layout-main-container {
@@ -32,7 +32,7 @@
 
         &.layout-static {
             .layout-main-container {
-                margin-left: 300px;
+                margin-left: 200px;
             }
 
             &.layout-static-inactive {
@@ -54,7 +54,7 @@
     }
 }
 
-@media (max-width: 991px) {
+@media (max-width: 1200px) {
     .blocked-scroll {
         overflow: hidden;
     }

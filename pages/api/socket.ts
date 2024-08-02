@@ -9,7 +9,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
 
     const io2 = new Server((res.socket as any).server);
     // let url = await getMobileSocketURL();
-    const url = "http://10.108.1.10:10334/";
+    const url = "http://10.108.1.131:10334/";
     let socket = io(url);
 
     let connectedClients = [];
@@ -27,10 +27,21 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
         // console.log("status get ",data.condition.auto_state);
         io2.emit("status", data);
       });
+      socket.on("move",(data:JSON) =>{
+        io2.emit("move", data);
+      });
+      socket.on("task_id",(data:number) =>{
+        console.log("taskid", data);
+        io2.emit("task_id", data);
+      })
+      socket.on("task",(data:string) =>{
+        console.log("task",data);
+        io2.emit("task",data);
+      })
     });
 
     io2.on("connection", (newsocket) => {
-      console.log(`${socket.id} connected`);
+      console.log(`${newsocket.id} connected`);
       console.log("count : ", io2.engine.clientsCount);
 
       io2.on("disconnect", (socket) => {

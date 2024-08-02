@@ -50,7 +50,6 @@ import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, s
 import {getMobileAPIURL} from '../api/url';
 import './style.scss'
 import { transStatus } from '../api/to';
-import { TreeNode } from 'primereact/treenode';
 
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
@@ -61,7 +60,6 @@ const Move: React.FC = () =>{
     let socketRef;
     const toast = useRef<Toast | null>(null);
 
-    const [nodes, setNodes] = useState<TreeNode[]>([]);
     const [Status, setStatus] = useState<StatusState>(initState);
 
     const [targetX, setTargetX] = useState(0);
@@ -86,9 +84,13 @@ const Move: React.FC = () =>{
 
             socketRef.on("status", async(data) => {
                 const json = JSON.parse(data);
-                console.log(json.condition.auto_state);
+                // console.log(json.condition.auto_state);
                 setStatus(await transStatus(json));
             });
+
+            socketRef.on("move", (data) =>{
+                console.log("move response1 : ",data);
+            })
 
           return () => {
             console.log("Socket disconnect ", socketRef.id);
@@ -106,16 +108,6 @@ const Move: React.FC = () =>{
         };
     },[])
 
-    useEffect(()=>{
-        if(mobileURL != ''){
-            getNodes();
-        }
-    },[mobileURL])
-
-    async function getNodes(){
-        const response = await axios.get(mobileURL + "/task");
-        setNodes(response.data);
-    }
 
     async function setURL(){
         setMobileURL(await getMobileAPIURL());
@@ -154,24 +146,24 @@ const Move: React.FC = () =>{
                 life: 3000
             })
 
-            const response = await axios.get(mobileURL+'/control/move');
+            // const response = await axios.get(mobileURL+'/control/move');
 
-            console.log("response : ",response);
+            // console.log("response : ",response);
 
-            if(response.data.result == 'success'){
-                toast.current?.show({
-                    severity: 'success',
-                    summary: 'Move Done',
-                    life: 3000
-                })
-            }else{
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Move Failed',
-                    detail: response.data.message,
-                    life: 3000
-                })
-            }
+            // if(response.data.result == 'success'){
+            //     toast.current?.show({
+            //         severity: 'success',
+            //         summary: 'Move Done',
+            //         life: 3000
+            //     })
+            // }else{
+            //     toast.current?.show({
+            //         severity: 'error',
+            //         summary: 'Move Failed',
+            //         detail: response.data.message,
+            //         life: 3000
+            //     })
+            // }
         }else{
             toast.current?.show({
                 severity: 'error',
@@ -180,6 +172,10 @@ const Move: React.FC = () =>{
                 life: 3000
             })
         }
+    }
+
+    const handleNodeSelect = (event) =>{
+
     }
 
     async function moveGoal(){
@@ -211,24 +207,24 @@ const Move: React.FC = () =>{
                 life: 3000
             })
 
-            const response = await axios.get(mobileURL+'/control/move');
+            // const response = await axios.get(mobileURL+'/control/move');
 
-            console.log("response : ",response);
+            // console.log("response : ",response);
 
-            if(response.data.result == 'success'){
-                toast.current?.show({
-                    severity: 'success',
-                    summary: 'Move Done',
-                    life: 3000
-                })
-            }else{
-                toast.current?.show({
-                    severity: 'error',
-                    summary: 'Move Failed',
-                    detail: response.data.message,
-                    life: 3000
-                })
-            }
+            // if(response.data.result == 'success'){
+            //     toast.current?.show({
+            //         severity: 'success',
+            //         summary: 'Move Done',
+            //         life: 3000
+            //     })
+            // }else{
+            //     toast.current?.show({
+            //         severity: 'error',
+            //         summary: 'Move Failed',
+            //         detail: response.data.message,
+            //         life: 3000
+            //     })
+            // }
         }else{
             toast.current?.show({
                 severity: 'error',
@@ -637,11 +633,6 @@ const Move: React.FC = () =>{
                         </div>
                     </div>
                 </div>
-            </div>
-
-
-            <div className='card flex justify-content-center'>
-                <Tree className="w-full md:w-30rem" value={nodes}></Tree>
             </div>
         </main>
     );

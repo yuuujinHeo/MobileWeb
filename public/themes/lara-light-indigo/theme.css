@@ -3407,12 +3407,12 @@
     border-radius: 6px;
   }
   .p-tree .p-tree-container .p-treenode {
-    padding: 0.143rem;
+    /* padding: 0.143rem; */
   }
   .p-tree .p-tree-container .p-treenode .p-treenode-content {
     border-radius: 6px;
     transition: box-shadow 0.2s;
-    padding: 0.5rem;
+    /* padding: 0.5rem; */
   }
   .p-tree .p-tree-container .p-treenode .p-treenode-content .p-tree-toggler {
     margin-right: 0.5rem;
@@ -3481,7 +3481,7 @@
     color: #6b7280;
   }
   .p-tree .p-treenode-children {
-    padding: 0 0 0 1rem;
+    padding: 0 0 0 2rem;
   }
   .p-tree .p-tree-loading-icon {
     font-size: 2rem;
