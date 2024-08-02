@@ -1487,15 +1487,15 @@ const LidarCanvas = ({
       const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
       const length = startPos.distanceTo(endPos);
       // default color is blue
-      // 0.45 is one-half the length of the model diagonal.
+      // 14.17 is one-half the length of the model diagonal.
       const arrowHelper = new THREE.ArrowHelper(
         dir,
         startPos,
-        length - 0.45,
+        length - 14.17,
         color
       );
       arrowHelper.name = `arrow-${from.name}-${to.name}`;
-      arrowHelper.setLength(length - 0.45, 0.5, 0.22);
+      arrowHelper.setLength(length - 14.17, 10, 4.4);
       sceneRef.current?.add(arrowHelper);
     }
   };
