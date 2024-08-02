@@ -31,7 +31,6 @@ const Joystick = () => {
   const leftJoyManagerRef = useRef<JoystickManager | null>(null);
   const rightJoyManagerRef = useRef<JoystickManager | null>(null);
 
-
   // for joystick
   const joyIntervalRef = useRef<number | null>(null);
   const leftIntervalRef = useRef<number | null>(null);
@@ -41,8 +40,8 @@ const Joystick = () => {
   const leftControlRef = useRef(false);
   const rightControlRef = useRef(false);
 
-  let leftStartPosition = {x:0, y:0};
-  let rightStartPosition = {x:0, y:0};
+  let leftStartPosition = { x: 0, y: 0 };
+  let rightStartPosition = { x: 0, y: 0 };
 
   useEffect(() => {
     const createJoystick = () => {
@@ -115,11 +114,11 @@ const Joystick = () => {
         .replace("T", " ")
         .replace("Z", "");
 
-      await axios.post(url + "/jog/manual", {
-        command: "move",
-        vx: vx,
-        vy: vy,
-        wz: wz,
+      await axios.post(url + "/control/move", {
+        command: "jog",
+        vx: vx.toString(),
+        vy: vy.toString(),
+        wz: wz.toString(),
         time: currentTime,
       });
     } catch (error) {
@@ -147,13 +146,13 @@ const Joystick = () => {
     };
 
     const clearLeftInterval = () => {
-      if(joyIntervalRef.current){
+      if (joyIntervalRef.current) {
         leftControlRef.current = false;
         leftValueRef.current.vx = 0;
 
         sendJogRequest(0, 0, rightValueRef.current.wz);
 
-        if(!rightControlRef.current){
+        if (!rightControlRef.current) {
           clearInterval(joyIntervalRef.current);
           joyIntervalRef.current = null;
         }
@@ -161,13 +160,13 @@ const Joystick = () => {
     };
 
     const clearRightInterval = () => {
-      if(joyIntervalRef.current){
+      if (joyIntervalRef.current) {
         rightControlRef.current = false;
         rightValueRef.current.wz = 0;
 
         sendJogRequest(leftValueRef.current.vx, 0, 0);
 
-        if(!leftControlRef.current){
+        if (!leftControlRef.current) {
           clearInterval(joyIntervalRef.current);
           joyIntervalRef.current = null;
         }
@@ -175,11 +174,11 @@ const Joystick = () => {
     };
 
     if (leftJoyManagerRef.current && rightJoyManagerRef.current) {
-      leftJoyManagerRef.current.on("start", (evt,data) =>{
+      leftJoyManagerRef.current.on("start", (evt, data) => {
         leftStartPosition = {
           x: data.position.x,
-          y: data.position.y
-        }
+          y: data.position.y,
+        };
         startLeftInterval();
       });
       leftJoyManagerRef.current.on("move", (evt, data) => {
@@ -190,11 +189,11 @@ const Joystick = () => {
         clearLeftInterval();
       });
 
-      rightJoyManagerRef.current.on("start", (evt,data) =>{
+      rightJoyManagerRef.current.on("start", (evt, data) => {
         rightStartPosition = {
           x: data.position.x,
-          y: data.position.y
-        }
+          y: data.position.y,
+        };
         startRightInterval();
       });
       rightJoyManagerRef.current.on("move", (evt, data) => {
@@ -243,3 +242,4 @@ const Joystick = () => {
 };
 
 export default Joystick;
+

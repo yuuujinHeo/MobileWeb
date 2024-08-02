@@ -904,6 +904,7 @@ const LidarCanvas = ({
         }
 
         socketRef.current.on("status", (data) => {
+          console.log(123123, "status");
           const res = JSON.parse(data);
           robotPose = {
             x: parseFloat(res.pose.x),

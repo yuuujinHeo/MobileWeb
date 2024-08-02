@@ -15,8 +15,10 @@ import { AccordionTab } from "primereact/accordion";
 import { Button } from "primereact/button";
 import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
 import { InputText } from "primereact/inputtext";
+import { InputNumber } from "primereact/inputnumber";
 import { Dropdown } from "primereact/dropdown";
 import { Divider } from "primereact/divider";
+import { Slider } from "primereact/slider";
 
 import { CANVAS_ACTION, NODE_TYPE } from "@/constants";
 
@@ -52,6 +54,9 @@ export default function PropertyPanel() {
     z: "0",
     rz: "0",
   });
+
+  const [goalID, setGoalID] = useState("");
+  const [preset, setPreset] = useState<number>(3);
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
@@ -193,6 +198,66 @@ export default function PropertyPanel() {
     if (input === "" || input.endsWith(".")) return false;
     return !isNaN(Number(input));
   };
+
+  async function moveGoal() {
+    try {
+      console.log("moveGoal");
+
+      const currentTime = new Date()
+        .toISOString()
+        .replace("T", " ")
+        .replace("Z", "");
+
+      const json = JSON.stringify({
+        command: "goal",
+        id: goalID,
+        preset: preset,
+        method: "pp",
+        time: currentTime,
+      });
+
+      const response = await axios.post(url + "/control/move", json, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("response : ", response);
+
+      if (response.data.result == "accept") {
+        toast.current?.show({
+          severity: "success",
+          summary: "Move Start",
+          life: 3000,
+        });
+
+        const response = await axios.get(url + "/control/move");
+
+        console.log("response : ", response);
+
+        if (response.data.result == "success") {
+          toast.current?.show({
+            severity: "success",
+            summary: "Move Done",
+            life: 3000,
+          });
+        } else {
+          toast.current?.show({
+            severity: "error",
+            summary: "Move Failed",
+            detail: response.data.message,
+            life: 3000,
+          });
+        }
+      } else {
+        toast.current?.show({
+          severity: "error",
+          summary: "Move Failed",
+          detail: response.data.message,
+          life: 3000,
+        });
+      }
+    } catch (e) {}
+  }
 
   return (
     <Panel>
@@ -399,6 +464,35 @@ export default function PropertyPanel() {
                   }}
                 />
               </div>
+            </AccordionTab>
+            <AccordionTab header="Move">
+              <div className="accordion-item">
+                Goal
+                <InputText
+                  // value={selectedObjectInfo.id}
+                  value={goalID}
+                  onChange={(e) => setGoalID(e.target.value)}
+                  className="p-inputtext-sm"
+                />
+              </div>
+              <div className="accordion-item ">
+                Preset
+                <div>
+                  <InputNumber value={preset} readOnly></InputNumber>
+                  <Slider
+                    value={preset}
+                    min={0}
+                    max={5}
+                    step={1}
+                    onChange={(e) => setPreset(e.value as number)}
+                  ></Slider>
+                </div>
+              </div>
+              <Button
+                label="GO"
+                className="w-full move-button__goal"
+                onClick={moveGoal}
+              />
             </AccordionTab>
           </Accordion>
         </TabPanel>
