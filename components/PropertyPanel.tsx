@@ -339,6 +339,14 @@ export default function PropertyPanel() {
                   </div>
                 </AccordionTab>
               </Accordion>
+              <Button
+                className="node-delete-button"
+                label="Delete Node"
+                size="small"
+                severity="danger"
+                rounded
+                onClick={deleteNode}
+              />
             </>
           )}
         </TabPanel>
@@ -394,7 +402,6 @@ export default function PropertyPanel() {
             </AccordionTab>
           </Accordion>
         </TabPanel>
-        {/* <TabPanel header="Localization" leftIcon="pi pi-compass"></TabPanel> */}
         <TabPanel header="Edit" leftIcon="pi pi-map-marker">
           <Accordion multiple activeIndex={[0]}>
             <AccordionTab header="Annotation">
