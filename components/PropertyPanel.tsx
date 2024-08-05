@@ -39,10 +39,7 @@ export default function PropertyPanel() {
   const dispatch = useDispatch();
 
   // root state
-  const selectedPanel = useSelector(
-    (state: RootState) => state.propertyPanel.selectedPanel
-  );
-  const { createHelper, selectedObjectInfo } = useSelector(
+  const { sceneInfo, createHelper, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -414,8 +411,16 @@ export default function PropertyPanel() {
       <TabView>
         {/* TODO General Scene Info */}
         <TabPanel header="Information" leftIcon="pi pi-info-circle">
+          {/* TODO */}
+
+          <h5>Scene Info</h5>
+          <div id="scene-info-container">
+            <p>{sceneInfo.goalNum} Goal Nodes</p>
+            <p>{sceneInfo.routeNum} Route Nodes</p>
+          </div>
           {selectedObjectInfo.name && (
             <div id="selected-container">
+              <Divider />
               <h5>{selectedObjectInfo.name}</h5>
               <Accordion multiple activeIndex={[0]}>
                 <AccordionTab header="Data">

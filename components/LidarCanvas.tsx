@@ -6,6 +6,8 @@ import { RootState } from "@/store/store";
 import {
   updateCreateHelper,
   changeSelectedObjectInfo,
+  updateGoalNum,
+  updateRouteNum,
 } from "@/store/canvasSlice";
 
 // three
@@ -67,7 +69,6 @@ const LidarCanvas = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
   const transformControlRef = useRef<TransformControls>();
-  const isInitializedRef = useRef<boolean>(false);
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
@@ -79,10 +80,14 @@ const LidarCanvas = ({
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
-  const goals = useRef<number[]>(new Array(10000).fill(0));
-  const routes = useRef<number[]>(new Array(10000).fill(0));
+  const goals = useRef<number[]>([0]);
+  const goalNum = useRef<number>(0);
+  const routes = useRef<number[]>([0]);
+  const routeNum = useRef<number>(0);
 
   const isMarkingModeRef = useRef<boolean>(false);
+
+  // robot info
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -390,8 +395,6 @@ const LidarCanvas = ({
 
     scene.add(currSelectionBoxRef.current);
     scene.add(prevSelectionBoxRef.current);
-
-    isInitializedRef.current = true;
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
@@ -914,9 +917,14 @@ const LidarCanvas = ({
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
           driveRobot(robotPose);
+          // setRobotStatus(res);
         });
       });
     }
+  };
+
+  const setRobotStatus = (data) => {
+    // setRobotX(data.pose.x);
   };
 
   const reloadMappingData = async () => {
@@ -996,7 +1004,7 @@ const LidarCanvas = ({
   };
 
   const drawCloud = (targetCanvas: string, cloud: string[][] | null) => {
-    if (!isInitializedRef.current || !cloud) return;
+    if (!cloud) return;
     if (className !== targetCanvas) return;
 
     resetCamera();
@@ -1174,6 +1182,9 @@ const LidarCanvas = ({
             }
           });
 
+          goalNum.current += 1;
+          dispatch(updateGoalNum(goalNum.current));
+
           addLabelToNode(group);
           sceneRef.current?.add(group);
 
@@ -1206,6 +1217,9 @@ const LidarCanvas = ({
 
     setupNode(route, NODE_TYPE.ROUTE, nodePos);
 
+    routeNum.current += 1;
+    dispatch(updateRouteNum(routeNum.current));
+
     addLabelToNode(route);
     sceneRef.current?.add(route);
     raycastTargetsRef.current.push(route);
@@ -1221,19 +1235,23 @@ const LidarCanvas = ({
 
     const nodes = type === NODE_TYPE.GOAL ? goals.current : routes.current;
     const prefix = type === NODE_TYPE.GOAL ? "goal" : "route";
-    for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i] === 0) {
-        nodes[i] = 1;
-        node.name = `${prefix}-${formatNumber(i + 1)}`;
-        node.userData.index = i;
-        node.userData.links = [];
-        node.userData.links_from = [];
-        node.userData.type = type;
-        node.userData.info = "";
-        break;
-      }
-    }
 
+    const isZeroExist = (element: number) => element === 0;
+    const zeroIndex = nodes.findIndex(isZeroExist);
+
+    if (zeroIndex >= 0) {
+      nodes[zeroIndex] = 1;
+      node.name = `${prefix}-${formatNumber(zeroIndex + 1)}`;
+      node.userData.index = zeroIndex;
+    } else {
+      nodes.push(1);
+      node.name = `${prefix}-${formatNumber(nodes.length)}`;
+      node.userData.index = nodes.length - 1;
+    }
+    node.userData.links = [];
+    node.userData.links_from = [];
+    node.userData.type = type;
+    node.userData.info = "";
     // called from drawTopo
     if (topoData && topoData.length && (nodePos.idx as number) >= 0) {
       const topo = topoData[nodePos.idx as number];
@@ -1279,8 +1297,12 @@ const LidarCanvas = ({
     // Num update
     if (target.userData.type === NODE_TYPE.GOAL) {
       goals.current[target.userData.index] = 0;
+      goalNum.current -= 1;
+      dispatch(updateGoalNum(goalNum.current));
     } else if (target.userData.type === NODE_TYPE.ROUTE) {
       routes.current[target.userData.index] = 0;
+      routeNum.current -= 1;
+      dispatch(updateRouteNum(routeNum.current));
     }
 
     if (transformControlRef.current) {

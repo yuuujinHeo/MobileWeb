@@ -7,7 +7,7 @@ interface CommandData {
   name?: string;
   value?: string;
 }
-interface Init {
+interface CreateHelperData {
   x: string;
   y: string;
   z: string;
@@ -22,6 +22,11 @@ const initialState = {
     pose: "",
     type: "",
     info: "",
+  },
+  sceneInfo: {
+    goalNum: 0,
+    routeNum: 0,
+    linkNum: 0,
   },
   action: {
     command: "",
@@ -58,7 +63,7 @@ const canvasSlice = createSlice({
       if (action.payload.target) state.action.target = action.payload.target;
       state.action.timestamp = Date.now();
     },
-    updateCreateHelper(state, action: PayloadAction<Init>) {
+    updateCreateHelper(state, action: PayloadAction<CreateHelperData>) {
       state.createHelper.x = action.payload.x;
       state.createHelper.y = action.payload.y;
       state.createHelper.z = action.payload.z;
@@ -70,6 +75,12 @@ const canvasSlice = createSlice({
     changeSelectedObjectInfo(state, action) {
       state.selectedObjectInfo = action.payload;
     },
+    updateGoalNum(state, action) {
+      state.sceneInfo.goalNum = action.payload;
+    },
+    updateRouteNum(state, action) {
+      state.sceneInfo.routeNum = action.payload;
+    },
   },
 });
 
@@ -79,5 +90,7 @@ export const {
   toggleMarkingMode,
   createAction,
   changeSelectedObjectInfo,
+  updateGoalNum,
+  updateRouteNum,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;
