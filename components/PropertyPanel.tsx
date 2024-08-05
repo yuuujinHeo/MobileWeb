@@ -55,8 +55,13 @@ export default function PropertyPanel() {
     rz: "0",
   });
 
+  const [targetX, setTargetX] = useState<number>(0);
+  const [targetY, setTargetY] = useState<number>(0);
+  const [targetRZ, setTargetRZ] = useState<number>(0);
   const [goalID, setGoalID] = useState("");
-  const [preset, setPreset] = useState<number>(3);
+
+  const [targetPreset, setTargetPreset] = useState<number>(3);
+  const [goalPreset, setGoalPreset] = useState<number>(3);
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
@@ -203,18 +208,79 @@ export default function PropertyPanel() {
     return !isNaN(Number(input));
   };
 
-  async function moveGoal() {
-    try {
-      const currentTime = getCurrentTime();
-      const json = JSON.stringify({
-        command: "goal",
-        id: goalID,
-        preset: preset,
-        method: "pp",
-        time: currentTime,
+  async function moveTarget() {
+    const currentTime = getCurrentTime();
+    const json = JSON.stringify({
+      command: "target",
+      x: targetX,
+      y: targetY,
+      z: 0,
+      rz: targetRZ,
+      preset: targetPreset,
+      method: "pp",
+      time: currentTime,
+    });
+
+    const response = await axios.post(url + "/control/move", json, {
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (response.data.result == "accept") {
+      toast.current?.show({
+        severity: "success",
+        summary: "Move Start",
+        life: 3000,
       });
 
-      const response = await axios.post(url + "/control/move", json, {
+      const response = await axios.get(url + "/control/move");
+      if (response.data.result == "success") {
+        toast.current?.show({
+          severity: "success",
+          summary: "Move Done",
+          life: 3000,
+        });
+      } else {
+        toast.current?.show({
+          severity: "error",
+          summary: "Move Failed",
+          detail: response.data.message,
+          life: 3000,
+        });
+      }
+    } else {
+      toast.current?.show({
+        severity: "error",
+        summary: "Move Failed",
+        detail: response.data.message,
+        life: 3000,
+      });
+    }
+  }
+
+  async function requestMove(command: string) {
+    try {
+      const currentTime = getCurrentTime();
+      let requestBody = {
+        command: command,
+        time: currentTime,
+      };
+      if (command === "goal") {
+        requestBody["id"] = goalID;
+        requestBody["preset"] = goalPreset;
+        requestBody["method"] = "pp";
+      } else if (command === "target") {
+        requestBody["x"] = targetX;
+        requestBody["y"] = targetY;
+        requestBody["z"] = 0;
+        requestBody["rz"] = targetRZ;
+        requestBody["preset"] = targetPreset;
+        requestBody["method"] = "pp";
+      }
+      const requestJson = JSON.stringify(requestBody);
+
+      const response = await axios.post(url + "/control/move", requestJson, {
         headers: {
           "Content-Type": "application/json",
         },
@@ -349,7 +415,8 @@ export default function PropertyPanel() {
         {/* TODO General Scene Info */}
         <TabPanel header="Information" leftIcon="pi pi-info-circle">
           {selectedObjectInfo.name && (
-            <>
+            <div id="selected-container">
+              <h5>{selectedObjectInfo.name}</h5>
               <Accordion multiple activeIndex={[0]}>
                 <AccordionTab header="Data">
                   <div className="accordion-item">
@@ -496,7 +563,7 @@ export default function PropertyPanel() {
                 rounded
                 onClick={deleteNode}
               />
-            </>
+            </div>
           )}
         </TabPanel>
         <TabPanel header="Control" leftIcon="pi pi-arrows-alt">
@@ -550,6 +617,65 @@ export default function PropertyPanel() {
               </div>
             </AccordionTab>
             <AccordionTab header="Move">
+              <h5>Target Move</h5>
+              <div className="accordion-item">
+                X
+                <InputNumber
+                  className="p-inputtext-sm"
+                  value={targetX}
+                  minFractionDigits={2}
+                  maxFractionDigits={5}
+                  onChange={(e) => {
+                    setTargetX(e.value as number);
+                  }}
+                />
+              </div>
+              <div className="accordion-item">
+                Y
+                <InputNumber
+                  className="p-inputtext-sm"
+                  value={targetY}
+                  minFractionDigits={2}
+                  maxFractionDigits={5}
+                  onChange={(e) => {
+                    setTargetY(e.value as number);
+                  }}
+                />
+              </div>
+              <div className="accordion-item">
+                RZ
+                <InputNumber
+                  className="p-inputtext-sm"
+                  value={targetRZ}
+                  minFractionDigits={2}
+                  maxFractionDigits={5}
+                  onChange={(e) => {
+                    setTargetRZ(e.value as number);
+                  }}
+                />
+              </div>
+              <div className="accordion-item ">
+                Preset
+                <div>
+                  <InputNumber value={targetPreset} readOnly></InputNumber>
+                  <Slider
+                    value={targetPreset}
+                    min={0}
+                    max={5}
+                    step={1}
+                    onChange={(e) => setTargetPreset(e.value as number)}
+                  ></Slider>
+                </div>
+              </div>
+              <Button
+                label="GO"
+                icon="pi pi-play"
+                className="w-full move-button__goal"
+                onClick={() => {
+                  requestMove("target");
+                }}
+              />
+              <Divider />
               <h5>Goal Move</h5>
               <div className="accordion-item">
                 Goal
@@ -563,35 +689,42 @@ export default function PropertyPanel() {
               <div className="accordion-item ">
                 Preset
                 <div>
-                  <InputNumber value={preset} readOnly></InputNumber>
+                  <InputNumber value={goalPreset} readOnly></InputNumber>
                   <Slider
-                    value={preset}
+                    value={goalPreset}
                     min={0}
                     max={5}
                     step={1}
-                    onChange={(e) => setPreset(e.value as number)}
+                    onChange={(e) => setGoalPreset(e.value as number)}
                   ></Slider>
                 </div>
               </div>
               <Button
                 label="GO"
+                icon="pi pi-play"
                 className="w-full move-button__goal"
-                onClick={moveGoal}
+                onClick={() => {
+                  requestMove("goal");
+                }}
               />
               <Divider />
               <h5>Command</h5>
               <Button
                 label="PAUSE"
+                icon="pi pi-pause"
                 className="w-full move-button__goal"
                 onClick={movePause}
               />
               <Button
                 label="RESUME"
+                icon="pi pi-reply"
                 className="w-full move-button__goal"
                 onClick={moveResume}
               />
               <Button
                 label="STOP"
+                icon="pi pi-stop"
+                severity="danger"
                 className="w-full move-button__goal"
                 onClick={moveStop}
               />
