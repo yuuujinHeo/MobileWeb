@@ -830,6 +830,8 @@ const LidarCanvas = ({
     const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
 
     const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
+    // [TEMP]
+    originPoint.scale.set(31.5, 31.5, 31.5);
     sceneRef.current.add(axesHelperOrin); // scene에 추가
     sceneRef.current.add(originPoint);
 
@@ -905,9 +907,10 @@ const LidarCanvas = ({
 
         socketRef.current.on("status", (data) => {
           const res = JSON.parse(data);
+          // [TEMP]
           robotPose = {
-            x: parseFloat(res.pose.x),
-            y: parseFloat(res.pose.y),
+            x: parseFloat(res.pose.x) * 31.5,
+            y: parseFloat(res.pose.y) * 31.5,
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
           driveRobot(robotPose);
@@ -1072,9 +1075,10 @@ const LidarCanvas = ({
       const poseArr = topo.pose.split(",");
 
       const nodePos: NodePos = {
-        x: Number(poseArr[0]),
-        y: Number(poseArr[1]),
-        z: Number(poseArr[2]),
+        // [TEMP]
+        x: Number(poseArr[0]) * 31.5,
+        y: Number(poseArr[1]) * 31.5,
+        z: Number(poseArr[2]) * 31.5,
         rz: Number(poseArr[5]),
         idx: i,
       };
@@ -1211,7 +1215,7 @@ const LidarCanvas = ({
   const setupNode = (node: THREE.Object3D, type: string, nodePos: NodePos) => {
     // Set node position
     node.position.set(nodePos.x, nodePos.y, 0);
-    node.rotation.z = nodePos.rz;
+    node.rotation.z = nodePos.rz * (Math.PI / 180);
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
@@ -1324,11 +1328,12 @@ const LidarCanvas = ({
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const position = node.position.toArray();
       const parsedPos = position
-        .map((pos) => pos.toString().slice(0, 6))
+        // [TEMP]
+        .map((pos) => (pos / 31.5).toString().slice(0, 6))
         .toString();
       const rotation = node.rotation.toArray().slice(0, 3);
-      const parsedRot = (rotation as string[])
-        .map((rot) => rot.toString().slice(0, 6))
+      const parsedRot = (rotation as number[])
+        .map((rot) => (rot * (180 / Math.PI)).toString().slice(0, 6))
         .toString();
       const pose = parsedPos + "," + parsedRot;
       const linkedNodes = getLinkedNodes(node);
