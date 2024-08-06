@@ -39,7 +39,7 @@ export default function PropertyPanel() {
   const dispatch = useDispatch();
 
   // root state
-  const { sceneInfo, createHelper, selectedObjectInfo } = useSelector(
+  const { sceneInfo, robotHelper, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -85,11 +85,11 @@ export default function PropertyPanel() {
 
   const sendLOCRequest = async (command: string) => {
     try {
-      const r2d = (Number(createHelper.rz) * (180 / Math.PI)).toString();
+      const r2d = (Number(robotHelper.rz) * (180 / Math.PI)).toString();
       // [TEMP]
-      const scaledX = Number(createHelper.x) / 31.5;
-      const scaledY = Number(createHelper.y) / 31.5;
-      const scaledZ = Number(createHelper.z) / 31.5;
+      const scaledX = Number(robotHelper.x) / 31.5;
+      const scaledY = Number(robotHelper.y) / 31.5;
+      const scaledZ = Number(robotHelper.z) / 31.5;
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
