@@ -7,7 +7,7 @@ interface CommandData {
   name?: string;
   value?: string;
 }
-interface Init {
+interface RobotHelper {
   x: string;
   y: string;
   z: string;
@@ -23,6 +23,11 @@ const initialState = {
     type: "",
     info: "",
   },
+  sceneInfo: {
+    goalNum: 0,
+    routeNum: 0,
+    linkNum: 0,
+  },
   action: {
     command: "",
     category: "",
@@ -31,7 +36,7 @@ const initialState = {
     value: "",
     timestamp: 0,
   },
-  createHelper: {
+  robotHelper: {
     x: "",
     y: "",
     z: "",
@@ -58,11 +63,11 @@ const canvasSlice = createSlice({
       if (action.payload.target) state.action.target = action.payload.target;
       state.action.timestamp = Date.now();
     },
-    updateCreateHelper(state, action: PayloadAction<Init>) {
-      state.createHelper.x = action.payload.x;
-      state.createHelper.y = action.payload.y;
-      state.createHelper.z = action.payload.z;
-      state.createHelper.rz = action.payload.rz;
+    updateRobotHelper(state, action: PayloadAction<RobotHelper>) {
+      state.robotHelper.x = action.payload.x;
+      state.robotHelper.y = action.payload.y;
+      state.robotHelper.z = action.payload.z;
+      state.robotHelper.rz = action.payload.rz;
     },
     toggleMarkingMode(state, action) {
       state.isMarkingMode = action.payload.isMarkingMode;
@@ -70,14 +75,22 @@ const canvasSlice = createSlice({
     changeSelectedObjectInfo(state, action) {
       state.selectedObjectInfo = action.payload;
     },
+    updateGoalNum(state, action) {
+      state.sceneInfo.goalNum = action.payload;
+    },
+    updateRouteNum(state, action) {
+      state.sceneInfo.routeNum = action.payload;
+    },
   },
 });
 
 export const {
   handleMapping,
-  updateCreateHelper,
+  updateRobotHelper,
   toggleMarkingMode,
   createAction,
   changeSelectedObjectInfo,
+  updateGoalNum,
+  updateRouteNum,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

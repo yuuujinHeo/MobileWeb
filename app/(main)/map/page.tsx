@@ -188,15 +188,14 @@ const Map: React.FC = () => {
 
   return (
     <div id="map">
+      <div style={{ position: "absolute" }}>
+        <Menubar model={menuItems} end={end} />
+      </div>
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
         cloudData={cloudData}
         topoData={topoData}
       />
-      <div style={{ position: "absolute" }}>
-        <Menubar model={menuItems} end={end} />
-      </div>
-
       <div id="property-container">
         <PropertyPanel />
       </div>
