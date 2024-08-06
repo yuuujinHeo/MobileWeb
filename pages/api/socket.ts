@@ -6,9 +6,9 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
     // First use, starting socket.io
 
-
     const ioServer = new Server((res.socket as any).server);
-    const url = "http://10.108.1.10:10334/";
+    const url =
+      process.env.NEXT_PUBLIC_WEB_SOCKET_URL ?? "http://10.108.1.40:10334";
     const socket = io(url);
     let connectedClients = [];
 
@@ -22,17 +22,17 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       socket.on("status", (data: JSON) => {
         ioServer.emit("status", data);
       });
-      socket.on("move",(data:JSON) =>{
+      socket.on("move", (data: JSON) => {
         ioServer.emit("move", data);
       });
-      socket.on("task_id",(data:number) =>{
+      socket.on("task_id", (data: number) => {
         console.log("taskid", data);
         ioServer.emit("task_id", data);
-      })
-      socket.on("task",(data:string) =>{
-        console.log("task",data);
-        ioServer.emit("task",data);
-      })
+      });
+      socket.on("task", (data: string) => {
+        console.log("task", data);
+        ioServer.emit("task", data);
+      });
     });
 
     ioServer.on("connection", (newsocket) => {
