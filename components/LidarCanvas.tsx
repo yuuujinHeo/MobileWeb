@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/store";
 import {
-  updateCreateHelper,
+  updateRobotHelper,
   changeSelectedObjectInfo,
   updateGoalNum,
   updateRouteNum,
@@ -41,7 +41,7 @@ interface UserData {
   type: string;
 }
 
-interface NodePos {
+interface NodePose {
   x: number;
   y: number;
   z: number;
@@ -65,7 +65,7 @@ const LidarCanvas = ({
 }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
-  const { action, isMarkingMode, createHelper } = useSelector(
+  const { action, isMarkingMode, robotHelper } = useSelector(
     (state: RootState) => state.canvas
   );
 
@@ -97,7 +97,7 @@ const LidarCanvas = ({
   const isMarkingModeRef = useRef<boolean>(false);
 
   // robot info
-  const [robotStatus, setRobotStatus] = useState<RobotState>({
+  const [robotState, setRobotState] = useState<RobotState>({
     x: "0.00",
     y: "0.00",
     rz: "0.00",
@@ -109,7 +109,7 @@ const LidarCanvas = ({
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
   let robotPose: { x: number; y: number; rz: number } = { x: 0, y: 0, rz: 0 };
-  let removedNodePos: NodePos | null = null;
+  let removedNodePose: NodePose | null = null;
 
   // mouse event variables
   let isMouseDown: boolean = false;
@@ -158,11 +158,11 @@ const LidarCanvas = ({
       switch (action.command) {
         case CANVAS_ACTION.ADD_NODE:
           if (className !== CANVAS_CLASSES.DEFAULT) break;
-          const nodePose: NodePos = {
-            x: Number(createHelper.x),
-            y: Number(createHelper.y),
-            z: Number(createHelper.z),
-            rz: Number(createHelper.rz),
+          const nodePose: NodePose = {
+            x: Number(robotHelper.x),
+            y: Number(robotHelper.y),
+            z: Number(robotHelper.z),
+            rz: Number(robotHelper.rz),
           };
           if (action.category === NODE_TYPE.ROUTE) {
             addRouteNode(nodePose);
@@ -269,9 +269,9 @@ const LidarCanvas = ({
           if (selectedObj) removeNode(selectedObj);
 
           if (value === NODE_TYPE.GOAL) {
-            addGoalNode(removedNodePos as NodePos);
+            addGoalNode(removedNodePose as NodePose);
           } else if (value === NODE_TYPE.ROUTE) {
-            addRouteNode(removedNodePos as NodePos);
+            addRouteNode(removedNodePose as NodePose);
           }
         }
         break;
@@ -381,7 +381,7 @@ const LidarCanvas = ({
       if (transformControl.object) {
         const obj: THREE.Object3D | undefined = transformControl.object;
         dispatch(
-          updateCreateHelper({
+          updateRobotHelper({
             x: obj.position.x.toString(),
             y: obj.position.y.toString(),
             z: obj.position.z.toString(),
@@ -595,7 +595,7 @@ const LidarCanvas = ({
     prevSelectionBox.visible = false;
   };
 
-  const createNodeHelper = (event: MouseEvent | TouchEvent) => {
+  const createRobotHelper = (event: MouseEvent | TouchEvent) => {
     const raycaster = getRaycaster(event);
     transformControlRef.current?.detach();
     if (!sceneRef.current || !raycaster) return;
@@ -606,7 +606,7 @@ const LidarCanvas = ({
 
     if (intersects.length > 0) {
       // remove prev craeteHelper
-      const prevHelper = sceneRef.current.getObjectByName("createHelper");
+      const prevHelper = sceneRef.current.getObjectByName("robotHelper");
       if (prevHelper) {
         sceneRef.current.remove(prevHelper);
       }
@@ -614,11 +614,10 @@ const LidarCanvas = ({
       const intersect = intersects[0];
 
       const loader = new ThreeMFLoader();
-
       loader.load("amr.3MF", function (group) {
         group.scale.set(0.0315, 0.0315, 0.0315);
         group.position.set(intersect.point.x, intersect.point.y, 0);
-        group.name = "createHelper";
+        group.name = "robotHelper";
 
         group.traverse((obj) => {
           if (obj instanceof THREE.Mesh) {
@@ -636,7 +635,7 @@ const LidarCanvas = ({
         // transformControlRef.current?.attach(group);
 
         dispatch(
-          updateCreateHelper({
+          updateRobotHelper({
             x: group.position.x.toString(),
             y: group.position.y.toString(),
             z: group.position.z.toString(),
@@ -656,7 +655,7 @@ const LidarCanvas = ({
       case 2:
         if (isMarkingModeRef.current) {
           selectObject(null);
-          createNodeHelper(event);
+          createRobotHelper(event);
         }
         break;
       default:
@@ -676,8 +675,8 @@ const LidarCanvas = ({
       if (selectedNodeRef.current) {
         targetObj = selectedNodeRef.current;
       } else {
-        const createHelper = sceneRef.current?.getObjectByName("createHelper");
-        if (createHelper) targetObj = createHelper;
+        const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+        if (robotHelper) targetObj = robotHelper;
       }
       if (
         targetObj &&
@@ -777,15 +776,15 @@ const LidarCanvas = ({
     }
 
     if (!transformControlRef.current || event.button !== 2) return;
-    const createHelepr: THREE.Object3D | undefined =
-      sceneRef.current?.getObjectByName("createHelper");
-    if (createHelepr) {
+    const robotHelper: THREE.Object3D | undefined =
+      sceneRef.current?.getObjectByName("robotHelper");
+    if (robotHelper) {
       dispatch(
-        updateCreateHelper({
-          x: createHelepr.position.x.toString(),
-          y: createHelepr.position.y.toString(),
-          z: createHelepr.position.z.toString(),
-          rz: createHelepr.rotation.z.toString(),
+        updateRobotHelper({
+          x: robotHelper.position.x.toString(),
+          y: robotHelper.position.y.toString(),
+          z: robotHelper.position.z.toString(),
+          rz: robotHelper.rotation.z.toString(),
         })
       );
     }
@@ -795,7 +794,7 @@ const LidarCanvas = ({
     const touchEndTime = new Date().getTime();
     const touchDuration = touchEndTime - touchStartTime;
     if (touchDuration >= LONG_TOUCH_DURATION && !isTouchDragging) {
-      if (isMarkingModeRef.current) createNodeHelper(event);
+      if (isMarkingModeRef.current) createRobotHelper(event);
     }
   };
 
@@ -949,7 +948,7 @@ const LidarCanvas = ({
       auto_state: data.condition.auto_state,
       obs_state: data.condition.obs_state,
     };
-    setRobotStatus(parsedData);
+    setRobotState(parsedData);
   };
 
   const reloadMappingData = async () => {
@@ -1107,7 +1106,7 @@ const LidarCanvas = ({
     const tasks = topoData.map((topo, i) => {
       const poseArr = topo.pose.split(",");
 
-      const nodePos: NodePos = {
+      const nodePose: NodePose = {
         // [TEMP]
         x: Number(poseArr[0]) * 31.5,
         y: Number(poseArr[1]) * 31.5,
@@ -1116,9 +1115,9 @@ const LidarCanvas = ({
         idx: i,
       };
       if (topo.type === NODE_TYPE.GOAL) {
-        return addGoalNode(nodePos);
+        return addGoalNode(nodePose);
       } else if (topo.type === NODE_TYPE.ROUTE) {
-        return addRouteNode(nodePos);
+        return addRouteNode(nodePose);
       }
     });
 
@@ -1180,12 +1179,12 @@ const LidarCanvas = ({
   };
 
   // Returns "Promise" because it includes a callback method.
-  const addGoalNode = (nodePos: NodePos): Promise<void> => {
+  const addGoalNode = (nodePose: NodePose): Promise<void> => {
     const loader = new ThreeMFLoader();
     return new Promise((resolve, reject) => {
       try {
         loader.load("amr.3MF", function (group) {
-          setupNode(group, NODE_TYPE.GOAL, nodePos);
+          setupNode(group, NODE_TYPE.GOAL, nodePose);
           group.scale.set(0.02835, 0.02835, 0.02835);
           // group.rotation.z = Number(createHelper.rz);
 
@@ -1224,7 +1223,7 @@ const LidarCanvas = ({
     });
   };
 
-  const addRouteNode = (nodePos: NodePos) => {
+  const addRouteNode = (nodePose: NodePose) => {
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
@@ -1240,7 +1239,7 @@ const LidarCanvas = ({
     plane.visible = false;
     route.add(plane);
 
-    setupNode(route, NODE_TYPE.ROUTE, nodePos);
+    setupNode(route, NODE_TYPE.ROUTE, nodePose);
 
     routeNum.current += 1;
     dispatch(updateRouteNum(routeNum.current));
@@ -1251,10 +1250,15 @@ const LidarCanvas = ({
     selectObject(route);
   };
 
-  const setupNode = (node: THREE.Object3D, type: string, nodePos: NodePos) => {
-    // Set node position
-    node.position.set(nodePos.x, nodePos.y, 0);
-    node.rotation.z = nodePos.rz * (Math.PI / 180);
+  const setupNode = (
+    node: THREE.Object3D,
+    type: string,
+    nodePose: NodePose
+  ) => {
+    // Set node pose
+    node.position.set(nodePose.x, nodePose.y, 0);
+
+    node.rotation.z = nodePose.rz;
     const nodeId = node.uuid;
     nodesRef.current.set(nodeId, node);
 
@@ -1278,11 +1282,12 @@ const LidarCanvas = ({
     node.userData.type = type;
     node.userData.info = "";
     // called from drawTopo
-    if (topoData && topoData.length && (nodePos.idx as number) >= 0) {
-      const topo = topoData[nodePos.idx as number];
+    if (topoData && topoData.length && (nodePose.idx as number) >= 0) {
+      const topo = topoData[nodePose.idx as number];
       // update userdata
       node.name = topo.name;
       node.userData.info = topo.info;
+      node.rotation.z = nodePose.rz * (Math.PI / 180);
     }
   };
 
@@ -1312,7 +1317,7 @@ const LidarCanvas = ({
     const nodes = nodesRef.current;
     if (!scene) return;
 
-    removedNodePos = {
+    removedNodePose = {
       x: target.position.x,
       y: target.position.y,
       z: target.position.z,
@@ -1652,12 +1657,12 @@ const LidarCanvas = ({
           <canvas className={className} ref={canvasRef} />
           <div className="lidar-canvas__robot-info">
             <p>ROBOT STATE</p>
-            <p>localization: {robotStatus.localization}</p>
+            <p>localization: {robotState.localization}</p>
             <p>
-              pose x: {robotStatus.x} y: {robotStatus.y} rz: {robotStatus.rz}
+              pose x: {robotState.x} y: {robotState.y} rz: {robotState.rz}
             </p>
-            <p>auto state: {robotStatus.auto_state}</p>
-            <p>obs state: {robotStatus.obs_state}</p>
+            <p>auto state: {robotState.auto_state}</p>
+            <p>obs state: {robotState.obs_state}</p>
           </div>
         </div>
       )}
