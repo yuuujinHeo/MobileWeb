@@ -8,7 +8,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
 
 
     const ioServer = new Server((res.socket as any).server);
-    const url = "http://10.108.1.131:10334/";
+    const url = "http://10.108.1.10:10334/";
     const socket = io(url);
     let connectedClients = [];
 
@@ -23,15 +23,15 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
         ioServer.emit("status", data);
       });
       socket.on("move",(data:JSON) =>{
-        io2.emit("move", data);
+        ioServer.emit("move", data);
       });
       socket.on("task_id",(data:number) =>{
         console.log("taskid", data);
-        io2.emit("task_id", data);
+        ioServer.emit("task_id", data);
       })
       socket.on("task",(data:string) =>{
         console.log("task",data);
-        io2.emit("task",data);
+        ioServer.emit("task",data);
       })
     });
 

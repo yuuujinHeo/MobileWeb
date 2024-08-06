@@ -35,13 +35,13 @@
 }
 
 .tool-main{
-  position: absolute;
+  // position: absolute;
   left: 20px;
   right: 20px;
   width: calc(100% - 40px)
 }
 .tool-run{
-  position: absolute;
+  // position: absolute;
   left: 20px;
   right: 20px;
   top: 750px;
@@ -68,7 +68,7 @@
   min-height: 600px;
 }
 .child-box2{
-  position: absolute;
+  // position: absolute;
   width: 100%;
   top: 100px;
 }
@@ -83,7 +83,7 @@
 
 .tool-box{
   position: relative;
-  width: 30%;
+  width: 40%;
   max-width: 400px;
   min-width: 200px;
 }
@@ -98,13 +98,12 @@
 .tool-tool{
   position: relative;
   width: 100%;
-  height: 150px;
+  // height: 150px;
 }
 
 .tool-detail{
   position: relative;
   width: 100%;
-  height: 450px;
 }
 .custom-data {
     color: #4caf50; /* Green color */
@@ -122,7 +121,7 @@
 .p-tree .p-tree-container .p-treenode .p-treenode-content .p-tree-toggler {
   margin-right: 0.5rem;
   width: 2rem;
-  height: 2rem;
+  height: 3rem;
   color: #4caf50;
   background: transparent;
   border-radius: 50%;

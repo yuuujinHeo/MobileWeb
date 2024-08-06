@@ -474,15 +474,8 @@ const Update: React.FC = () =>{
         try{
             console.log("startProgram",mobileURL);
             const response = await axios.get(mobileURL+'/start/'+filename);
-
-            if(response.data.message){
-                toast_main.current?.show({
-                    severity: 'warn',
-                    summary: filename,
-                    detail: 'Already started',
-                    life: 3000
-                })
-            }else{
+            console.log(response.data.message.result)
+            if(response.data.result == "success"){
                 toast_main.current?.show({
                     severity: 'success',
                     summary: filename,
@@ -496,6 +489,21 @@ const Update: React.FC = () =>{
                 }else if(filename == "SLAMNAV2"){
                     setRunningSLAMNAV2(response.data);
                 }
+                
+            }else if(response.data.result == "fail"){
+                toast_main.current?.show({
+                    severity: 'error',
+                    summary: filename,
+                    detail: 'Start Failed',
+                    life: 3000
+                })
+            }else{
+                toast_main.current?.show({
+                    severity: 'warn',
+                    summary: filename,
+                    detail: 'Already started',
+                    life: 3000
+                })
             }
         }catch(error){
             toast_main.current?.show({
@@ -529,7 +537,6 @@ const Update: React.FC = () =>{
                 detail: 'Restart Failed',
                 life: 3000
             })
-
         }
     }
     async function stopProgram(filename:string){
@@ -564,7 +571,7 @@ const Update: React.FC = () =>{
             <RollbackDialog/>
             <Toast ref={toast_main}></Toast>
             <Toolbar start={<Button label="새로고침" icon="pi pi-refresh" onClick={refresh} style={{ marginRight: '.5em' }} severity="secondary"/>} end={<Button label="업로드" onClick={() => setDisplayUpload(true)} icon="pi pi-upload" style={{ width: '10rem' }}></Button>}></Toolbar>
-            {type== "AMR" &&
+            {(type== "AMR" || type =="SRV")&&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
                     <h3>SLAMNAV2</h3>
@@ -600,7 +607,7 @@ const Update: React.FC = () =>{
                 </div>
             </Panel>
             }
-            {(type != "AMR" && type != '') &&
+            {(type == "SERVING") &&
             <Panel style={{marginTop:'2em'}} header = "프로그램 버전" id="TabRobotBasic" > 
                 <div className="card" >
                     <h3>MAIN_MOBILE</h3>

@@ -463,7 +463,7 @@ const Setting: React.FC = () => {
 
     const loadPresetList = async() =>{
         try{
-            const response = await axios.get(mobileURL+'/setting/preset/list');
+            const response = await axios.get(mobileURL+'/setting/preset');
             console.log(response.data);
             setPresets(response.data);
         }catch(error){
@@ -569,7 +569,7 @@ const Setting: React.FC = () => {
             const num = getNextNumber();
             try{
                 console.log(selectPreset);
-                const response = await axios.post(mobileURL+'/setting/preset/add/'+num,cur);
+                const response = await axios.post(mobileURL+'/setting/preset/'+num,cur);
                 setSelectPreset(num);
                 setCur(response.data);
                 formik_preset.handleReset(response.data);
@@ -581,7 +581,7 @@ const Setting: React.FC = () => {
         }
         async function savePreset(){
             try{
-                const response = await axios.post(mobileURL+'/setting/preset/'+selectPreset,formik_preset.values);
+                const response = await axios.put(mobileURL+'/setting/preset/'+selectPreset,formik_preset.values);
                 console.log(response);
                 setCur(response.data);
                 formik_preset.handleReset(response.data);
@@ -604,7 +604,7 @@ const Setting: React.FC = () => {
         async function addPreset(){
             const num = getNextNumber();
             try{
-                const response = await axios.get(mobileURL+'/setting/preset/add/'+num);
+                const response = await axios.post(mobileURL+'/setting/preset/'+num);
                 console.log(response);
                 setSelectPreset(num);
                 setCur(response.data);

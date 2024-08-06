@@ -27,6 +27,7 @@ import { Tree,TreeDragDropEvent, TreeExpandedKeysType, TreeSelectionEvent } from
 import { TreeTable } from 'primereact/treetable';
 import { DataView } from 'primereact/dataview';
 import { Slider, SliderChangeEvent } from "primereact/slider";
+import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
 import { Accordion , AccordionTab} from 'primereact/accordion';
 import { ToggleButton } from "primereact/togglebutton";
 import styles from './index.module.scss';
@@ -54,6 +55,7 @@ import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, s
 import {getMobileAPIURL} from '../api/url';
 import { transStatus } from '../api/to';
 import { TreeNode } from 'primereact/treenode';
+import { selectMapName } from '@/store/loadSlice';
 import { TreeSelectChangeEvent } from 'primereact/treeselect';
 import exp from 'constants';
 import './style.scss'
@@ -62,7 +64,8 @@ import { MenuItem } from 'primereact/menuitem';
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
-    const userState = useSelector((state:RootState) => selectUser(state));    
+    const userState = useSelector((state:RootState) => selectUser(state));       
+    const mapName = useSelector((state:RootState) => selectMapName(state));
     const [mobileURL, setMobileURL] = useState('');
     const toast_main = useRef('');
     const toast = useRef<Toast | null>(null);
@@ -73,6 +76,7 @@ const Move: React.FC = () =>{
     const [selectMove, setSelectMove] = useState<string>('target');
 
     const [listVisible, setListVisible] = useState(false);
+    const [saveVisible, setSaveVisible] = useState(false);
     const [expandedKeys, setExpandedKeys] = useState<TreeExpandedKeysType>({'0': true});
 
     const [tasks, setTasks] = useState<string[]>([]);
@@ -81,10 +85,13 @@ const Move: React.FC = () =>{
     const [moveRZ, setMoveRZ] = useState<any>(0);
     const [waitTime, setWaitTime] = useState<any>(0);
     const [repeatTime, setRepeatTime] = useState<any>(0);
+    const [goals, setGoals] = useState<string[]>([]);
+    const [goalVisible, setGoalVisible] = useState(false);
 
     const [copiedNode, setCopiedNode] = useState<TreeNode | null>(null);
 
     const [taskName, setTaskName] = useState('');
+    const [newTaskName, setNewTaskName] = useState('');
     const socketRef = useRef<any>();
 
     const [taskID,setTaskID] = useState<number>(0);
@@ -149,6 +156,44 @@ const Move: React.FC = () =>{
         const response = await axios.get(mobileURL + "/task");
         console.log("getTask",response.data);
         setTasks(response.data);
+    }
+
+    const getGoals = async() =>{
+        const response = await axios.get(mobileURL+"/map/goal/"+mapName);
+        console.log("getgoals:",response.data);
+        setGoals(response.data);
+    }
+
+    const openGoalList = () =>{
+        getGoals();
+        setGoalVisible(true);
+    }
+
+    const PopupGoal = () =>{
+        const renderListItem = (goal: string) => {
+            return (
+                <div className="col-12 column w-full gap-2">
+                    <Button className='w-full' onClick={()=>{setSelectNode({...selectNode, data:goal}); setGoalVisible(false);
+                        }} label={goal}></Button>
+                </div>
+            );
+          };
+        const itemTemplate = (task: any) => {
+            if (!task) {
+            return;
+            }
+
+            return renderListItem(task);
+        };
+        return(
+            <Dialog header = 'Goal 리스트'
+                style={{width: '300px'}}
+                visible={goalVisible} onHide={()=>setGoalVisible(false)}>
+                <DataView value={goals}
+                itemTemplate={itemTemplate}
+                />
+            </Dialog>
+        );
     }
 
     async function getNodes(name){
@@ -363,23 +408,25 @@ const Move: React.FC = () =>{
     };
 
     const saveChange = () =>{
-        const changed = findTreeNodeByKey(nodes,selectNodeKey);
-
-        if(selectNode?.label == "move"){
-            if(selectMove == "target"){
-                changed.data = moveX+","+moveY+","+moveRZ;
-            }else{
+        if(selectNode){
+            const changed = findTreeNodeByKey(nodes,selectNodeKey);
+    
+            if(selectNode?.label == "move"){
+                if(selectMove == "target"){
+                    changed.data = moveX+","+moveY+","+moveRZ;
+                }else{
+                    changed.data = selectNode.data;
+                }
+            }else if(selectNode?.label == "script" || selectNode?.label == "if" || selectNode?.label == "else if"){
                 changed.data = selectNode.data;
+            }else if(selectNode?.label == "wait"){
+                changed.data = waitTime + " sec";
+            }else if(selectNode?.label == "repeat"){
+                changed.data = repeatTime + " times";
             }
-        }else if(selectNode?.label == "script" || selectNode?.label == "if" || selectNode?.label == "else if"){
-            changed.data = selectNode.data;
-        }else if(selectNode?.label == "wait"){
-            changed.data = waitTime + " sec";
-        }else if(selectNode?.label == "repeat"){
-            changed.data = repeatTime + " times";
-        }
-        console.log(changed.data);
-        setSelectNode(cloneValue(changed));        
+            console.log(changed.data);
+            setSelectNode(cloneValue(changed));      
+        }  
     }
 
     const deleteSelect = () =>{
@@ -437,6 +484,10 @@ const Move: React.FC = () =>{
             }else{
                 insertNode(parent, selectNode!.key as string, copiedNode);
             }
+        
+            let _expandedKeys = expandedKeys;
+            expandNode(copiedNode, _expandedKeys);
+            setExpandedKeys(_expandedKeys);
             
             setSelectNodeInfo(copiedNode);
             setNodes(makeNodes(temp));
@@ -455,19 +506,57 @@ const Move: React.FC = () =>{
             };
         });
     }
-    const saveTask = async() =>{
+
+    const saveTask = async(name:string|undefined) =>{
+        console.log(saveTask);
+        if(name == undefined || name == ""){
+            name = taskName;
+        }
         saveChange();
         //copy and make nodes
         const new_nodes = unmakeNodes(nodes);
         console.log(new_nodes);
 
         //post
-        const response = await axios.post(mobileURL + "/task/"+taskName,new_nodes);
+        const response = await axios.post(mobileURL + "/task/"+name,new_nodes);
         console.log("saveTask : ",response);
     }
 
+
+
+
+    const makeNewTask = () =>{
+        setTaskName('temp_12546a');
+        
+        const newNode:TreeNode[] = [{ key: '0', label: 'root', children: [
+            { key: uuidv4(),
+                label: 'begin',
+                children: []
+            },
+            { key: uuidv4(),
+                label: 'end',
+                children: []
+            },
+        ] }];
+
+        setNodes(makeNodes(newNode));
+    }
+
     const newTask = () =>{
-        console.log("???");
+        if(taskName == ''){
+            makeNewTask();
+        }else{
+            confirmDialog({
+                message: '정말 현재 작업을 취소하고 새로 만드시겠습니까?',
+                header: 'New Task',
+                icon: 'pi pi-exclamation-triangle',
+                accept: makeNewTask
+            })
+        }
+    }
+    const openSave = () =>{
+        console.log("openSave");
+        setSaveVisible(true);
     }
     const openPopup = () =>{
         console.log("?")
@@ -479,7 +568,8 @@ const Move: React.FC = () =>{
         <Toolbar className='tool-main' start={
             <React.Fragment>
                 <Button icon="pi pi-plus" className='mr-2' onClick={newTask}></Button>
-                <Button icon="pi pi-folder-open" onClick={openPopup}></Button>
+                <Button icon="pi pi-folder-open" className='mr-2' onClick={openPopup}></Button>
+                <Chip label={taskName=='temp_12546a'?"새로 만드는 중":taskName}></Chip> 
             </React.Fragment>
         } center={
             <React.Fragment>
@@ -488,13 +578,20 @@ const Move: React.FC = () =>{
             </React.Fragment>
         } end={
             <React.Fragment>
-                <SplitButton icon="pi pi-save" className='mr-2' label="저장" onClick={saveTask} model={
+                <SplitButton icon="pi pi-save" className='mr-2' label="저장" disabled={taskName==""} onClick={()=>taskName=="temp_12546a"?openSave():saveTask(undefined)} 
+                model={
                     [
                         {
                             label: '업로드',
                             icon: 'pi pi-upload',
                             command: () =>{
 
+                            }
+                        },
+                        {
+                            label: '다른 이름으로 저장',
+                            command: () =>{
+                                openSave();
                             }
                         }
                     ]
@@ -547,14 +644,36 @@ const Move: React.FC = () =>{
         )
     }
 
+    const PopupSave = () =>{
+        const [newName, setNewName] = useState('');
+        const save = async() =>{
+            if(newName.split('.').length > 1){
+                setTaskName(newName);
+                saveTask(newName);
+            }else{
+                setTaskName(newName+".task");
+                saveTask(newName+".task");
+            }
+            setSaveVisible(false);
+        }
+        return(
+            <Dialog header='저장'
+                visible={saveVisible} onHide={()=>setSaveVisible(false)}>
+                    <InputText value={newName} onChange={(e) =>setNewName(e.target.value)}></InputText>
+                    <Button label='저장' disabled={newName==''} onClick={save}></Button>
+                    <Button label='취소' onClick={()=>setSaveVisible(false)}></Button>
+                </Dialog>        
+        );
+    }
+
     const ToolPanel = () =>{
         return(<Toolbar className='tool-tool' center={
             <div className='grid gap-5 align-item-center justify-content-center'>
                 {/* <Button icon="pi pi-save" className='w-4' label="save" onClick={saveTask}></Button> */}
-                <Button icon="pi pi-save"  label="save" className='btn-tool' onClick={saveChange}></Button>
-                <Button icon="pi pi-eraser" label="delete"  className='btn-tool' onClick={deleteSelect}></Button>
-                <Button icon="pi pi-clone" label="copy"  className='btn-tool' onClick={copyNode}></Button>
-                <Button disabled={copiedNode==null} icon="pi pi-clone"   className='btn-tool' label="paste" onClick={pasteNode}></Button>
+                <Button icon="pi pi-check" disabled={!selectNode} label="적용" className='btn-tool' onClick={saveChange}></Button>
+                <Button icon="pi pi-eraser" disabled={!selectNode}  label="삭제"  className='btn-tool' onClick={deleteSelect}></Button>
+                <Button icon="pi pi-clone" disabled={!selectNode} label="복사"  className='btn-tool' onClick={copyNode}></Button>
+                <Button disabled={copiedNode==null} icon="pi pi-clone"   className='btn-tool' label="붙여넣기" onClick={pasteNode}></Button>
             </div>
         }></Toolbar>);
     }
@@ -730,6 +849,11 @@ const Move: React.FC = () =>{
             insertNode(parent, selectNode!.key as string, newNode);
         }
         
+
+        let _expandedKeys = expandedKeys;
+        _expandedKeys[newNode.key] = true;
+        setExpandedKeys(_expandedKeys);
+
         setSelectNodeInfo(newNode);
 
         setNodes(makeNodes(temp));
@@ -745,7 +869,10 @@ const Move: React.FC = () =>{
 
     return(
         <main>
+        <ConfirmDialog></ConfirmDialog>
         <PopupLoad></PopupLoad>
+        <PopupSave></PopupSave>
+        <PopupGoal></PopupGoal>
         <Toast ref={toast}></Toast>
         <div className="main-box card flex flex-column align-items-center">
             <MainToolPanel ></MainToolPanel>
@@ -835,6 +962,7 @@ const Move: React.FC = () =>{
                             {selectMove == 'goal' &&
                                 <div className='card'>
                                     <InputText value={selectNode.data} onChange={(e) => setSelectNode({...selectNode, data:e.target.value})}></InputText>
+                                    <Button  label='list' onClick={openGoalList}></Button>
                                 </div>
                             }
                         </div>

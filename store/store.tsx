@@ -4,6 +4,7 @@ import { createWrapper } from "next-redux-wrapper";
 import networkReducer from "./networkSlice";
 import userReducer from "./userSlice";
 import settingReducer from "./settingSlice";
+import loadSlice from "./loadSlice";
 import statusSlice from "./statusSlice";
 import stateSlice from "./stateSlice";
 import canvasReducer from "./canvasSlice";
@@ -18,6 +19,7 @@ export const store = configureStore({
     canvas: canvasReducer,
     propertyPanel: propertyPanelReducer,
     user: userReducer,
+    load: loadSlice
   },
 });
 
@@ -25,5 +27,6 @@ export const useStore = (initialState) => {
   const store = useMemo(() => store(initialState), [initialState]);
   return store;
 };
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

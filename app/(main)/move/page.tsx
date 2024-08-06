@@ -16,6 +16,7 @@ import { MultiSelect } from "primereact/multiselect";
 import { RadioButton } from "primereact/radiobutton";
 import { Rating } from "primereact/rating";
 import { Panel } from 'primereact/panel';
+import { DataView } from 'primereact/dataview';
 import { Toolbar } from 'primereact/toolbar';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
@@ -43,6 +44,7 @@ import { start } from 'repl';
 import { useDispatch, useSelector } from 'react-redux';
 import {store,AppDispatch, RootState} from '../../../store/store';
 // import ChartTemp from '@/components/Chart'
+import { OverlayPanel } from 'primereact/overlaypanel';
 import { selectUser, setUser } from '@/store/userSlice';
 import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
 import { io } from "socket.io-client";
@@ -50,11 +52,13 @@ import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, s
 import {getMobileAPIURL} from '../api/url';
 import './style.scss'
 import { transStatus } from '../api/to';
+import { selectMapName } from '@/store/loadSlice';
 
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
     const userState = useSelector((state:RootState) => selectUser(state));    
+    const mapName = useSelector((state:RootState) => selectMapName(state));
     const [mobileURL, setMobileURL] = useState('');
     const toast_main = useRef('');
     let socketRef;
@@ -67,6 +71,9 @@ const Move: React.FC = () =>{
     const [targetRZ, setTargetRZ] = useState(0);
     const [goalID, setGoalID] = useState('');
     const [preset, setPreset] = useState<number>(3);
+
+    const [goals, setGoals] = useState<string[]>([]);
+    const [goalVisible, setGoalVisible] = useState(false);
 
     useEffect(()=>{
         setURL();
@@ -97,6 +104,7 @@ const Move: React.FC = () =>{
             if(socketRef)
                 socketRef.disconnect();
           };
+
         });
       }
     }, []);
@@ -176,6 +184,44 @@ const Move: React.FC = () =>{
 
     const handleNodeSelect = (event) =>{
 
+    }
+
+    const getGoals = async() =>{
+        const response = await axios.get(mobileURL+"/map/goal/"+mapName);
+        console.log("getgoals:",response.data);
+        setGoals(response.data);
+    }
+
+    const openGoalList = () =>{
+        getGoals();
+        setGoalVisible(true);
+    }
+
+    const PopupGoal = () =>{
+        const renderListItem = (goal: string) => {
+            return (
+                <div className="col-12 column w-full gap-2">
+                    <Button className='w-full' onClick={()=>{setGoalID(goal); setGoalVisible(false);
+                        }} label={goal}></Button>
+                </div>
+            );
+          };
+        const itemTemplate = (task: any) => {
+            if (!task) {
+            return;
+            }
+
+            return renderListItem(task);
+        };
+        return(
+            <Dialog header = 'Goal 리스트'
+                style={{width: '300px'}}
+                visible={goalVisible} onHide={()=>setGoalVisible(false)}>
+                <DataView value={goals}
+                itemTemplate={itemTemplate}
+                />
+            </Dialog>
+        );
     }
 
     async function moveGoal(){
@@ -338,179 +384,7 @@ const Move: React.FC = () =>{
     return(
         <main>
         <Toast ref={toast}></Toast>
-            <div className='card'>
-                <div className='grid'>
-
-                <div className='col-12 md:col-6'>
-                        <div className='card p-fluid' >
-                            <h5 className='font-bold'>Motor 0</h5>
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Connection
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                    <SelectButton value={Status.motor0.connection} className={Status.motor0.connection==='true'?'con':'discon'} readOnly options={[{label:'Disconnect', value:'false'}, {label:'Connect', value:'true'}]}> </SelectButton>
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Status
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                {Status.motor0.connection && 
-                                    <div className="flex gap-2 ">
-                                        {!Status.motor0.status.running && <Tag value="Motor Off"/>}
-                                        {Status.motor0.status.running && <Tag severity="success" value="Motor On" />}
-                                        {Status.motor0.status.mode && <Tag severity="danger" value="Mod" />}
-                                        {Status.motor0.status.jam && <Tag severity="danger" value="Jam" />}
-                                        {Status.motor0.status.current && <Tag severity="danger" value="Cur" />}
-                                        {Status.motor0.status.big && <Tag severity="danger" value="Big" />}
-                                        {Status.motor0.status.input && <Tag severity="danger" value="Inp" />}
-                                        {Status.motor0.status.position && <Tag severity="danger" value="Pos" />}
-                                        {Status.motor0.status.collision && <Tag severity="danger" value="Col" />}
-                                    </div>}
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Temperature
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                <InputNumber value={Status.motor0.temperature} readOnly suffix="℃"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className='col-12 md:col-6'>
-                        <div className='card p-fluid' >
-                            <h5 className='font-bold'>Motor 1</h5>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Connection
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                    <SelectButton value={Status.motor1.connection} className={Status.motor1.connection==='true'?'con':'discon'} readOnly options={[{label:'Disconnect', value:'false'}, {label:'Connect', value:'true'}]}> </SelectButton>
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Status
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                {Status.motor1.connection && 
-                                    <div className="flex gap-2 ">
-                                        {!Status.motor1.status.running && <Tag value="Motor Off"/>}
-                                        {Status.motor1.status.running && <Tag severity="success" value="Motor On" />}
-                                        {Status.motor1.status.mode && <Tag severity="danger" value="Mod" />}
-                                        {Status.motor1.status.jam && <Tag severity="danger" value="Jam" />}
-                                        {Status.motor1.status.current && <Tag severity="danger" value="Cur" />}
-                                        {Status.motor1.status.big && <Tag severity="danger" value="Big" />}
-                                        {Status.motor1.status.input && <Tag severity="danger" value="Inp" />}
-                                        {Status.motor1.status.position && <Tag severity="danger" value="Pos" />}
-                                        {Status.motor1.status.collision && <Tag severity="danger" value="Col" />}
-                                    </div>}
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Temperature
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                <InputNumber value={Status.motor1.temperature} readOnly suffix="℃"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className='col-12 md:col-6'>
-                        <div className='card p-fluid' >
-                            <h5 className='font-bold'>Power</h5>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                Battery In
-                                </label>
-                                <div className="col-12  w-8 md:col-10">
-                                <InputNumber value={Status.power.bat_in} readOnly suffix="V"/>
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold  w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Battery Out
-                                </label>
-                                <div className="col-12  w-8 md:col-10">
-                                <InputNumber value={Status.power.bat_out} readOnly suffix="V"/>
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                Battery Current
-                                </label>
-                                <div className="col-12 w-8  md:col-10">
-                                <InputNumber value={Status.power.bat_current} readOnly suffix="A"/>
-                                </div>
-                            </div>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                Power
-                                </label>
-                                <div className="col-12 w-8  md:col-10">
-                                <InputNumber value={Status.power.power} readOnly suffix="W"/>
-                                </div>
-                            </div>
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold  w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                Power(Total)
-                                </label>
-                                {/* <ChartTemp cur={Status.power.power}></ChartTemp> */}
-                                <div className="col-12  w-8 md:col-10">
-                                <InputNumber value={Status.power.total_power} readOnly suffix="Wh"/>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className='col-12 md:col-6'>
-                        <div className='card p-fluid' >
-                            <h5 className='font-bold'>State</h5>
-
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                하부 전원
-                                </label>
-                                <div className="col-12 w-8 md:col-10">
-                                    <SelectButton value={Status.state.power} className={Status.state.power==='true'?'con':'discon'} readOnly options={[{label:'Off', value:'false'}, {label:'On', value:'true'}]}> </SelectButton>
-                                </div>
-                            </div>
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                비상스위치(EMO)
-                                </label>
-                                <div className="col-12 w-8  md:col-10">
-                                    <SelectButton value={Status.state.emo} className={Status.state.emo==='true'?'con':'discon'} readOnly options={[{label:'push', value:'false'}, {label:'release', value:'true'}]}> </SelectButton>
-                                </div>
-                            </div>
-                            <div className="field grid gap-5">
-                                <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
-                                충전 선 연결
-                                </label>
-                                <div className="col-12  w-8 md:col-10">
-                                    <SelectButton value={Status.state.emo} className={Status.state.emo==='true'?'con':'discon'} readOnly options={[{label:'Disconnect', value:'false'}, {label:'Connect', value:'true'}]}> </SelectButton>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <PopupGoal></PopupGoal>
             <div className='card'>
                 <h5 className='font-bold'>Move State</h5>
                 <div className='card p-fluid' >
@@ -592,20 +466,23 @@ const Move: React.FC = () =>{
                             </div>
                     </div>
                     <div className='col-12 md:col-6'>
-                        <div className='card p-fluid'>
+                        <div className='card '>
                         <h5 className='font-bold'>Goal Move</h5>
                             <div className="field grid gap-5">
                                 <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
                                 GOAL
                                 </label>
                                 <div className="col-12 w-8 md:col-10">
-                                    <InputText
-                                        value={goalID}
-                                        onChange={(e)=>setGoalID(e.target.value)}
-                                    ></InputText>
+                                    <div className="grid gap-3">
+                                        <InputText
+                                            value={goalID}
+                                            onChange={(e)=>setGoalID(e.target.value)}
+                                        ></InputText>
+                                        <Button  label='list' onClick={openGoalList}></Button>
+                                    </div>
                                 </div>
                             </div>
-                            <div className="field grid gap-5">
+                            <div className="field grid p-fluid gap-5">
                                 <label htmlFor="name3" className="font-bold w-3  col-12 mb-2 md:col-2 md:mb-0">
                                 PRESET
                                 </label>
@@ -619,7 +496,7 @@ const Move: React.FC = () =>{
                                     ></Slider>
                                 </div>
                             </div>
-                            <Button onClick={moveGoal}>GO</Button>
+                            <Button className='w-full' onClick={moveGoal}>GO</Button>
                         </div>
                     </div>
                     <div className='col-12 md:col-6'>
