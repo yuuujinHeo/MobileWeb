@@ -32,6 +32,9 @@
       padding-bottom: 0.15rem;
     }
   }
+  .move-button__goal {
+    margin-top: 0.5rem;
+  }
 }
 
 #switch-container {
@@ -49,9 +52,6 @@
   }
 }
 
-#selected-info {
-  word-wrap: break-word;
-}
 .p-card-content {
   display: flex;
   flex-direction: column;
