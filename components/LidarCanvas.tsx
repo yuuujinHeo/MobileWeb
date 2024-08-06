@@ -49,6 +49,15 @@ interface NodePos {
   idx?: number;
 }
 
+interface RobotState {
+  x: string;
+  y: string;
+  rz: string;
+  localization: string;
+  auto_state: string;
+  obs_state: string;
+}
+
 const LidarCanvas = ({
   className,
   cloudData = null,
@@ -88,6 +97,14 @@ const LidarCanvas = ({
   const isMarkingModeRef = useRef<boolean>(false);
 
   // robot info
+  const [robotStatus, setRobotStatus] = useState<RobotState>({
+    x: "0.00",
+    y: "0.00",
+    rz: "0.00",
+    localization: "none",
+    auto_state: "stop",
+    obs_state: "none",
+  });
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -917,14 +934,22 @@ const LidarCanvas = ({
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
           driveRobot(robotPose);
-          // setRobotStatus(res);
+          updateRobotState(res);
         });
       });
     }
   };
 
-  const setRobotStatus = (data) => {
-    // setRobotX(data.pose.x);
+  const updateRobotState = (data) => {
+    const parsedData: RobotState = {
+      x: data.pose.x,
+      y: data.pose.y,
+      rz: data.pose.rz,
+      localization: data.state.localization,
+      auto_state: data.condition.auto_state,
+      obs_state: data.condition.obs_state,
+    };
+    setRobotStatus(parsedData);
   };
 
   const reloadMappingData = async () => {
@@ -1620,7 +1645,26 @@ const LidarCanvas = ({
     return num < 10 ? `0${num}` : `${num}`;
   };
 
-  return <canvas className={className} ref={canvasRef} />;
+  return className === CANVAS_CLASSES.DEFAULT ? (
+    <div id="lidar-canvas__container">
+      {className === CANVAS_CLASSES.DEFAULT && (
+        <div id="lidar-canvas__container">
+          <canvas className={className} ref={canvasRef} />
+          <div className="lidar-canvas__robot-info">
+            <p>ROBOT STATE</p>
+            <p>localization: {robotStatus.localization}</p>
+            <p>
+              pose x: {robotStatus.x} y: {robotStatus.y} rz: {robotStatus.rz}
+            </p>
+            <p>auto state: {robotStatus.auto_state}</p>
+            <p>obs state: {robotStatus.obs_state}</p>
+          </div>
+        </div>
+      )}
+    </div>
+  ) : (
+    <canvas className={className} ref={canvasRef} />
+  );
 };
 
 export default LidarCanvas;

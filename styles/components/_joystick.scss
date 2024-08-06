@@ -1,6 +1,5 @@
-// TEMP
-
 #joystick-container {
+  position: absolute;
   z-index: 999;
   opacity: 0.8;
   width: 100%;
@@ -8,11 +7,11 @@
   display: flex;
   justify-content: space-between;
   background: #e0e0e0;
-  border-radius: 12px;
   box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.2), 0px 0px 2px rgba(0, 0, 0, 0.3),
     0px 1px 4px rgba(0, 0, 0, 0.4);
   padding: 20px;
   border: 2px solid #333;
+  bottom: 0%;
 
   #left-joystick,
   #right-joystick {
@@ -20,7 +19,6 @@
     height: 100%;
     background: #ffffff;
     opacity: 0.5;
-    // position: relative;
     align-items: center;
     justify-content: center;
     display: flex;
@@ -41,9 +39,3 @@
     align-items: center;
   }
 }
-
-// @media (min-width: 1025px) {
-//   #joystick-container {
-//     height: 40vh;
-//   }
-// }
