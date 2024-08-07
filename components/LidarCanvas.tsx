@@ -940,9 +940,12 @@ const LidarCanvas = ({
   };
 
   const updateRobotState = (data) => {
+    // [TEMP]
+    const parsedX = (Number(data.pose.x) * 31.5).toString().slice(0, 6);
+    const parsedY = (Number(data.pose.y) * 31.5).toString().slice(0, 6);
     const parsedData: RobotState = {
-      x: data.pose.x,
-      y: data.pose.y,
+      x: parsedX,
+      y: parsedY,
       rz: data.pose.rz,
       localization: data.state.localization,
       auto_state: data.condition.auto_state,

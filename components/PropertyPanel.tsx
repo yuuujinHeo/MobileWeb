@@ -205,57 +205,6 @@ export default function PropertyPanel() {
     return !isNaN(Number(input));
   };
 
-  async function moveTarget() {
-    const currentTime = getCurrentTime();
-    const json = JSON.stringify({
-      command: "target",
-      x: targetX,
-      y: targetY,
-      z: 0,
-      rz: targetRZ,
-      preset: targetPreset,
-      method: "pp",
-      time: currentTime,
-    });
-
-    const response = await axios.post(url + "/control/move", json, {
-      headers: {
-        "Content-Type": "application/json",
-      },
-    });
-
-    if (response.data.result == "accept") {
-      toast.current?.show({
-        severity: "success",
-        summary: "Move Start",
-        life: 3000,
-      });
-
-      const response = await axios.get(url + "/control/move");
-      if (response.data.result == "success") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Move Done",
-          life: 3000,
-        });
-      } else {
-        toast.current?.show({
-          severity: "error",
-          summary: "Move Failed",
-          detail: response.data.message,
-          life: 3000,
-        });
-      }
-    } else {
-      toast.current?.show({
-        severity: "error",
-        summary: "Move Failed",
-        detail: response.data.message,
-        life: 3000,
-      });
-    }
-  }
-
   async function requestMove(command: string) {
     try {
       const currentTime = getCurrentTime();
@@ -268,8 +217,9 @@ export default function PropertyPanel() {
         requestBody["preset"] = goalPreset;
         requestBody["method"] = "pp";
       } else if (command === "target") {
-        requestBody["x"] = targetX;
-        requestBody["y"] = targetY;
+        // [TEMP]
+        requestBody["x"] = targetX / 31.5;
+        requestBody["y"] = targetY / 31.5;
         requestBody["z"] = 0;
         requestBody["rz"] = targetRZ;
         requestBody["preset"] = targetPreset;
@@ -318,6 +268,12 @@ export default function PropertyPanel() {
       console.error(e);
     }
   }
+
+  const getTargetFromRobotHelper = () => {
+    setTargetX(Number(robotHelper.x));
+    setTargetY(Number(robotHelper.y));
+    setTargetRZ(Number(robotHelper.rz) * (180 / Math.PI));
+  };
 
   async function movePause() {
     try {
@@ -672,6 +628,11 @@ export default function PropertyPanel() {
                   ></Slider>
                 </div>
               </div>
+              <Button
+                label="Get target from marker"
+                className="w-full move-button__goal"
+                onClick={getTargetFromRobotHelper}
+              />
               <Button
                 label="GO"
                 icon="pi pi-play"
