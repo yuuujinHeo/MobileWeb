@@ -10,6 +10,9 @@ import {
   updateRouteNum,
 } from "@/store/canvasSlice";
 
+// prime
+import { Toast } from "primereact/toast";
+
 // three
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
@@ -79,8 +82,8 @@ const LidarCanvas = ({
   const controlRef = useRef<MapControls | null>(null);
   const transformControlRef = useRef<TransformControls>();
   const robotModel = useRef<THREE.Object3D>();
+  // [TODO] remove lidarPoints ref
   const lidarPoints = useRef<number>();
-  const mappingPointsArr = useRef<number[]>([]);
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
 
@@ -89,10 +92,13 @@ const LidarCanvas = ({
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
+  const cloudRef = useRef<string[][] | null>(null);
   const goals = useRef<number[]>([0]);
   const goalNum = useRef<number>(0);
   const routes = useRef<number[]>([0]);
   const routeNum = useRef<number>(0);
+
+  const toast = useRef<Toast>(null);
 
   const isMarkingModeRef = useRef<boolean>(false);
 
@@ -174,9 +180,6 @@ const LidarCanvas = ({
           const selectedObject = selectedNodeRef.current;
           if (selectedObject) removeNode(selectedObject);
           break;
-        case CANVAS_ACTION.SAVE_ANNOTATION:
-          saveAnnotation(action.name);
-          break;
         case CANVAS_ACTION.UPDATE_PROPERTY:
           updateProperty(action.category, action.value);
           break;
@@ -190,6 +193,9 @@ const LidarCanvas = ({
         case CANVAS_ACTION.DRAW_CLOUD_TOPO:
           drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
           drawTopo();
+          break;
+        case CANVAS_ACTION.SAVE_MAP:
+          saveMap(action.value);
           break;
         default:
           break;
@@ -220,6 +226,10 @@ const LidarCanvas = ({
       // handleLocalizationOff();
     };
   }, [isMarkingMode]);
+
+  useEffect(() => {
+    cloudRef.current = cloudData;
+  }, [cloudData]);
 
   const updateProperty = (category: string, value: string) => {
     const scene = sceneRef.current;
@@ -737,6 +747,11 @@ const LidarCanvas = ({
         new THREE.Float32BufferAttribute(newPositions, 3)
       );
       points.geometry.attributes.position.needsUpdate = true;
+
+      // cloud data for http request
+      if (cloudRef.current !== null) {
+        cloudRef.current.splice(index, 1);
+      }
     }
   };
 
@@ -1072,8 +1087,6 @@ const LidarCanvas = ({
       points.name = "PointCloud";
       points.scale.set(31.5, 31.5, 31.5);
 
-      mappingPointsArr.current.push(points.id);
-
       sceneRef.current?.add(points);
     }
   };
@@ -1144,12 +1157,9 @@ const LidarCanvas = ({
       socketRef.current.off("mapping");
     }
     // reset mapping points
-    if (!mappingPointsArr.current || !sceneRef.current) return;
-    for (const i of mappingPointsArr.current) {
-      const points = sceneRef.current.getObjectById(i);
-      if (points) sceneRef.current.remove(points);
-    }
-    mappingPointsArr.current = [];
+    if (!sceneRef.current) return;
+    const points = sceneRef.current.getObjectByName("PointCloud");
+    if (points) sceneRef.current.remove(points);
   };
 
   const clearAllNodes = () => {
@@ -1379,7 +1389,7 @@ const LidarCanvas = ({
     );
   };
 
-  const saveAnnotation = async (filename: string) => {
+  const saveAnnotation = async (filename: string): Promise<any> => {
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const position = node.position.toArray();
       const parsedPos = position
@@ -1404,9 +1414,61 @@ const LidarCanvas = ({
     });
 
     try {
-      await axios.post(url + `/map/topo/${filename}`, nodeArr);
+      const response = await axios.post(url + `/map/topo/${filename}`, nodeArr);
+      return response;
     } catch (e) {
       console.error(e);
+      return false;
+    }
+  };
+
+  const saveCloud = async (filename: string): Promise<any> => {
+    try {
+      const response = await axios.post(
+        url + `/map/cloud/${filename}`,
+        cloudRef.current
+      );
+      return response;
+    } catch (e) {
+      console.error(e);
+      return false;
+    }
+  };
+
+  const saveMap = async (filename: string) => {
+    const annoRes = await saveAnnotation(filename);
+    const cloudRes = await saveCloud(filename);
+
+    if (annoRes && cloudRes) {
+      toast.current?.show({
+        severity: "success",
+        summary: "Success",
+        detail: "Save Succeed",
+        life: 2500,
+      });
+    } else if (!annoRes && cloudRes) {
+      toast.current?.show({
+        severity: "warn",
+        summary: "Warn",
+        detail:
+          "The cloud data was saved successfully. However, The annotation data storage failed...",
+        life: 2500,
+      });
+    } else if (annoRes && !cloudRes) {
+      toast.current?.show({
+        severity: "warn",
+        summary: "Warn",
+        detail:
+          "The annotation data was saved successfully. However, The cloud data storage failed...",
+        life: 2500,
+      });
+    } else if (!annoRes && !cloudRes) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Save Failed...",
+        life: 2500,
+      });
     }
   };
 
@@ -1655,20 +1717,17 @@ const LidarCanvas = ({
 
   return className === CANVAS_CLASSES.DEFAULT ? (
     <div id="lidar-canvas__container">
-      {className === CANVAS_CLASSES.DEFAULT && (
-        <div id="lidar-canvas__container">
-          <canvas className={className} ref={canvasRef} />
-          <div className="lidar-canvas__robot-info">
-            <p>ROBOT STATE</p>
-            <p>localization: {robotState.localization}</p>
-            <p>
-              pose x: {robotState.x} y: {robotState.y} rz: {robotState.rz}
-            </p>
-            <p>auto state: {robotState.auto_state}</p>
-            <p>obs state: {robotState.obs_state}</p>
-          </div>
-        </div>
-      )}
+      <Toast ref={toast} />
+      <canvas className={className} ref={canvasRef} />
+      <div className="lidar-canvas__robot-info">
+        <p>ROBOT STATE</p>
+        <p>localization: {robotState.localization}</p>
+        <p>
+          pose x: {robotState.x} y: {robotState.y} rz: {robotState.rz}
+        </p>
+        <p>auto state: {robotState.auto_state}</p>
+        <p>obs state: {robotState.obs_state}</p>
+      </div>
     </div>
   ) : (
     <canvas className={className} ref={canvasRef} />

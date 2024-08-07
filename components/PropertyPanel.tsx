@@ -114,53 +114,6 @@ export default function PropertyPanel() {
     return currentTime;
   };
 
-  const showToast = (severity: Severity, summary: string, detail: string) => {
-    toast.current?.show({
-      severity: severity,
-      summary: summary,
-      detail: detail,
-      life: 3000,
-    });
-  };
-  const saveAnnotation = () => {
-    // dialog for save button
-    const accept = async () => {
-      try {
-        dispatch(
-          createAction({
-            command: CANVAS_ACTION.SAVE_ANNOTATION,
-            name: filenameRef.current,
-          })
-        );
-        showToast("info", "Save", "Save succeed");
-      } catch (e) {
-        showToast("error", "Error", `Save failed: ${e.message}`);
-      }
-    };
-
-    const reject = () => {
-      showToast("warn", "Rejected", "You have rejected");
-    };
-
-    confirmDialog({
-      message: (
-        <div>
-          <InputText
-            id="filename"
-            placeholder="File name"
-            onChange={(e) => {
-              filenameRef.current = e.target.value;
-            }}
-          />
-        </div>
-      ),
-      header: "Save",
-      icon: "pi pi-save",
-      accept,
-      reject,
-    });
-  };
-
   const deleteNode = () => {
     dispatch(
       createAction({
@@ -731,16 +684,6 @@ export default function PropertyPanel() {
                         category: NODE_TYPE.GOAL,
                       })
                     );
-                  }}
-                />
-                <Button
-                  label="Save"
-                  size="small"
-                  severity="secondary"
-                  text
-                  raised
-                  onClick={() => {
-                    saveAnnotation();
                   }}
                 />
                 <Button
