@@ -14,6 +14,7 @@ import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Menubar } from "primereact/menubar";
 import { InputSwitch } from "primereact/inputswitch";
+import { Toast } from "primereact/toast";
 
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
@@ -57,9 +58,11 @@ const Map: React.FC = () => {
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
   const [cloudData, setCloudData] = useState<string[][] | null>(null);
   const [topoData, setTopoData] = useState<UserData[] | null>(null);
-  const [selectBtn, setSelectBtn] = useState<string>("Off");
-  //
+
   const [isMarkingMode, setIsMarkingMode] = useState<boolean>(false);
+
+  const fileNameRef = useRef<string | null>(null);
+  const toast = useRef<Toast>(null);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -79,6 +82,9 @@ const Map: React.FC = () => {
         {
           label: "Save",
           icon: "pi pi-save",
+          command: () => {
+            saveMap();
+          },
         },
       ],
     },
@@ -90,6 +96,23 @@ const Map: React.FC = () => {
       },
     },
   ];
+
+  const saveMap = () => {
+    if (fileNameRef.current === null) {
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Save failed. No files selected.",
+      });
+    } else {
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.SAVE_MAP,
+          value: fileNameRef.current,
+        })
+      );
+    }
+  };
 
   const handleMarkingModeChange = (isMarkingMode: boolean) => {
     setIsMarkingMode(isMarkingMode);
@@ -155,6 +178,7 @@ const Map: React.FC = () => {
 
   const handleSelectMap = (e) => {
     setSelectedMap(e.value as MapData);
+    fileNameRef.current = e.value.name;
   };
 
   const handleLoadMap = () => {
@@ -188,6 +212,7 @@ const Map: React.FC = () => {
 
   return (
     <div id="map">
+      <Toast ref={toast} />
       <div style={{ position: "absolute" }}>
         <Menubar model={menuItems} end={end} />
       </div>
