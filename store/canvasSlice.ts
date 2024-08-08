@@ -43,6 +43,7 @@ const initialState = {
     rz: "",
   },
   isMarkingMode: false,
+  transformControlMode: "translate",
 };
 
 const canvasSlice = createSlice({
@@ -81,6 +82,9 @@ const canvasSlice = createSlice({
     updateRouteNum(state, action) {
       state.sceneInfo.routeNum = action.payload;
     },
+    updateTransformControlsMode(state, action) {
+      state.transformControlMode = action.payload;
+    },
   },
 });
 
@@ -92,5 +96,6 @@ export const {
   changeSelectedObjectInfo,
   updateGoalNum,
   updateRouteNum,
+  updateTransformControlsMode,
 } = canvasSlice.actions;
 export default canvasSlice.reducer;

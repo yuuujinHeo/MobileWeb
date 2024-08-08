@@ -8,6 +8,7 @@ import {
   changeSelectedObjectInfo,
   updateGoalNum,
   updateRouteNum,
+  updateTransformControlsMode,
 } from "@/store/canvasSlice";
 
 // prime
@@ -17,7 +18,10 @@ import { Toast } from "primereact/toast";
 import * as THREE from "three";
 import { MapControls } from "three/examples/jsm/controls/MapControls";
 import { ThreeMFLoader } from "three/examples/jsm/loaders/3MFLoader";
-import { TransformControls } from "three/examples/jsm/controls/TransformControls";
+import {
+  TransformControls,
+  TransformControlsMode,
+} from "three/examples/jsm/controls/TransformControls";
 import {
   CSS2DRenderer,
   CSS2DObject,
@@ -144,6 +148,7 @@ const LidarCanvas = ({
         canvasRef.current.removeEventListener("touchstart", handleTouchStart);
         canvasRef.current.removeEventListener("touchmove", handleMouseMove);
         canvasRef.current.removeEventListener("touchend", handleTouchEnd);
+        canvasRef.current.removeEventListener("keydown", handleKeyDown);
       }
       rendererRef.current?.setAnimationLoop(null);
 
@@ -196,6 +201,9 @@ const LidarCanvas = ({
           break;
         case CANVAS_ACTION.SAVE_MAP:
           saveMap(action.value);
+          break;
+        case CANVAS_ACTION.TFC_SET_MODE:
+          setTransformControlsMode(action.name as TransformControlsMode);
           break;
         default:
           break;
@@ -377,11 +385,7 @@ const LidarCanvas = ({
       renderer.domElement
     );
     transformControlRef.current = transformControl;
-    // transformControl.mode = "rotate";
-    // tfControl.showX = false;
-    // tfControl.showY = false;
     transformControl.showZ = false;
-    // transformControl.size = 0.8;
     transformControl.addEventListener("change", handleTransformChange);
     transformControl.addEventListener("dragging-changed", (event) => {
       control.enabled = !event.value;
@@ -426,12 +430,16 @@ const LidarCanvas = ({
     // resize handling
     window.addEventListener("resize", onWindowResize);
 
+    // mouse & touch handling
     canvasRef.current.addEventListener("mousedown", handleMouseDown);
     canvasRef.current.addEventListener("mousemove", handleMouseMove);
     canvasRef.current.addEventListener("mouseup", handleMouseUp);
     canvasRef.current.addEventListener("touchstart", handleTouchStart);
     canvasRef.current.addEventListener("touchmove", handleTouchMove);
     canvasRef.current.addEventListener("touchend", handleTouchEnd);
+
+    // key input handling
+    canvasRef.current.addEventListener("keydown", handleKeyDown);
   };
 
   const toggleMarkingMode = () => {
@@ -811,6 +819,39 @@ const LidarCanvas = ({
     if (touchDuration >= LONG_TOUCH_DURATION && !isTouchDragging) {
       if (isMarkingModeRef.current) createRobotHelper(event);
     }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!transformControlRef.current) return;
+    switch (e.code) {
+      case "KeyW":
+        setTransformControlsMode("translate");
+        break;
+      case "KeyE":
+        setTransformControlsMode("rotate");
+        break;
+      case "KeyR":
+        setTransformControlsMode("scale");
+        break;
+      default:
+        break;
+    }
+  };
+  const setTransformControlsMode = (mode: TransformControlsMode) => {
+    if (!transformControlRef.current) return;
+    const tfControl = transformControlRef.current;
+
+    tfControl.setMode(mode);
+    if (mode === "rotate") {
+      tfControl.showX = false;
+      tfControl.showY = false;
+      tfControl.showZ = true;
+    } else {
+      tfControl.showX = true;
+      tfControl.showY = true;
+      tfControl.showZ = false;
+    }
+    dispatch(updateTransformControlsMode(mode));
   };
 
   const onWindowResize = () => {
@@ -1718,7 +1759,7 @@ const LidarCanvas = ({
   return className === CANVAS_CLASSES.DEFAULT ? (
     <div id="lidar-canvas__container">
       <Toast ref={toast} />
-      <canvas className={className} ref={canvasRef} />
+      <canvas className={className} ref={canvasRef} tabIndex={0} />
       <div className="lidar-canvas__robot-info">
         <p>ROBOT STATE</p>
         <p>localization: {robotState.localization}</p>

@@ -20,6 +20,36 @@
   width: 100% !important;
   height: 100% !important;
 }
+
+#transform-toolbar {
+  position: absolute;
+  top: 72px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  button {
+    background-color: #ffffff;
+    height: 32px;
+    width: 32px;
+    border: 0px;
+    padding: 5px 8px;
+    outline: none;
+    cursor: pointer;
+    img {
+      width: 16px;
+    }
+    &:hover {
+      background-color: #e0e0e0;
+    }
+    &.selected {
+      background-color: #0087fd;
+
+      &:hover {
+        background-color: #0087fd;
+      }
+    }
+  }
+}
 #property-container {
   position: relative;
 
