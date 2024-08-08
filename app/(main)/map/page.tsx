@@ -3,6 +3,7 @@ import React, { useEffect, useState, useRef } from "react";
 import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
 import { createAction, toggleMarkingMode } from "@/store/canvasSlice";
 
 // prime
@@ -51,6 +52,10 @@ const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
 const Map: React.FC = () => {
   const dispatch = useDispatch();
 
+  // root state
+  const { transformControlMode } = useSelector(
+    (state: RootState) => state.canvas
+  );
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
@@ -132,6 +137,10 @@ const Map: React.FC = () => {
   );
 
   useEffect(() => {
+    handleTransformModeChange(transformControlMode);
+  }, [transformControlMode]);
+
+  useEffect(() => {
     getMapList();
   }, []);
 
@@ -210,11 +219,52 @@ const Map: React.FC = () => {
     }
   };
 
+  const handleTransformModeChange = (selectedBtn: string) => {
+    const buttons = document.querySelectorAll("#transform-toolbar button");
+    buttons.forEach((button) => {
+      button.classList.remove("selected");
+    });
+
+    const button = document.querySelector(
+      `.transform-toolbar__${selectedBtn}_button`
+    );
+    button?.classList.add("selected");
+    dispatch(
+      createAction({ command: CANVAS_ACTION.TFC_SET_MODE, name: selectedBtn })
+    );
+  };
+
   return (
     <div id="map">
       <Toast ref={toast} />
       <div style={{ position: "absolute" }}>
         <Menubar model={menuItems} end={end} />
+      </div>
+      <div id="transform-toolbar">
+        <button
+          className="transform-toolbar__translate_button selected"
+          onClick={() => {
+            handleTransformModeChange("translate");
+          }}
+        >
+          <img title="Translate" src="translate.svg" />
+        </button>
+        <button
+          className="transform-toolbar__rotate_button"
+          onClick={() => {
+            handleTransformModeChange("rotate");
+          }}
+        >
+          <img title="Rotate" src="rotate.svg" />
+        </button>
+        <button
+          className="transform-toolbar__scale_button"
+          onClick={() => {
+            handleTransformModeChange("scale");
+          }}
+        >
+          <img title="Scale" src="scale.svg" />
+        </button>
       </div>
       <LidarCanvas
         className={CANVAS_CLASSES.DEFAULT}
