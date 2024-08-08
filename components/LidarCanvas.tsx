@@ -1317,7 +1317,7 @@ const LidarCanvas = ({
       node.userData.index = zeroIndex;
     } else {
       nodes.push(1);
-      node.name = `${prefix}-${formatNumber(nodes.length)}`;
+      node.name = `${prefix}_${formatNumber(nodes.length)}`;
       node.userData.index = nodes.length - 1;
     }
     node.userData.links = [];
