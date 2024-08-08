@@ -483,7 +483,7 @@ export default function PropertyPanel() {
         <TabPanel header="Control" leftIcon="pi pi-arrows-alt">
           <Accordion multiple activeIndex={[0]}>
             <AccordionTab header="Localization">
-              <div id="loc-container">
+              <div className="button-container">
                 <Button
                   label="INIT"
                   size="small"
@@ -653,7 +653,7 @@ export default function PropertyPanel() {
         <TabPanel header="Edit" leftIcon="pi pi-map-marker">
           <Accordion multiple activeIndex={[0]}>
             <AccordionTab header="Annotation">
-              <div id="annotation-container">
+              <div className="button-container">
                 <ConfirmDialog />
                 <Toast ref={toast} />
                 <Button

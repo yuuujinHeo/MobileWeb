@@ -1240,7 +1240,7 @@ const LidarCanvas = ({
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
-    route.scale.set(0.63, 0.63, 0.63);
+    route.scale.set(0.38, 0.38, 0.38);
 
     const geo = new THREE.PlaneGeometry(1, 1);
     const mat = new THREE.MeshBasicMaterial({
