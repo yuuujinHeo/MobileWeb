@@ -88,6 +88,7 @@ const LidarCanvas = ({
   const robotModel = useRef<THREE.Object3D>();
   // [TODO] remove lidarPoints ref
   const lidarPoints = useRef<number>();
+  const mappingPointsArr = useRef<number[]>([]);
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
 
@@ -164,6 +165,7 @@ const LidarCanvas = ({
 
   useEffect(() => {
     if (action.command === CANVAS_ACTION.DRAW_CLOUD) {
+      clearMapPoints(action.target);
       drawCloud(action.target, cloudData);
     } else if (className === CANVAS_CLASSES.DEFAULT) {
       switch (action.command) {
@@ -196,6 +198,7 @@ const LidarCanvas = ({
           removeLink(action.target, action.value);
           break;
         case CANVAS_ACTION.DRAW_CLOUD_TOPO:
+          clearMapPoints(CANVAS_CLASSES.DEFAULT);
           drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
           drawTopo();
           break;
@@ -210,8 +213,12 @@ const LidarCanvas = ({
       }
     } else if (className === CANVAS_CLASSES.SIDEBAR) {
       switch (action.command) {
+        case CANVAS_ACTION.MAPPING_START:
+          addMappingListener();
+          break;
         case CANVAS_ACTION.MAPPING_STOP:
-          clearMappingPoints(CANVAS_CLASSES.SIDEBAR);
+          clearMapPoints(CANVAS_CLASSES.SIDEBAR);
+          removeMappingListener();
           break;
         default:
           break;
@@ -975,9 +982,6 @@ const LidarCanvas = ({
               rz: (parseFloat(data.pose.rz) * Math.PI) / 180,
             });
           });
-          socketRef.current.on("mapping", (data) => {
-            drawCloud(CANVAS_CLASSES.SIDEBAR, data);
-          });
         }
 
         socketRef.current.on("status", (data) => {
@@ -1090,32 +1094,24 @@ const LidarCanvas = ({
     if (!cloud) return;
     if (className !== targetCanvas) return;
 
-    resetCamera();
-    clearMappingPoints(className);
+    if (className !== CANVAS_CLASSES.SIDEBAR) resetCamera();
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
 
       const positions: number[] = [];
-      // const colors: number[] = [];
-      //
-      // const color = new THREE.Color();
 
       cloud.forEach((arr: string[]) => {
         // set positions
         const parsedArr = arr.slice(0, 3).map(parseFloat);
 
         positions.push(...parsedArr);
-
-        // color.setRGB(0, 0.7, 0, THREE.SRGBColorSpace);
-        // colors.push(color.r, color.g, color.b);
       });
 
       geo.setAttribute(
         "position",
         new THREE.Float32BufferAttribute(positions, 3)
       );
-      // geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
 
       geo.computeBoundingSphere();
 
@@ -1128,6 +1124,7 @@ const LidarCanvas = ({
       points.name = "PointCloud";
       points.scale.set(31.5, 31.5, 31.5);
 
+      mappingPointsArr.current.push(points.id);
       sceneRef.current?.add(points);
     }
   };
@@ -1138,28 +1135,7 @@ const LidarCanvas = ({
 
     clearAllNodes();
     // repaint all nodes
-    // The following codes(Type1 and Type2) show the difference between "Promise all" and "Promise"
 
-    // Type1
-    // for (let i = 0; i < topoData.length; i++) {
-    //   // First, Create Node
-    //   const topo = topoData[i];
-    //   const poseArr = topo.pose.split(",");
-    //   const nodePos: NodePos = {
-    //     x: Number(poseArr[0]),
-    //     y: Number(poseArr[1]),
-    //     z: Number(poseArr[2]),
-    //     rz: Number(poseArr[5]),
-    //     idx: i,
-    //   };
-    //   if (topo.type === "GOAL") {
-    //     await addGoalNode(nodePos);
-    //   } else if (topo.type === "ROUTE") {
-    //     await addRouteNode(nodePos);
-    //   }
-    // }
-
-    // Type 2
     const tasks = topoData.map((topo, i) => {
       const poseArr = topo.pose.split(",");
 
@@ -1191,16 +1167,29 @@ const LidarCanvas = ({
     });
   };
 
-  const clearMappingPoints = (targetCanvas: string) => {
+  const clearMapPoints = (targetCanvas: string) => {
     if (className !== targetCanvas) return;
-    // clear socket
+    if (!mappingPointsArr.current || !sceneRef.current) return;
+    for (const i of mappingPointsArr.current) {
+      const points = sceneRef.current.getObjectById(i);
+      if (points) sceneRef.current.remove(points);
+    }
+    mappingPointsArr.current = [];
+  };
+
+  const addMappingListener = () => {
+    if (className === CANVAS_CLASSES.SIDEBAR) {
+      socketRef.current.on("mapping", (data) => {
+        clearMapPoints(CANVAS_CLASSES.SIDEBAR);
+        drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+      });
+    }
+  };
+
+  const removeMappingListener = () => {
     if (socketRef.current) {
       socketRef.current.off("mapping");
     }
-    // reset mapping points
-    if (!sceneRef.current) return;
-    const points = sceneRef.current.getObjectByName("PointCloud");
-    if (points) sceneRef.current.remove(points);
   };
 
   const clearAllNodes = () => {
