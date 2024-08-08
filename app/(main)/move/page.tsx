@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect,  useContext, useRef, useState } from 'react';
-import { useRouter } from 'next/router';
+// import { useRouter } from 'next/router';
 import { SplitButton } from 'primereact/splitbutton';
 import { Button } from 'primereact/button';
 import axios from 'axios';
@@ -46,7 +46,7 @@ import {store,AppDispatch, RootState} from '../../../store/store';
 // import ChartTemp from '@/components/Chart'
 import { OverlayPanel } from 'primereact/overlaypanel';
 import { selectUser, setUser } from '@/store/userSlice';
-import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
+import { selectStatus } from '@/store/statusSlice';
 import { io } from "socket.io-client";
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 import {getMobileAPIURL} from '../api/url';
@@ -55,17 +55,13 @@ import { transStatus } from '../api/to';
 import { selectMapName } from '@/store/loadSlice';
 
 const Move: React.FC = () =>{
-    const dispatch = useDispatch<AppDispatch>();
-    const settingState = useSelector((state:RootState) => selectSetting(state));
-    const userState = useSelector((state:RootState) => selectUser(state));    
+    const Status = useSelector((state:RootState) => selectStatus(state));
+
     const mapName = useSelector((state:RootState) => selectMapName(state));
     const [mobileURL, setMobileURL] = useState('');
     const toast_main = useRef('');
-    let socketRef;
+
     const toast = useRef<Toast | null>(null);
-
-    const [Status, setStatus] = useState<StatusState>(initState);
-
     const [targetX, setTargetX] = useState(0);
     const [targetY, setTargetY] = useState(0);
     const [targetRZ, setTargetRZ] = useState(0);
@@ -79,44 +75,6 @@ const Move: React.FC = () =>{
         setURL();
     },[])
           
-    useEffect(() => {
-        if (!socketRef) {
-          fetch("/api/socket").finally(() => {
-
-            socketRef = io();
-    
-            socketRef.on("connect", () => {
-              console.log("Socket connected ", socketRef.id);
-            });
-
-            socketRef.on("status", async(data) => {
-                const json = JSON.parse(data);
-                // console.log(json.condition.auto_state);
-                setStatus(await transStatus(json));
-            });
-
-            socketRef.on("move", (data) =>{
-                console.log("move response1 : ",data);
-            })
-
-          return () => {
-            console.log("Socket disconnect ", socketRef.id);
-            if(socketRef)
-                socketRef.disconnect();
-          };
-
-        });
-      }
-    }, []);
-
-    useEffect(()=>{
-        return () =>{
-            console.log("move page unmount");
-            socketRef.disconnect();
-        };
-    },[])
-
-
     async function setURL(){
         setMobileURL(await getMobileAPIURL());
     }
@@ -153,25 +111,6 @@ const Move: React.FC = () =>{
                 summary: 'Move Start',
                 life: 3000
             })
-
-            // const response = await axios.get(mobileURL+'/control/move');
-
-            // console.log("response : ",response);
-
-            // if(response.data.result == 'success'){
-            //     toast.current?.show({
-            //         severity: 'success',
-            //         summary: 'Move Done',
-            //         life: 3000
-            //     })
-            // }else{
-            //     toast.current?.show({
-            //         severity: 'error',
-            //         summary: 'Move Failed',
-            //         detail: response.data.message,
-            //         life: 3000
-            //     })
-            // }
         }else{
             toast.current?.show({
                 severity: 'error',
@@ -252,25 +191,6 @@ const Move: React.FC = () =>{
                 summary: 'Move Start',
                 life: 3000
             })
-
-            // const response = await axios.get(mobileURL+'/control/move');
-
-            // console.log("response : ",response);
-
-            // if(response.data.result == 'success'){
-            //     toast.current?.show({
-            //         severity: 'success',
-            //         summary: 'Move Done',
-            //         life: 3000
-            //     })
-            // }else{
-            //     toast.current?.show({
-            //         severity: 'error',
-            //         summary: 'Move Failed',
-            //         detail: response.data.message,
-            //         life: 3000
-            //     })
-            // }
         }else{
             toast.current?.show({
                 severity: 'error',

@@ -41,7 +41,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import {store,AppDispatch, RootState} from '../../../store/store';
 // import ChartTemp from '@/components/Chart'
 import { selectUser, setUser } from '@/store/userSlice';
-import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
+import { selectStatus } from '@/store/statusSlice';
 import { io } from "socket.io-client";
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 import './style.scss';
@@ -54,35 +54,15 @@ const State: React.FC = () =>{
     const userState = useSelector((state:RootState) => selectUser(state));    
     // const Status = useSelector((state:RootState) => selectStatus(state));
     const [mobileURL, setMobileURL] = useState('');
-    const toast_main = useRef('');
-    const socketRef = useRef<any>();
+    const Status = useSelector((state:RootState) => selectStatus(state));
 
-    const [Status, setStatus] = useState<StatusState>(initState);
+    // const [Status, setStatus] = useState<StatusState>(initState);
 
     useEffect(()=>{
         setURL();
+        console.log(Status);
     },[])
 
-    useEffect(() => {
-        if (!socketRef.current) {
-          fetch("/api/socket").finally(() => {
-            socketRef.current = io();
-    
-            socketRef.current.on("connect", () => {
-              console.log("Socket connected ", socketRef.current.id);
-            });
-        
-            socketRef.current.on("status", async(data) => {
-                const json =JSON.parse(data);
-                setStatus(await transStatus(json));
-            });
-          return () => {
-            console.log("Socket disconnect ", socketRef.current.id);
-            socketRef.current.disconnect();
-          };
-        });
-      }
-    }, []);
           
     async function setURL(){
         setMobileURL(await getMobileAPIURL());

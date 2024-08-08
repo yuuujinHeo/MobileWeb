@@ -5,8 +5,9 @@ import networkReducer from "./networkSlice";
 import userReducer from "./userSlice";
 import settingReducer from "./settingSlice";
 import loadSlice from "./loadSlice";
-import statusSlice from "./statusSlice";
+import statusReducer from "./statusSlice";
 import stateSlice from "./stateSlice";
+import taskSlice from "./taskSlice";
 import canvasReducer from "./canvasSlice";
 import propertyPanelReducer from "./propertyPanelSlices";
 
@@ -14,19 +15,16 @@ export const store = configureStore({
   reducer: {
     network: networkReducer,
     setting: settingReducer,
-    status: statusSlice,
+    status: statusReducer,
     state1: stateSlice,
     canvas: canvasReducer,
     propertyPanel: propertyPanelReducer,
     user: userReducer,
-    load: loadSlice
+    load: loadSlice,
+    task: taskSlice
   },
 });
 
-export const useStore = (initialState) => {
-  const store = useMemo(() => store(initialState), [initialState]);
-  return store;
-};
 
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

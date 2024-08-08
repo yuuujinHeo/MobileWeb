@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect,  useContext, useRef, useState } from 'react';
-import { useRouter } from 'next/router';
+// import { useRouter } from 'next/router';
 import { SplitButton } from 'primereact/splitbutton';
 import { Button } from 'primereact/button';
 import axios from 'axios';
@@ -48,12 +48,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import {store,AppDispatch, RootState} from '../../../store/store';
 // import ChartTemp from '@/components/Chart'
 import { selectUser, setUser } from '@/store/userSlice';
-import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
+import { selectStatus } from '@/store/statusSlice';
 import { io } from "socket.io-client";
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 import {getMobileAPIURL} from '../api/url';
 import { transStatus } from '../api/to';
 import { TreeNode } from 'primereact/treenode';
+import emitter from '@/lib/eventBus'
+import { selectTask } from '@/store/taskSlice';
 import { TreeSelectChangeEvent } from 'primereact/treeselect';
 import exp from 'constants';
 import './style.scss'
@@ -62,6 +64,7 @@ const Run: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
     const userState = useSelector((state:RootState) => selectUser(state));    
+    const taskState = useSelector((state:RootState) => selectTask(state));
     const [mobileURL, setMobileURL] = useState('');
     const toast_main = useRef('');
     const toast = useRef<Toast | null>(null);
@@ -84,14 +87,13 @@ const Run: React.FC = () =>{
     const [waitTime, setWaitTime] = useState<any>(0);
     const [repeatTime, setRepeatTime] = useState<any>(0);
 
-    const [playing, setPlaying] = useState<boolean>(false);
+    // const [playing, setPlaying] = useState<boolean>(false);
     const [pause, setPause] = useState<boolean>(false);
 
     const [copiedNode, setCopiedNode] = useState<TreeNode | null>(null);
 
-    const socketRef = useRef<any>();
 
-    const [taskID,setTaskID] = useState<string>('');
+    // const [taskID,setTaskID] = useState<string>('');
 
     useEffect(()=>{
         setURL();
@@ -111,42 +113,28 @@ const Run: React.FC = () =>{
     },[nodes])
 
     useEffect(() => {
-        if (!socketRef.current) {
-          fetch("/api/socket").finally(() => {
-            socketRef.current = io();
-    
-            socketRef.current.on("connect", () => {
-              console.log("Socket connected ", socketRef.current.id);
-            });
-        
-            socketRef.current.on("task_id", async(data) => {
-                console.log("Task ID : ",data);
-                setTaskID(data);
-            });
-            socketRef.current.on("task",async(data) =>{
-                console.log("Task : ",data);
-                if(data == "start"){ 
-                    toast.current?.show({
-                        severity: 'success',
-                        summary: 'Task Start',
-                        life: 3000
-                    })
-                    setPlaying(true);
-                }else{
-                    toast.current?.show({
-                        severity: 'success',
-                        summary: 'Task Stop',
-                        life: 3000
-                    })
-                    setPlaying(false);
-                }
-            })
-          return () => {
-            console.log("Socket disconnect ", socketRef.current.id);
-            socketRef.current.disconnect();
-          };
-        });
-      }
+        const handlerTask = (event) =>{
+            console.log("task handler ",event)
+            if(event == "start"){
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Task Start',
+                    life: 3000
+                })
+            }else{
+                toast.current?.show({
+                    severity: 'success',
+                    summary: 'Task Stop',
+                    life: 3000
+                })
+            }
+        };
+
+        emitter.on('task',handlerTask);
+
+        return () =>{
+            emitter.off('task',handlerTask);
+        };
     }, []);
 
     async function setURL(){
@@ -226,25 +214,15 @@ const Run: React.FC = () =>{
 
     const playTask = async() =>{
         if(curTask != ''){
-            if(playing){
+            if(taskState.running){
                 toast.current?.show({
                     severity: 'info',
                     summary: 'Already Playing',
                     life: 3000
                 })
-                // if(pause){
-
-                // }else{
-                //     const response = await axios.get(mobileURL + "/task/pause");
-                // }
             }else{
                 const response = await axios.get(mobileURL + "/task/load/"+curTask);
                 if(response.data == "success"){
-                    // toast.current?.show({
-                    //     severity: 'success',
-                    //     summary: 'Load Success',
-                    //     life: 3000
-                    // })
                     const response2 = await axios.get(mobileURL + "/task/run");
                 }else{
                     toast.current?.show({
@@ -259,7 +237,7 @@ const Run: React.FC = () =>{
 
     const stopTask = async() =>{
         if(curTask != ''){
-            if(playing){
+            if(taskState.running){
                 const response = await axios.get(mobileURL + "/task/stop");
             }else{
 
@@ -271,11 +249,11 @@ const Run: React.FC = () =>{
         return(
         <Toolbar className='tool-main' start={
             <React.Fragment>
-                <Button icon="pi pi-folder-open" disabled={playing} onClick={openPopup}></Button>
+                <Button icon="pi pi-folder-open" disabled={taskState.running} onClick={openPopup}></Button>
             </React.Fragment>
         } center={
             <React.Fragment>
-                <Button className='mr-5' disabled={curTask==''} icon={playing ? "pi pi-pause" : "pi pi-play"} onClick={playTask} />
+                <Button className='mr-5' disabled={curTask==''} icon={taskState.running ? "pi pi-pause" : "pi pi-play"} onClick={playTask} />
                 <Button icon="pi pi-stop" disabled={curTask==''} onClick={stopTask} />
             </React.Fragment>
         } end={
@@ -357,11 +335,11 @@ const Run: React.FC = () =>{
 
 
     useEffect(() => {
-      if (taskID) {
-        const offsetTop = parseInt(taskID)*50;
+      if (taskState.taskID) {
+        const offsetTop = parseInt(taskState.taskID)*50;
         document.getElementById("my-tree")!.parentElement!.scrollTop = offsetTop;
       }
-    }, [taskID]);
+    }, [taskState.taskID]);
   
     return(
         <main>
@@ -376,7 +354,7 @@ const Run: React.FC = () =>{
                         ref={TreeRef} nodeTemplate={nodeTemplate} 
                         onExpand={(e) =>{console.log(e)}} dragdropScope="f" 
                         onToggle={(e) => {}}  selectionMode="single" 
-                        expandedKeys={expandedKeys} selectionKeys={taskID} 
+                        expandedKeys={expandedKeys} selectionKeys={taskState.taskID} 
                         value={nodes['0']?nodes['0'].children:[]}>
                         </Tree>
                         <ScrollTop target="parent" threshold={100} className="w-2rem h-2rem border-round bg-primary" icon="pi pi-arrow-up text-base" />

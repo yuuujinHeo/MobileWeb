@@ -1,74 +1,50 @@
 'use client';
-import React, { useEffect,  useContext, useRef, useState } from 'react';
-import { useRouter } from 'next/router';
+import React, { useEffect, useContext, useRef, useState } from 'react';
 import { SplitButton } from 'primereact/splitbutton';
 import { Button } from 'primereact/button';
 import axios from 'axios';
-import {Formik, useFormik, Form, Field, FormikProps} from 'formik';
-import { Dropdown, DropdownProps } from "primereact/dropdown";
 import { InputNumber } from "primereact/inputnumber";
-import { InputSwitch } from "primereact/inputswitch";
 import { InputText } from "primereact/inputtext";
 import { InputTextarea } from "primereact/inputtextarea";
-import { Knob } from "primereact/knob";
-import { ListBox } from "primereact/listbox";
-import { MultiSelect } from "primereact/multiselect";
-import { RadioButton } from "primereact/radiobutton";
-import { Rating } from "primereact/rating";
-import { Panel } from 'primereact/panel';
 import { Toolbar } from 'primereact/toolbar';
-import { SpeedDial } from 'primereact/speeddial';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import { Toast } from 'primereact/toast';
 import { Tag } from 'primereact/tag';
 import { Chip } from 'primereact/chip';
 import { SelectButton } from "primereact/selectbutton";
 import { Tree,TreeDragDropEvent, TreeExpandedKeysType, TreeSelectionEvent } from 'primereact/tree';
-import { TreeTable } from 'primereact/treetable';
 import { DataView } from 'primereact/dataview';
-import { Slider, SliderChangeEvent } from "primereact/slider";
 import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import { Accordion , AccordionTab} from 'primereact/accordion';
-import { ToggleButton } from "primereact/togglebutton";
-import styles from './index.module.scss';
-import { classNames } from 'primereact/utils';
 import {v4 as uuidv4} from 'uuid';
-import { Column } from 'primereact/column';
-import { DataTable } from 'primereact/datatable';
-import fs from 'fs';
 import { Dialog } from 'primereact/dialog';
-// import { ListBox } from 'primereact/listbox';
-import { FileUpload,  FileUploadState, FileUploadHandlerEvent, FileUploadSelectEvent, FileUploadUploadEvent } from 'primereact/fileupload';
-import { forEachChild } from 'typescript';
-import { encode } from 'punycode';
-import {userContext} from '../../../interface/user'
-// import { selectMonitor } from '@/store/networkSlice';
-import {version, defaultVersion, newversion, defaultNewVersion,versions, defaultNewVersions,defaultVersions} from '../../../interface/update';
-import { start } from 'repl';
-import { useDispatch, useSelector } from 'react-redux';
-import {store,AppDispatch, RootState} from '../../../store/store';
-// import ChartTemp from '@/components/Chart'
-import { selectUser, setUser } from '@/store/userSlice';
-import { selectStatus, initState, setStatus, StatusState } from '@/store/statusSlice';
-import { io } from "socket.io-client";
-import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
+import { shallowEqual, useDispatch, useStore, useSelector } from 'react-redux';
+import { selectStatus, StatusState } from '@/store/statusSlice';
 import {getMobileAPIURL} from '../api/url';
-import { transStatus } from '../api/to';
 import { TreeNode } from 'primereact/treenode';
-import { selectMapName } from '@/store/loadSlice';
-import { TreeSelectChangeEvent } from 'primereact/treeselect';
-import exp from 'constants';
 import './style.scss'
 import { MenuItem } from 'primereact/menuitem';
+import { RootState, AppDispatch } from '@/store/store';
+import { selectTask } from '@/store/taskSlice';
 
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
-    const settingState = useSelector((state:RootState) => selectSetting(state));
-    const userState = useSelector((state:RootState) => selectUser(state));       
-    const mapName = useSelector((state:RootState) => selectMapName(state));
+    const taskState = useSelector((state:RootState) => selectTask(state));   
     const [mobileURL, setMobileURL] = useState('');
-    const toast_main = useRef('');
     const toast = useRef<Toast | null>(null);
+
+    const store = useStore<RootState>();
+    const Status = useRef<StatusState>(store.getState().status);
+
+    useEffect(() => {
+        const handleChange = () => {
+            Status.current = store.getState().status;
+        };
+        const unsubscribe = store.subscribe(handleChange);
+        return () => {
+            unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
+        };
+    }, [store]);
+
     const TreeRef = useRef<any>(null);
     const [nodes, setNodes] = useState<TreeNode[]>([]);
     const [selectNodeKey, setSelectNodeKey] = useState<string>('');
@@ -80,9 +56,11 @@ const Move: React.FC = () =>{
     const [expandedKeys, setExpandedKeys] = useState<TreeExpandedKeysType>({'0': true});
 
     const [tasks, setTasks] = useState<string[]>([]);
+    const [moveGoal, setMoveGoal] = useState<string>('');
     const [moveX, setMoveX] = useState<any>(0);
     const [moveY, setMoveY] = useState<any>(0);
     const [moveRZ, setMoveRZ] = useState<any>(0);
+    const [movePreset, setMovePreset] = useState<any>(0);
     const [waitTime, setWaitTime] = useState<any>(0);
     const [repeatTime, setRepeatTime] = useState<any>(0);
     const [goals, setGoals] = useState<string[]>([]);
@@ -91,12 +69,7 @@ const Move: React.FC = () =>{
     const [copiedNode, setCopiedNode] = useState<TreeNode | null>(null);
 
     const [taskName, setTaskName] = useState('');
-    const [newTaskName, setNewTaskName] = useState('');
-    const socketRef = useRef<any>();
-
-    const [taskID,setTaskID] = useState<number>(0);
-    const [taskRun, setTaskRun] = useState<boolean>(false);
-
+    
     useEffect(()=>{
         setURL();
         setSelectNodeKey('');
@@ -110,33 +83,7 @@ const Move: React.FC = () =>{
         }
     },[mobileURL])
 
-    useEffect(() => {
-        if (!socketRef.current) {
-          fetch("/api/socket").finally(() => {
-            socketRef.current = io();
     
-            socketRef.current.on("connect", () => {
-              console.log("Socket connected ", socketRef.current.id);
-            });
-        
-            socketRef.current.on("task_id", async(data) => {
-                setTaskID(data);
-            });
-            socketRef.current.on("task",async(data) =>{
-                if(data == "start"){
-                    setTaskRun(true);
-                }else{
-                    setTaskRun(false);
-                }
-            })
-          return () => {
-            console.log("Socket disconnect ", socketRef.current.id);
-            socketRef.current.disconnect();
-          };
-        });
-      }
-    }, []);
-
     useEffect(()=>{
         console.log(selectNode);
     },[selectNode])
@@ -159,9 +106,15 @@ const Move: React.FC = () =>{
     }
 
     const getGoals = async() =>{
-        const response = await axios.get(mobileURL+"/map/goal/"+mapName);
+        const response = await axios.get(mobileURL+"/map/goal/"+Status.current.state.map);
         console.log("getgoals:",response.data);
         setGoals(response.data);
+    }
+
+    const getcurPos = () =>{
+        setMoveX(Status.current.pose.x);
+        setMoveY(Status.current.pose.y);
+        setMoveRZ(Status.current.pose.rz);
     }
 
     const openGoalList = () =>{
@@ -173,7 +126,7 @@ const Move: React.FC = () =>{
         const renderListItem = (goal: string) => {
             return (
                 <div className="col-12 column w-full gap-2">
-                    <Button className='w-full' onClick={()=>{setSelectNode({...selectNode, data:goal}); setGoalVisible(false);
+                    <Button className='w-full' onClick={()=>{setMoveGoal(goal); setGoalVisible(false);
                         }} label={goal}></Button>
                 </div>
             );
@@ -343,7 +296,7 @@ const Move: React.FC = () =>{
 
     const handleSelect = async(e:TreeSelectionEvent) =>{
         const node = findTreeNodeByKey(nodes, e.value as string);
-        console.log(e.value,node);
+        console.log(e.value,node, nodes);
         if(node.label == 'root' || node.label == "repeat" || node.label == "if" || node.label == "else if"){
             let _expandedKeys = {};
 
@@ -367,14 +320,21 @@ const Move: React.FC = () =>{
 
     const setSelectNodeInfo = (node) =>{
         if(node.label == "move"){
-            setMoveX(node.data.split(',').length>1?node.data.split(',')[0]:0);
-            setMoveY(node.data.split(',')[1]?node.data.split(',')[1]:0);
-            setMoveRZ(node.data.split(',')[2]?node.data.split(',')[2]:0);
-
-            if(node.data.split(',').length > 1){
+            if(node.data.split(',').length > 2){
                 setSelectMove('target');
+                setMoveX(node.data.split(',').length>1?node.data.split(',')[0]:0);
+                setMoveY(node.data.split(',')[1]?node.data.split(',')[1]:0);
+                setMoveRZ(node.data.split(',')[2]?node.data.split(',')[2]:0);
+                setMovePreset(node.data.split(',')[3]?node.data.split(',')[3]:0);
+    
             }else{
                 setSelectMove('goal');
+                setMoveGoal(node.data.split(',')[0]);
+                setMoveX(0);
+                setMoveY(0);
+                setMoveRZ(0);
+                setMovePreset(node.data.split(',')[1]?node.data.split(',')[1]:0);
+    
             }
         }else if(node.label == "wait"){
             setWaitTime(node.data.split(' ')[0]);
@@ -413,9 +373,9 @@ const Move: React.FC = () =>{
     
             if(selectNode?.label == "move"){
                 if(selectMove == "target"){
-                    changed.data = moveX+","+moveY+","+moveRZ;
+                    changed.data = moveX+","+moveY+","+moveRZ+","+movePreset;
                 }else{
-                    changed.data = selectNode.data;
+                    changed.data = moveGoal+","+movePreset;
                 }
             }else if(selectNode?.label == "script" || selectNode?.label == "if" || selectNode?.label == "else if"){
                 changed.data = selectNode.data;
@@ -541,6 +501,10 @@ const Move: React.FC = () =>{
 
         setNodes(makeNodes(newNode));
     }
+
+    useEffect(()=>{
+        console.log("node change : ",nodes);
+    },[nodes]);
 
     const newTask = () =>{
         if(taskName == ''){
@@ -932,36 +896,40 @@ const Move: React.FC = () =>{
                                 <SelectButton value={selectMove} onChange={(e) => setSelectMove(e.value)} options={['target','goal']}></SelectButton>
                             </div>
                             {selectMove == 'target' &&
-                                <div className='card'>
-                                <div className='field grid gap-3'>
-                                    <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                        X
-                                    </label>
-                                    <div className="col-12 w-8 md:col-10">
-                                        <InputNumber value={moveX} onChange={(e) => setMoveX(e.value)} suffix=" m" minFractionDigits={3}></InputNumber>
+                                <div className='card p-fluid'>
+                                    <div className='field'>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            X
+                                        </label>
+                                        <InputNumber className='input_detail'  value={moveX} onChange={(e) => setMoveX(e.value)} suffix=" m" minFractionDigits={3}></InputNumber>
+                                        
                                     </div>
-                                </div>
-                                <div className='field grid gap-3'>
-                                    <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                        Y
-                                    </label>
-                                    <div className="col-12 w-8 md:col-10">
-                                        <InputNumber value={moveY} onChange={(e) => setMoveY(e.value)} suffix=" m" minFractionDigits={3}></InputNumber>
+                                    <div className='field'>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            Y
+                                        </label>
+                                        <InputNumber className='input_detail' value={moveY} onChange={(e) => setMoveY(e.value)} suffix=" m" minFractionDigits={3}></InputNumber>
+                                        
                                     </div>
-                                </div>
-                                <div className='field grid gap-3'>
-                                    <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
-                                        RZ
-                                    </label>
-                                    <div className="col-12 w-8 md:col-10">
-                                        <InputNumber value={moveRZ} onChange={(e) => setMoveRZ(e.value)} suffix=" deg"></InputNumber>
+                                    <div className='field '>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            RZ
+                                        </label>
+                                        <InputNumber className='input_detail'  value={moveRZ} onChange={(e) => setMoveRZ(e.value)} suffix=" deg"></InputNumber>
                                     </div>
-                                </div>
+                                    <div className='field'>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            Preset
+                                        </label>
+                                        <InputNumber className='input_detail' min={0} max={5} value={movePreset} onChange={(e) => setMovePreset(e.value)} suffix=""></InputNumber>
+                                    </div>
+                                    <Button label='현재위치 가져오기' onClick={getcurPos}></Button>
                                 </div>
                             }
+                            
                             {selectMove == 'goal' &&
                                 <div className='card'>
-                                    <InputText value={selectNode.data} onChange={(e) => setSelectNode({...selectNode, data:e.target.value})}></InputText>
+                                    <InputText value={moveGoal} onChange={(e) => setMoveGoal(e.target.value)}></InputText>
                                     <Button  label='list' onClick={openGoalList}></Button>
                                 </div>
                             }

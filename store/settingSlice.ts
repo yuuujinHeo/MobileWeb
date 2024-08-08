@@ -95,8 +95,6 @@ export interface PresetSetting{
     PP_ST_V:        number;
     PP_ED_V:        number;
 }
-
-
 export interface SettingState{
     robot:RobotSetting;
     debug:DebugSetting;
@@ -197,6 +195,7 @@ const settingSlice = createSlice({
   },
   reducers: {
     setRobot(state,action: PayloadAction<RobotSetting>) {
+      console.log("setRobot : ",action.payload);
       state.robot = action.payload;
     },
     setDebug(state,action: PayloadAction<DebugSetting>) {

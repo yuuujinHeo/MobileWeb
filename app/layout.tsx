@@ -8,7 +8,7 @@ import "../styles/layout/layout.scss";
 import "../styles/components/components.scss";
 import { Provider } from "react-redux";
 import { GlobalUserProvider } from "../interface/user";
-import { store } from "@/store/store";
+import {store} from "@/store/store";
 import { useEffect } from "react";
 
 interface RootLayoutProps {
@@ -27,12 +27,12 @@ export default function RootLayout({ children }: RootLayoutProps) {
       </head>
       <body>
         {/* <Provider store={store}> */}
-        <PrimeReactProvider>
-          <GlobalUserProvider>
-            <LayoutProvider>{children}</LayoutProvider>
-          </GlobalUserProvider>
-        </PrimeReactProvider>
-        {/* </Provider> */}
+          <PrimeReactProvider>
+            <GlobalUserProvider>
+              <LayoutProvider>{children}</LayoutProvider>
+            </GlobalUserProvider>
+          </PrimeReactProvider>
+        {/* </Provider>  */}
       </body>
     </html>
   );

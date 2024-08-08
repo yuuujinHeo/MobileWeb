@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
 import io from "socket.io-client";
+import {AppDispatch, RootState} from '@/store/store';
+import { useDispatch, useSelector } from 'react-redux';
 import type { NextApiRequest, NextApiResponse } from "next";
 
 async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
@@ -19,7 +21,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       socket.on("lidar", (data: string[][]) => {
         ioServer.emit("lidar", data);
       });
-      socket.on("status", (data: JSON) => {
+      socket.on("status", async(data: JSON) => {
         ioServer.emit("status", data);
       });
       socket.on("move", (data: JSON) => {

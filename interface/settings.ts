@@ -229,12 +229,9 @@ export interface SettingState {
   obs: ObsSetting;
 }
 
-export const ROBOT_TYPE = ["SERVING", "CALLING", "BOTH", "CLEANING", "AMR"];
+export const ROBOT_TYPE = ["SRV", "AMR"];
 export const ROBOT_TYPE2 = [
-  { name: "서빙용", code: "SERVING" },
-  { name: "호출용", code: "CALLING" },
-  { name: "서빙+호출용", code: "BOTH" },
-  { name: "퇴식용", code: "CLEANING" },
+  { name: "서빙로봇", code: "SRV" },
   { name: "AMR", code: "AMR" },
 ];
 

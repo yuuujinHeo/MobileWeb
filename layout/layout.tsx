@@ -15,7 +15,8 @@ import { PrimeReactContext } from 'primereact/api';
 import { ChildContainerProps, LayoutState, AppTopbarRef } from '@/types';
 import { usePathname, useSearchParams } from 'next/navigation';
 import {userContext} from '../interface/user'
-import { store } from '@/store/store';
+// import { store } from '@/store/store';
+import {store} from '@/store/store'
 import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
     
 const Layout = ({ children }: ChildContainerProps) => {
@@ -24,7 +25,7 @@ const Layout = ({ children }: ChildContainerProps) => {
     const { setRipple } = useContext(PrimeReactContext);
     const topbarRef = useRef<AppTopbarRef>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
-    const router = useRouter();
+    // const router = useRouter();
     
     const [bindMenuOutsideClickListener, unbindMenuOutsideClickListener] = useEventListener({
         type: 'click',

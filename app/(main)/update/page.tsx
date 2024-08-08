@@ -41,6 +41,7 @@ import {version, defaultVersion, newversion, defaultNewVersion,versions, default
 import { start } from 'repl';
 import { selectSetting } from '@/store/settingSlice';
 import {getMobileAPIURL} from '../api/url';
+import { selectStatus } from '@/store/statusSlice';
 
 
 const Update: React.FC = () =>{
@@ -72,12 +73,15 @@ const Update: React.FC = () =>{
     const monitorURL = useSelector((state:RootState) => selectMonitor(state));
     const [type, setType] = useState('');
     const settingState = useSelector((state:RootState) => selectSetting(state));
+    const statttttttt = useSelector((state:RootState) => selectStatus(state));
     
     const [mobileURL, setMobileURL] = useState('');
 
     useEffect(()=>{
         console.log("useEffect");
         setURL();
+        console.log("settingState : ", settingState.robot);
+        console.log("statttttttt : ", statttttttt.state);
     },[])
 
     useEffect(()=>{

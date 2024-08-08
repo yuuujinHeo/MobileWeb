@@ -30,21 +30,11 @@ import { TabMenu } from 'primereact/tabmenu';
 const Setting: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const settingState = useSelector((state:RootState) => selectSetting(state));
-    const Status = useSelector((state:RootState) => selectStatus(state));
-    const State = useSelector((state:RootState) => selectState(state));
     const [mobileURL, setMobileURL] = useState('');
-
     const [curCategory, setCurCategory] = useState(0);
     const [visiblePreset, setVisiblePreset] = useState(false);
     const [presets, setPresets] = useState([]);
     const toast = useRef<Toast | null>(null);
-    const socketRef = useRef<any>();
-    const itemsss = [
-        { label: 'Dashboard', icon: 'pi pi-home' },
-        { label: 'Transactions', icon: 'pi pi-chart-line' },
-        { label: 'Products', icon: 'pi pi-list' },
-        { label: 'Messages', icon: 'pi pi-inbox' }
-    ];
 
     useEffect(() =>{
         setURL();
@@ -54,75 +44,25 @@ const Setting: React.FC = () => {
         setMobileURL(await getMobileAPIURL());
     }
 
-    useEffect(()=>{
-        if(mobileURL != ''){
-            default_setting();
-        }
-    },[mobileURL])
-
-    useEffect(() => {
-        if (!socketRef.current) {
-          fetch("/api/socket").finally(() => {
-            socketRef.current = io();
-    
-            socketRef.current.on("connect", () => {
-              console.log("Socket connected ", socketRef.current.id);
-            });
-        
-            socketRef.current.on("status", async(data) => {
-                const json =JSON.parse(data);
-                setStatus(await transStatus(json));
-            });
-
-          return () => {
-            console.log("Socket disconnect ", socketRef.current.id);
-            socketRef.current.disconnect();
-          };
-        });
-      }
-    }, []);
-
-    const default_setting = async(data:SettingState | undefined=undefined) =>{
+    const default_setting = async(data:SettingState) =>{
         try{
-            if(data == undefined){
-                const response = await axios.get(mobileURL+'/setting');
-                console.log(mobileURL+'/setting', response.data);
-                dispatch(setRobot(response.data.robot));
-                dispatch(setDebug(response.data.debug));
-                dispatch(setLoc(response.data.loc));
-                dispatch(setAnnotation(response.data.annotation));
-                dispatch(setDefault(response.data.default));
-                dispatch(setMotor(response.data.motor));
-                dispatch(setMapping(response.data.mapping));
-                dispatch(setObs(response.data.obs));
-                formik_robot.handleReset(response.data.robot);
-                formik_debug.handleReset(response.data.debug);
-                formik_loc.handleReset(response.data.loc);
-                formik_control.handleReset(response.data.control);
-                formik_annotation.handleReset(response.data.annotation);
-                formik_default.handleReset(response.data.default);
-                formik_motor.handleReset(response.data.motor);
-                formik_mapping.handleReset(response.data.mapping);
-                formik_obs.handleReset(response.data.obs);
-            }else{
-                dispatch(setRobot(data.robot));
-                dispatch(setDebug(data.debug));
-                dispatch(setLoc(data.loc));
-                dispatch(setAnnotation(data.annotation));
-                dispatch(setDefault(data.default));
-                dispatch(setMotor(data.motor));
-                dispatch(setMapping(data.mapping));
-                dispatch(setObs(data.obs));
-                formik_robot.handleReset(data.robot);
-                formik_debug.handleReset(data.debug);
-                formik_loc.handleReset(data.loc);
-                formik_control.handleReset(data.control);
-                formik_annotation.handleReset(data.annotation);
-                formik_default.handleReset(data.default);
-                formik_motor.handleReset(data.motor);
-                formik_mapping.handleReset(data.mapping);
-                formik_obs.handleReset(data.obs);
-            }
+            dispatch(setRobot(data.robot));
+            dispatch(setDebug(data.debug));
+            dispatch(setLoc(data.loc));
+            dispatch(setAnnotation(data.annotation));
+            dispatch(setDefault(data.default));
+            dispatch(setMotor(data.motor));
+            dispatch(setMapping(data.mapping));
+            dispatch(setObs(data.obs));
+            formik_robot.handleReset(data.robot);
+            formik_debug.handleReset(data.debug);
+            formik_loc.handleReset(data.loc);
+            formik_control.handleReset(data.control);
+            formik_annotation.handleReset(data.annotation);
+            formik_default.handleReset(data.default);
+            formik_motor.handleReset(data.motor);
+            formik_mapping.handleReset(data.mapping);
+            formik_obs.handleReset(data.obs);
         }catch(error){
             console.error(error);
         }
@@ -875,7 +815,7 @@ const Setting: React.FC = () => {
                                     className={formik_debug.errors.SIM_MODE?"p-invalid":""}
                                 />
                                 <small id="username-help" style={{color:"red", fontSize: '1em',marginLeft: '1em' }}>
-                                    {formik_debug.errors.SIM_MODE}
+                                    {formik_debug.errors.SIM_MODE as string}
                                 </small>
                             </span>
                         </Panel>
