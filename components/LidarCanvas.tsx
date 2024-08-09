@@ -900,14 +900,13 @@ const LidarCanvas = ({
   const initRobot = async () => {
     if (!sceneRef.current) return;
 
-    const originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
-    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
-    const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
+    const originGeometry = new THREE.SphereGeometry(0.1);
+    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const originPoint = new THREE.Mesh(originGeometry, originMaterial);
 
-    const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    // [TEMP]
+    const axesHelperOrin = new THREE.AxesHelper(1);
     originPoint.scale.set(31.5, 31.5, 31.5);
-    sceneRef.current.add(axesHelperOrin); // scene에 추가
+    originPoint.add(axesHelperOrin);
     sceneRef.current.add(originPoint);
 
     const loader = new ThreeMFLoader();
@@ -1280,8 +1279,6 @@ const LidarCanvas = ({
     plane.visible = false;
     route.add(plane);
 
-    setupNode(route, NODE_TYPE.ROUTE, nodePose);
-
     routeNum.current += 1;
     dispatch(updateRouteNum(routeNum.current));
 
@@ -1309,9 +1306,10 @@ const LidarCanvas = ({
     const isZeroExist = (element: number) => element === 0;
     const zeroIndex = nodes.findIndex(isZeroExist);
 
+    // If zero index is larger than 0, It means that there is empty slot in nodes.
     if (zeroIndex >= 0) {
       nodes[zeroIndex] = 1;
-      node.name = `${prefix}-${formatNumber(zeroIndex + 1)}`;
+      node.name = `${prefix}_${formatNumber(zeroIndex + 1)}`;
       node.userData.index = zeroIndex;
     } else {
       nodes.push(1);
