@@ -250,7 +250,9 @@ const LidarCanvas = ({
     const scene = sceneRef.current;
     const selectedObj = selectedNodeRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
-    if (!scene || !selectedObj || !currSelectionBox) return;
+    const transformControl = transformControlRef.current;
+    if (!scene || !selectedObj || !currSelectionBox || !transformControl)
+      return;
 
     switch (category) {
       case "name":
@@ -307,12 +309,17 @@ const LidarCanvas = ({
         break;
     }
 
-    // selection box
-    if (transformControlRef.current?.object)
-      currSelectionBox.setFromObject(transformControlRef.current.object);
-
     // update selected object info
     dispatchChange();
+
+    // selection box update
+    const transformedObj = transformControl.object;
+    if (!transformedObj) return;
+    if (transformedObj.name.includes("goal")) {
+      currSelectionBox.setFromObject(transformedObj.children[0]);
+    } else {
+      currSelectionBox.setFromObject(transformedObj);
+    }
   };
 
   const init3DScene = () => {
@@ -535,23 +542,6 @@ const LidarCanvas = ({
 
       selectedNodeRef.current = topParent;
       transformControl.attach(topParent);
-      // console.log("selected Object: ", topParent);
-
-      // nodes push
-      // if (!selectedNodesArray.includes(topParent)) {
-      //   selectedNodesArray.push(topParent);
-      // } else {
-      //   // if the selectedNodesRef array includes the passed intersect,
-      //   // reorder selectedNodesRef so that the selected node move to the front.
-      //   // This helpls in managing the order of selection.
-      //
-      //   // e.g) Given selctedNodeRef is [1, 2, 3, 4, 5],
-      //   // selecting node 4 will reorder it to [4, 1, 2, 3, 5]
-      //   const index = selectedNodesArray.indexOf(topParent);
-      //   selectedNodesArray.splice(index, 1);
-      //   selectedNodesArray.unshift(topParent);
-      // }
-      //
 
       // Limit the number of nodes that can be selectd to two
       // The code above is the original(multiselect).
@@ -571,7 +561,7 @@ const LidarCanvas = ({
         }
       }
 
-      hilightObject();
+      showSelectionHelper(topParent.children[0]);
       dispatchChange();
     } else {
       selectedNodeRef.current = null;
@@ -591,23 +581,26 @@ const LidarCanvas = ({
     }
   };
 
-  const hilightObject = () => {
+  const showSelectionHelper = (obj: THREE.Object3D) => {
     const scene = sceneRef.current;
     const selectedNodesArray = selectedNodesArrayRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
     const prevSelectionBox = prevSelectionBoxRef.current;
-    const transformControl = transformControlRef.current;
-    if (!scene || !currSelectionBox || !prevSelectionBox || !transformControl)
-      return;
+    if (!scene || !currSelectionBox || !prevSelectionBox) return;
 
     hideSelectionHelpers();
 
-    if (transformControl.object) {
-      currSelectionBox.setFromObject(transformControl.object);
-      currSelectionBox.visible = true;
-    }
+    if (obj.name.includes("goal"))
+      currSelectionBox.setFromObject(obj.children[0]);
+    else currSelectionBox.setFromObject(obj);
+
+    currSelectionBox.visible = true;
+
     if (selectedNodesArray.length > 1) {
-      prevSelectionBox.setFromObject(selectedNodesArray[0]);
+      const prev = selectedNodesArray[0];
+      if (prev.name.includes("goal"))
+        prevSelectionBox.setFromObject(prev.children[0]);
+      else prevSelectionBox.setFromObject(prev);
       prevSelectionBox.visible = true;
     }
   };
@@ -652,8 +645,8 @@ const LidarCanvas = ({
           }
         });
 
-        const axesHelper = new THREE.AxesHelper(2);
-        axesHelper.scale.set(1000, 1000, 1000);
+        const axesHelper = new THREE.AxesHelper(1);
+        axesHelper.scale.set(800, 800, 0);
         group.add(axesHelper);
 
         sceneRef.current?.add(group);
@@ -782,9 +775,10 @@ const LidarCanvas = ({
             event,
             raycastTargetsRef.current
           );
+          if (isMouseDragged) break;
           if (intersect !== null) {
             selectObject(intersect.object);
-          } else if (!isMouseDragged) {
+          } else {
             selectObject(null);
           }
         } else {
@@ -799,7 +793,6 @@ const LidarCanvas = ({
           );
           erasePoint(intersect);
         }
-
         break;
       default:
         break;
@@ -939,7 +932,7 @@ const LidarCanvas = ({
       robotModel.current = group;
 
       // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
-      const axesHelper = new THREE.AxesHelper(2);
+      const axesHelper = new THREE.AxesHelper(1);
       robotModel.current.add(axesHelper);
 
       axesHelper.scale.set(1000, 1000, 1000);
@@ -1233,12 +1226,12 @@ const LidarCanvas = ({
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
-              // obj.material.color.set(new THREE.Color(0x33ff52));
               obj.material.color.set(new THREE.Color(0xf7ff00));
 
               obj.material.transparent = true;
-              obj.material.opacity = 0.95;
+              obj.material.opacity = 0.85;
 
+              // Add Edge line
               const edges = new THREE.EdgesGeometry(obj.geometry);
               const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff,
@@ -1248,6 +1241,11 @@ const LidarCanvas = ({
               obj.add(line);
             }
           });
+
+          // axes helper
+          const axesHelper = new THREE.AxesHelper(1);
+          axesHelper.scale.set(800, 800, 0);
+          group.add(axesHelper);
 
           goalNum.current += 1;
           dispatch(updateGoalNum(goalNum.current));
@@ -1554,7 +1552,11 @@ const LidarCanvas = ({
     const currSelectionBox = currSelectionBoxRef.current;
     const transformControl = transformControlRef.current;
     if (currSelectionBox && transformControl && transformControl.object) {
-      currSelectionBox.setFromObject(transformControl.object);
+      if (transformControl.object.name.includes("goal")) {
+        currSelectionBox.setFromObject(transformControl.object.children[0]);
+      } else {
+        currSelectionBox.setFromObject(transformControl.object);
+      }
     }
     if (selectedNodeRef.current) {
       removeAllLinksRelateTo(selectedNodeRef.current.uuid);
