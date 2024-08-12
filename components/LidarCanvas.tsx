@@ -1309,12 +1309,10 @@ const LidarCanvas = ({
     // If zero index is larger than 0, It means that there is empty slot in nodes.
     if (zeroIndex >= 0) {
       nodes[zeroIndex] = 1;
-      node.name = `${prefix}_${formatNumber(zeroIndex + 1)}`;
-      node.userData.index = zeroIndex;
+      node.name = `${prefix}_${zeroIndex + 1}`;
     } else {
       nodes.push(1);
-      node.name = `${prefix}_${formatNumber(nodes.length)}`;
-      node.userData.index = nodes.length - 1;
+      node.name = `${prefix}_${nodes.length}`;
     }
     node.userData.links = [];
     node.userData.links_from = [];
@@ -1365,11 +1363,15 @@ const LidarCanvas = ({
 
     // Num update
     if (target.userData.type === NODE_TYPE.GOAL) {
-      goals.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      goals.current[Number(index as string) - 1] = 0;
       goalNum.current -= 1;
       dispatch(updateGoalNum(goalNum.current));
     } else if (target.userData.type === NODE_TYPE.ROUTE) {
-      routes.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      routes.current[Number(index as string) - 1] = 0;
       routeNum.current -= 1;
       dispatch(updateRouteNum(routeNum.current));
     }
@@ -1738,12 +1740,12 @@ const LidarCanvas = ({
     }
   };
 
-  const formatNumber = (num: number): string => {
-    if (num < 1 || num > 99) {
-      throw new Error("Input number must be between 1 and 99");
-    }
-    return num < 10 ? `0${num}` : `${num}`;
-  };
+  // const formatNumber = (num: number): string => {
+  //   if (num < 1 || num > 99) {
+  //     throw new Error("Input number must be between 1 and 99");
+  //   }
+  //   return num < 10 ? `0${num}` : `${num}`;
+  // };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
     <div id="lidar-canvas__container">
