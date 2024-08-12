@@ -168,6 +168,8 @@ const LidarCanvas = ({
       clearMapPoints(action.target);
       drawCloud(action.target, cloudData);
     } else if (className === CANVAS_CLASSES.DEFAULT) {
+      const selectedNodesArray = selectedNodesArrayRef.current;
+
       switch (action.command) {
         case CANVAS_ACTION.ADD_NODE:
           if (className !== CANVAS_CLASSES.DEFAULT) break;
@@ -191,8 +193,11 @@ const LidarCanvas = ({
           updateProperty(action.category, action.value);
           break;
         case CANVAS_ACTION.ADD_LINK:
-          const selectedNodesArray = selectedNodesArrayRef.current;
           addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          break;
+        case CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK:
+          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          addLinks(selectedNodesArray[1], selectedNodesArray[0]);
           break;
         case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
@@ -911,13 +916,14 @@ const LidarCanvas = ({
 
     const loader = new ThreeMFLoader();
 
-    loader.load("amr_texture.3MF", function (group) {
+    loader.load("amr.3MF", function (group) {
       group.name = "amr";
       group.scale.set(0.0315, 0.0315, 0.0315);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.material.color.set(new THREE.Color(0x0087fc));
+
           const edges = new THREE.EdgesGeometry(obj.geometry);
           const lineMaterial = new THREE.LineBasicMaterial({
             color: 0xffffff,

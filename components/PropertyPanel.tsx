@@ -687,13 +687,27 @@ export default function PropertyPanel() {
                   }}
                 />
                 <Button
-                  label="Add Link"
+                  label="Link Nodes(one way)"
                   size="small"
                   severity="secondary"
                   text
                   raised
                   onClick={() => {
                     dispatch(createAction({ command: CANVAS_ACTION.ADD_LINK }));
+                  }}
+                />
+                <Button
+                  label="Link Nodes(round trip)"
+                  size="small"
+                  severity="secondary"
+                  text
+                  raised
+                  onClick={() => {
+                    dispatch(
+                      createAction({
+                        command: CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK,
+                      })
+                    );
                   }}
                 />
               </div>
