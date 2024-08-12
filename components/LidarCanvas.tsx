@@ -900,14 +900,13 @@ const LidarCanvas = ({
   const initRobot = async () => {
     if (!sceneRef.current) return;
 
-    const originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
-    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
-    const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
+    const originGeometry = new THREE.SphereGeometry(0.1);
+    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const originPoint = new THREE.Mesh(originGeometry, originMaterial);
 
-    const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    // [TEMP]
+    const axesHelperOrin = new THREE.AxesHelper(1);
     originPoint.scale.set(31.5, 31.5, 31.5);
-    sceneRef.current.add(axesHelperOrin); // scene에 추가
+    originPoint.add(axesHelperOrin);
     sceneRef.current.add(originPoint);
 
     const loader = new ThreeMFLoader();
@@ -1280,8 +1279,6 @@ const LidarCanvas = ({
     plane.visible = false;
     route.add(plane);
 
-    setupNode(route, NODE_TYPE.ROUTE, nodePose);
-
     routeNum.current += 1;
     dispatch(updateRouteNum(routeNum.current));
 
@@ -1309,14 +1306,13 @@ const LidarCanvas = ({
     const isZeroExist = (element: number) => element === 0;
     const zeroIndex = nodes.findIndex(isZeroExist);
 
+    // If zero index is larger than 0, It means that there is empty slot in nodes.
     if (zeroIndex >= 0) {
       nodes[zeroIndex] = 1;
-      node.name = `${prefix}-${formatNumber(zeroIndex + 1)}`;
-      node.userData.index = zeroIndex;
+      node.name = `${prefix}_${zeroIndex + 1}`;
     } else {
       nodes.push(1);
-      node.name = `${prefix}_${formatNumber(nodes.length)}`;
-      node.userData.index = nodes.length - 1;
+      node.name = `${prefix}_${nodes.length}`;
     }
     node.userData.links = [];
     node.userData.links_from = [];
@@ -1367,11 +1363,15 @@ const LidarCanvas = ({
 
     // Num update
     if (target.userData.type === NODE_TYPE.GOAL) {
-      goals.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      goals.current[Number(index as string) - 1] = 0;
       goalNum.current -= 1;
       dispatch(updateGoalNum(goalNum.current));
     } else if (target.userData.type === NODE_TYPE.ROUTE) {
-      routes.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      routes.current[Number(index as string) - 1] = 0;
       routeNum.current -= 1;
       dispatch(updateRouteNum(routeNum.current));
     }
@@ -1740,12 +1740,12 @@ const LidarCanvas = ({
     }
   };
 
-  const formatNumber = (num: number): string => {
-    if (num < 1 || num > 99) {
-      throw new Error("Input number must be between 1 and 99");
-    }
-    return num < 10 ? `0${num}` : `${num}`;
-  };
+  // const formatNumber = (num: number): string => {
+  //   if (num < 1 || num > 99) {
+  //     throw new Error("Input number must be between 1 and 99");
+  //   }
+  //   return num < 10 ? `0${num}` : `${num}`;
+  // };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
     <div id="lidar-canvas__container">
