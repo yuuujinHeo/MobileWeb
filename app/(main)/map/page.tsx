@@ -329,7 +329,7 @@ const Map: React.FC = () => {
       >
         <div id="sidebar-container">
           <UtilityPanel />
-          <LidarCanvas className="canvas-sidebar" />
+          <LidarCanvas className="canvas-mapping" />
           <Joystick />
         </div>
       </Sidebar>

@@ -27,7 +27,7 @@ const UtilityPanel = () => {
       command: () => {
         getBuildResponse();
         dispatch(
-          handleMapping({ command: "MAPPING_START", target: "canvas-sidebar" })
+          handleMapping({ command: "MAPPING_START", target: "canvas-mapping" })
         );
       },
     },
@@ -37,7 +37,7 @@ const UtilityPanel = () => {
       command: () => {
         getStopResponse();
         dispatch(
-          handleMapping({ command: "MAPPING_STOP", target: "canvas-sidebar" })
+          handleMapping({ command: "MAPPING_STOP", target: "canvas-mapping" })
         );
       },
     },
