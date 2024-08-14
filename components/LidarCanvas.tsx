@@ -1177,8 +1177,8 @@ const LidarCanvas = ({
 
   const addMappingListener = () => {
     if (className === CANVAS_CLASSES.MAPPING) {
+      clearMapPoints(CANVAS_CLASSES.MAPPING);
       socketRef.current.on("mapping", (data) => {
-        clearMapPoints(CANVAS_CLASSES.MAPPING);
         drawCloud(CANVAS_CLASSES.MAPPING, data);
       });
     }

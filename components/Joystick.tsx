@@ -33,8 +33,8 @@ const Joystick = () => {
 
   // for joystick
   const joyIntervalRef = useRef<number | null>(null);
-  const leftIntervalRef = useRef<number | null>(null);
-  const rightIntervalRef = useRef<number | null>(null);
+  // const leftIntervalRef = useRef<number | null>(null);
+  // const rightIntervalRef = useRef<number | null>(null);
   const leftValueRef = useRef({ vx: 0 });
   const rightValueRef = useRef({ wz: 0 });
   const leftControlRef = useRef(false);
@@ -45,32 +45,25 @@ const Joystick = () => {
 
   useEffect(() => {
     const createJoystick = () => {
-      const leftJoy = document.getElementById("left-joystick") as
-        | HTMLElement
-        | undefined;
-      const rightJoy = document.getElementById("right-joystick") as
-        | HTMLElement
-        | undefined;
-
+      const leftJoy = document.getElementById("left-joystick");
+      const rightJoy = document.getElementById("right-joystick");
       const { joySize } = getJoystickSize();
 
       const leftJoyManager = nipplejs.create({
-        zone: leftJoy,
+        zone: leftJoy as HTMLElement,
         color: "blue",
-        // size: joySize,
-        mode: "dynamic",
+        size: joySize,
+        mode: "static",
         dynamicPage: true,
-        // position: { left: "50%", top: "50%" },
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
-        zone: rightJoy,
+        zone: rightJoy as HTMLElement,
         color: "red",
-        // size: joySize,
-        mode: "dynamic",
+        size: joySize,
+        mode: "static",
         dynamicPage: true,
-        // position: { left: "50%", top: "50%" },
         lockX: true,
       });
 
@@ -213,7 +206,7 @@ const Joystick = () => {
 
   return (
     <div id="joystick-container">
-      <div id="left-joystick">touch</div>
+      <div id="left-joystick"></div>
       <div id="control-parameter-container">
         <div id="speed-container">
           <span>Speed</span>
@@ -236,10 +229,9 @@ const Joystick = () => {
           />
         </div>
       </div>
-      <div id="right-joystick">touch</div>
+      <div id="right-joystick"></div>
     </div>
   );
 };
 
 export default Joystick;
-
