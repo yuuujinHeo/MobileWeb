@@ -1285,6 +1285,8 @@ const LidarCanvas = ({
     plane.visible = false;
     route.add(plane);
 
+    setupNode(route, NODE_TYPE.ROUTE, nodePose);
+
     routeNum.current += 1;
     dispatch(updateRouteNum(routeNum.current));
 
