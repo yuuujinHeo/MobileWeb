@@ -29,20 +29,34 @@
   &__power {
     display: flex;
     justify-content: center;
+    align-items: center;
+    h2 {
+      color: #ffffff;
+      font-weight: bold;
+      margin-right: 1rem;
+      margin-bottom: 0;
+    }
   }
   h5 {
-    padding-left: 3rem;
+    padding-left: 1rem;
+    color: #ffffff;
+    margin-top: 1.8rem;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
   }
   width: 30vw;
   display: flex;
   flex-direction: column;
-  background: #bfc9ca;
+  background: #606666;
   padding: 10px;
   clip-path: polygon(0% 0%, 100% 0%, 93% 100%, 7% 100%);
   &__speed {
     display: flex;
     flex-direction: row;
     justify-content: space-evenly;
+    background: #bfc9ca;
+    clip-path: polygon(3.3% 0%, 96.7% 0%, 93% 100%, 7% 100%);
+    font-weight: bold;
     &__linear,
     &__rotation {
       overflow: hidden;

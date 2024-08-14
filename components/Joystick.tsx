@@ -5,7 +5,7 @@ import nipplejs, { JoystickManager } from "nipplejs";
 
 // prime
 import { Knob } from "primereact/knob";
-import { SelectButton, SelectButtonChangeEvent } from "primereact/selectbutton";
+import { ToggleButton, ToggleButtonChangeEvent } from "primereact/togglebutton";
 
 const INTERVAL_TIME = 100;
 
@@ -44,12 +44,8 @@ const Joystick = () => {
   let leftStartPosition = { x: 0, y: 0 };
   let rightStartPosition = { x: 0, y: 0 };
 
-  const [joyPower, setJoyPower] = useState<number[]>([]);
-  const joyPowerRef = useRef<number[]>([]);
-  const items = [
-    { name: "LEFT", value: 1 },
-    { name: "RIGHT", value: 2 },
-  ];
+  const [joyPower, setJoyPower] = useState<boolean>(false);
+  const joyPowerRef = useRef<boolean>(false);
 
   useEffect(() => {
     const createJoystick = () => {
@@ -124,17 +120,16 @@ const Joystick = () => {
         .replace("T", " ")
         .replace("Z", "");
 
-      // Check joy power
-      const validVX = joyPowerRef.current.includes(1) ? vx.toString() : "0";
-      const validWZ = joyPowerRef.current.includes(2) ? wz.toString() : "0";
-
-      await axios.post(url + "/control/move", {
-        command: "jog",
-        vx: validVX,
-        vy: vy.toString(),
-        wz: validWZ,
-        time: currentTime,
-      });
+      // Check joy is on
+      if (joyPowerRef.current) {
+        await axios.post(url + "/control/move", {
+          command: "jog",
+          vx: vx.toString(),
+          vy: vy.toString(),
+          wz: wz.toString(),
+          time: currentTime,
+        });
+      }
     } catch (error) {
       console.error("Error sending jog request:", error);
     }
@@ -225,25 +220,25 @@ const Joystick = () => {
     };
   }, [speedFactor, rotateFactor]);
 
-  const handleSelectChange = (e: SelectButtonChangeEvent) => {
+  const handleToggleChange = (e: ToggleButtonChangeEvent) => {
     setJoyPower(e.value);
     joyPowerRef.current = e.value;
   };
 
   return (
     <div id="joystick-container">
-      <div id="left-joystick"></div>
+      <div id="left-joystick">TRANSLATE</div>
       <div className="control-container">
         <div className="control-container__power">
-          <SelectButton
-            value={joyPower}
-            onChange={(e) => handleSelectChange(e)}
-            optionLabel="name"
-            options={items}
-            multiple
+          <h2>POWER</h2>
+          <ToggleButton
+            onLabel="ON"
+            offLabel="OFF"
+            checked={joyPower}
+            onChange={(e) => handleToggleChange(e)}
           />
         </div>
-        <h5> Robot Speed Control</h5>
+        <h5> ROBOT SPEED CONTROL</h5>
         <div className="control-container__speed">
           <div className="control-container__speed__linear">
             <span>Linear Speed</span>
@@ -269,7 +264,7 @@ const Joystick = () => {
           </div>
         </div>
       </div>
-      <div id="right-joystick"></div>
+      <div id="right-joystick">ROTATE</div>
     </div>
   );
 };
