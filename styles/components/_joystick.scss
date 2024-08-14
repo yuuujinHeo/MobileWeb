@@ -3,7 +3,7 @@
   z-index: 999;
   opacity: 0.8;
   width: 100%;
-  height: 250px;
+  height: 300px;
   display: flex;
   justify-content: space-between;
   background: #e0e0e0;
@@ -25,17 +25,32 @@
   }
 }
 
-#control-parameter-container {
-  width: 25vw;
-  display: flex;
-  flex-direction: row;
-  justify-content: space-evenly;
-  #speed-container,
-  #rotation-container {
-    overflow: hidden;
-    touch-action: none;
+.control-container {
+  &__power {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    justify-content: center;
+  }
+  h5 {
+    padding-left: 3rem;
+  }
+  width: 30vw;
+  display: flex;
+  flex-direction: column;
+  background: #bfc9ca;
+  padding: 10px;
+  clip-path: polygon(0% 0%, 100% 0%, 93% 100%, 7% 100%);
+  &__speed {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-evenly;
+    &__linear,
+    &__rotation {
+      overflow: hidden;
+      touch-action: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 3px;
+    }
   }
 }
