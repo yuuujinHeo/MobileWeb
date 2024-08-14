@@ -1,7 +1,7 @@
 export const CANVAS_CLASSES = {
   DEFAULT: "canvas-default",
-  OVERLAY: "canvas-overlay",
-  SIDEBAR: "canvas-sidebar",
+  PREVIEW: "canvas-preview",
+  MAPPING: "canvas-mapping",
 } as const;
 
 export const CANVAS_ACTION = {

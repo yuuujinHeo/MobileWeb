@@ -134,7 +134,7 @@ const LidarCanvas = ({
   // 3D Scene setting when the component is mounted
   useEffect(() => {
     init3DScene();
-    if (className !== CANVAS_CLASSES.OVERLAY) {
+    if (className !== CANVAS_CLASSES.PREVIEW) {
       initRobot();
       connectSocket();
       reloadMappingData();
@@ -153,7 +153,7 @@ const LidarCanvas = ({
       }
       rendererRef.current?.setAnimationLoop(null);
 
-      if (socketRef.current && className !== CANVAS_CLASSES.OVERLAY) {
+      if (socketRef.current && className !== CANVAS_CLASSES.PREVIEW) {
         console.log("Socket disconnect ", socketRef.current.id);
         socketRef.current.disconnect();
       }
@@ -216,13 +216,13 @@ const LidarCanvas = ({
         default:
           break;
       }
-    } else if (className === CANVAS_CLASSES.SIDEBAR) {
+    } else if (className === CANVAS_CLASSES.MAPPING) {
       switch (action.command) {
         case CANVAS_ACTION.MAPPING_START:
           addMappingListener();
           break;
         case CANVAS_ACTION.MAPPING_STOP:
-          clearMapPoints(CANVAS_CLASSES.SIDEBAR);
+          clearMapPoints(CANVAS_CLASSES.MAPPING);
           removeMappingListener();
           break;
         default:
@@ -972,7 +972,7 @@ const LidarCanvas = ({
           console.log("Socket connected ", socketRef.current.id);
         });
 
-        if (className !== CANVAS_CLASSES.OVERLAY) {
+        if (className !== CANVAS_CLASSES.PREVIEW) {
           socketRef.current.on("lidar", (data) => {
             drawLidar(data.data, {
               x: parseFloat(data.pose.x),
@@ -1092,7 +1092,7 @@ const LidarCanvas = ({
     if (!cloud) return;
     if (className !== targetCanvas) return;
 
-    if (className !== CANVAS_CLASSES.SIDEBAR) resetCamera();
+    if (className !== CANVAS_CLASSES.MAPPING) resetCamera();
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
@@ -1176,10 +1176,10 @@ const LidarCanvas = ({
   };
 
   const addMappingListener = () => {
-    if (className === CANVAS_CLASSES.SIDEBAR) {
+    if (className === CANVAS_CLASSES.MAPPING) {
+      clearMapPoints(CANVAS_CLASSES.MAPPING);
       socketRef.current.on("mapping", (data) => {
-        clearMapPoints(CANVAS_CLASSES.SIDEBAR);
-        drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+        drawCloud(CANVAS_CLASSES.MAPPING, data);
       });
     }
   };

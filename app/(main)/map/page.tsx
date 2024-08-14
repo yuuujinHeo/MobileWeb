@@ -176,7 +176,7 @@ const Map: React.FC = () => {
       dispatch(
         createAction({
           command: CANVAS_ACTION.DRAW_CLOUD,
-          target: CANVAS_CLASSES.OVERLAY,
+          target: CANVAS_CLASSES.PREVIEW,
         })
       );
     } catch (e) {
@@ -308,7 +308,7 @@ const Map: React.FC = () => {
               <span className="text-xl text-900 font-bold">Preview</span>
             </div>
             <LidarCanvas
-              className={CANVAS_CLASSES.OVERLAY}
+              className={CANVAS_CLASSES.PREVIEW}
               cloudData={cloudData}
             />
             <Button
@@ -329,7 +329,7 @@ const Map: React.FC = () => {
       >
         <div id="sidebar-container">
           <UtilityPanel />
-          <LidarCanvas className="canvas-sidebar" />
+          <LidarCanvas className="canvas-mapping" />
           <Joystick />
         </div>
       </Sidebar>

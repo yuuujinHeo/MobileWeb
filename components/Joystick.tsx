@@ -5,6 +5,7 @@ import nipplejs, { JoystickManager } from "nipplejs";
 
 // prime
 import { Knob } from "primereact/knob";
+import { ToggleButton, ToggleButtonChangeEvent } from "primereact/togglebutton";
 
 const INTERVAL_TIME = 100;
 
@@ -26,15 +27,15 @@ const getJoystickSize = () => {
 };
 
 const Joystick = () => {
-  const [speedFactor, setSpeedFactor] = useState<number>(0.5);
-  const [rotateFactor, setRotateFactor] = useState<number>(20);
+  const [speedFactor, setSpeedFactor] = useState<number>(20);
+  const SPEED_CONVERSION_FACTOR = 0.02;
+  const [rotateFactor, setRotateFactor] = useState<number>(40);
+  const ROTATE_CONVERSION_FACTOR = 0.595;
   const leftJoyManagerRef = useRef<JoystickManager | null>(null);
   const rightJoyManagerRef = useRef<JoystickManager | null>(null);
 
   // for joystick
   const joyIntervalRef = useRef<number | null>(null);
-  const leftIntervalRef = useRef<number | null>(null);
-  const rightIntervalRef = useRef<number | null>(null);
   const leftValueRef = useRef({ vx: 0 });
   const rightValueRef = useRef({ wz: 0 });
   const leftControlRef = useRef(false);
@@ -43,34 +44,30 @@ const Joystick = () => {
   let leftStartPosition = { x: 0, y: 0 };
   let rightStartPosition = { x: 0, y: 0 };
 
+  const [joyPower, setJoyPower] = useState<boolean>(false);
+  const joyPowerRef = useRef<boolean>(false);
+
   useEffect(() => {
     const createJoystick = () => {
-      const leftJoy = document.getElementById("left-joystick") as
-        | HTMLElement
-        | undefined;
-      const rightJoy = document.getElementById("right-joystick") as
-        | HTMLElement
-        | undefined;
-
+      const leftJoy = document.getElementById("left-joystick");
+      const rightJoy = document.getElementById("right-joystick");
       const { joySize } = getJoystickSize();
 
       const leftJoyManager = nipplejs.create({
-        zone: leftJoy,
+        zone: leftJoy as HTMLElement,
         color: "blue",
-        // size: joySize,
-        mode: "dynamic",
+        size: joySize,
+        mode: "static",
         dynamicPage: true,
-        // position: { left: "50%", top: "50%" },
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
-        zone: rightJoy,
+        zone: rightJoy as HTMLElement,
         color: "red",
-        // size: joySize,
-        mode: "dynamic",
+        size: joySize,
+        mode: "static",
         dynamicPage: true,
-        // position: { left: "50%", top: "50%" },
         lockX: true,
       });
 
@@ -87,17 +84,26 @@ const Joystick = () => {
     let vx: number, wz: number;
 
     if (data.vector.y > 0) {
-      vx = speedFactor * (data.distance / maxDistance);
+      vx =
+        speedFactor * SPEED_CONVERSION_FACTOR * (data.distance / maxDistance);
     } else if (data.vector.y < 0) {
-      vx = -1 * speedFactor * (data.distance / maxDistance);
+      vx =
+        -1 *
+        (speedFactor * SPEED_CONVERSION_FACTOR) *
+        (data.distance / maxDistance);
     } else {
       vx = 0;
     }
 
     if (data.vector.x > 0) {
-      wz = rotateFactor * (data.distance / maxDistance);
+      wz =
+        rotateFactor * ROTATE_CONVERSION_FACTOR * (data.distance / maxDistance);
     } else if (data.vector.x < 0) {
-      wz = -1 * rotateFactor * (data.distance / maxDistance);
+      wz =
+        -1 *
+        rotateFactor *
+        ROTATE_CONVERSION_FACTOR *
+        (data.distance / maxDistance);
     } else {
       wz = 0;
     }
@@ -114,13 +120,16 @@ const Joystick = () => {
         .replace("T", " ")
         .replace("Z", "");
 
-      await axios.post(url + "/control/move", {
-        command: "jog",
-        vx: vx.toString(),
-        vy: vy.toString(),
-        wz: wz.toString(),
-        time: currentTime,
-      });
+      // Check joy is on
+      if (joyPowerRef.current) {
+        await axios.post(url + "/control/move", {
+          command: "jog",
+          vx: vx.toString(),
+          vy: vy.toString(),
+          wz: wz.toString(),
+          time: currentTime,
+        });
+      }
     } catch (error) {
       console.error("Error sending jog request:", error);
     }
@@ -211,35 +220,53 @@ const Joystick = () => {
     };
   }, [speedFactor, rotateFactor]);
 
+  const handleToggleChange = (e: ToggleButtonChangeEvent) => {
+    setJoyPower(e.value);
+    joyPowerRef.current = e.value;
+  };
+
   return (
     <div id="joystick-container">
-      <div id="left-joystick">touch</div>
-      <div id="control-parameter-container">
-        <div id="speed-container">
-          <span>Speed</span>
-          <Knob
-            value={speedFactor}
-            step={0.01}
-            min={0}
-            max={2}
-            onChange={(e) => setSpeedFactor(e.value)}
+      <div id="left-joystick">TRANSLATE</div>
+      <div className="control-container">
+        <div className="control-container__power">
+          <h2>POWER</h2>
+          <ToggleButton
+            onLabel="ON"
+            offLabel="OFF"
+            checked={joyPower}
+            onChange={(e) => handleToggleChange(e)}
           />
         </div>
-        <div id="rotation-container">
-          <span>Rotation</span>
-          <Knob
-            value={rotateFactor}
-            step={1}
-            min={0}
-            max={60}
-            onChange={(e) => setRotateFactor(e.value)}
-          />
+        <h5> ROBOT SPEED CONTROL</h5>
+        <div className="control-container__speed">
+          <div className="control-container__speed__linear">
+            <span>Linear Speed</span>
+            <Knob
+              value={speedFactor}
+              step={1}
+              min={1}
+              max={100}
+              strokeWidth={5}
+              onChange={(e) => setSpeedFactor(e.value)}
+            />
+          </div>
+          <div className="control-container__speed__rotation">
+            <span>Rotation Speed</span>
+            <Knob
+              value={rotateFactor}
+              step={1}
+              min={1}
+              max={100}
+              strokeWidth={5}
+              onChange={(e) => setRotateFactor(e.value)}
+            />
+          </div>
         </div>
       </div>
-      <div id="right-joystick">touch</div>
+      <div id="right-joystick">ROTATE</div>
     </div>
   );
 };
 
 export default Joystick;
-
