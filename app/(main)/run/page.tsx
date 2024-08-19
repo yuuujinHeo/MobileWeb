@@ -84,8 +84,12 @@ const Run: React.FC = () => {
   }
 
   async function getTaskList() {
-    const response = await axios.get(mobileURL + "/task");
-    setTasks(response.data);
+    try {
+      const response = await axios.get(mobileURL + "/task");
+      setTasks(response.data);
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   const expandAll = () => {
@@ -157,34 +161,42 @@ const Run: React.FC = () => {
   };
 
   const playTask = async () => {
-    if (curTask != "") {
-      if (taskState.running) {
-        toast.current?.show({
-          severity: "info",
-          summary: "Already Playing",
-          life: 3000,
-        });
-      } else {
-        const response = await axios.get(mobileURL + "/task/load/" + curTask);
-        if (response.data == "success") {
-          const response2 = await axios.get(mobileURL + "/task/run");
-        } else {
+    try {
+      if (curTask != "") {
+        if (taskState.running) {
           toast.current?.show({
-            severity: "error",
-            summary: "Load Fail",
+            severity: "info",
+            summary: "Already Playing",
             life: 3000,
           });
+        } else {
+          const response = await axios.get(mobileURL + "/task/load/" + curTask);
+          if (response.data == "success") {
+            const response2 = await axios.get(mobileURL + "/task/run");
+          } else {
+            toast.current?.show({
+              severity: "error",
+              summary: "Load Fail",
+              life: 3000,
+            });
+          }
         }
       }
+    } catch (e) {
+      console.error(e);
     }
   };
 
   const stopTask = async () => {
-    if (curTask != "") {
-      if (taskState.running) {
-        const response = await axios.get(mobileURL + "/task/stop");
-      } else {
+    try {
+      if (curTask != "") {
+        if (taskState.running) {
+          const response = await axios.get(mobileURL + "/task/stop");
+        } else {
+        }
       }
+    } catch (e) {
+      console.error(e);
     }
   };
 
@@ -222,11 +234,15 @@ const Run: React.FC = () => {
   };
 
   async function getNodes(name) {
-    const response = await axios.get(mobileURL + "/task/" + name);
-    node_num = 0;
-    setCurTask(name);
+    try {
+      const response = await axios.get(mobileURL + "/task/" + name);
+      node_num = 0;
+      setCurTask(name);
 
-    setNodes(makeNodes(response.data));
+      setNodes(makeNodes(response.data));
+    } catch (e) {
+      console.error(e);
+    }
   }
 
   const PopupLoad = () => {
