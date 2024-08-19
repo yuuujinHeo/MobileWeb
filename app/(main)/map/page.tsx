@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import dynamic from "next/dynamic";
 // redux
 import { useDispatch, useSelector } from "react-redux";
@@ -56,6 +56,11 @@ const Map: React.FC = () => {
   const { transformControlMode } = useSelector(
     (state: RootState) => state.canvas
   );
+  const { map } = useSelector(
+    (state: RootState) => state.status.state,
+    (prev, next) => prev.map === next.map
+  );
+
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
@@ -70,6 +75,40 @@ const Map: React.FC = () => {
   const toast = useRef<Toast>(null);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
+  useEffect(() => {
+    handleTransformModeChange(transformControlMode);
+  }, [transformControlMode]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    getMapList();
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedMap) {
+      getMapData(selectedMap.name);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.DRAW_CLOUD,
+          target: CANVAS_CLASSES.PREVIEW,
+        })
+      );
+      getTopoData(selectedMap.name);
+    }
+  }, [selectedMap]);
+
+  useEffect(() => {
+    syncCanvasWithSlamNav();
+  }, [map]);
 
   const menuItems = [
     {
@@ -136,30 +175,6 @@ const Map: React.FC = () => {
     </div>
   );
 
-  useEffect(() => {
-    handleTransformModeChange(transformControlMode);
-  }, [transformControlMode]);
-
-  useEffect(() => {
-    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-      event.preventDefault();
-      event.returnValue = "";
-    };
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    getMapList();
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (selectedMap) {
-      getMapData(selectedMap.name);
-      getTopoData(selectedMap.name);
-    }
-  }, [selectedMap]);
-
   const getMapList = async () => {
     try {
       const res = await axios.get(url + "/map/list");
@@ -173,12 +188,6 @@ const Map: React.FC = () => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setCloudData(res.data);
-      dispatch(
-        createAction({
-          command: CANVAS_ACTION.DRAW_CLOUD,
-          target: CANVAS_CLASSES.PREVIEW,
-        })
-      );
     } catch (e) {
       console.error(e);
     }
@@ -241,6 +250,14 @@ const Map: React.FC = () => {
     dispatch(
       createAction({ command: CANVAS_ACTION.TFC_SET_MODE, name: selectedBtn })
     );
+  };
+
+  const syncCanvasWithSlamNav = async () => {
+    if (map !== "") {
+      await getMapData(map);
+      await getTopoData(map);
+      dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
+    }
   };
 
   return (

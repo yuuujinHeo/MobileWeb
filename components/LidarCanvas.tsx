@@ -137,6 +137,8 @@ const LidarCanvas = ({
     if (className !== CANVAS_CLASSES.PREVIEW) {
       initRobot();
       connectSocket();
+    }
+    if (className === CANVAS_CLASSES.MAPPING) {
       reloadMappingData();
     }
 
