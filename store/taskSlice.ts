@@ -9,6 +9,7 @@ const taskSlice = createSlice({
     taskID: "",
     // [TEMP]
     name: "",
+    runningTaskName: "",
   },
   reducers: {
     setTaskRunning(state, action: PayloadAction<boolean>) {
@@ -21,10 +22,17 @@ const taskSlice = createSlice({
     updateTaskName(state, action: PayloadAction<string>) {
       state.name = action.payload;
     },
+    updateRunningTaskName(state, action: PayloadAction<string>) {
+      state.runningTaskName = action.payload;
+    },
   },
 });
 
-export const { setTaskRunning, setTaskID, updateTaskName } = taskSlice.actions;
+export const {
+  setTaskRunning,
+  setTaskID,
+  updateTaskName,
+  updateRunningTaskName,
+} = taskSlice.actions;
 export const selectTask = (state: RootState) => state.task;
 export default taskSlice.reducer;
-
