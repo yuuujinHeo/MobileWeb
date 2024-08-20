@@ -107,7 +107,6 @@ const Move: React.FC = () => {
     // [TEMP]
     url.current = await getMobileAPIURL();
     if (task.name !== "" && task.name !== undefined) {
-      console.log(123, mobileURL);
       getNodes(task.name);
     }
   }
@@ -547,6 +546,8 @@ const Move: React.FC = () => {
 
   const makeNewTask = () => {
     setTaskName("temp_12546a");
+    // [TEMP]
+    dispatch(updateTaskName(""));
 
     const newNode: TreeNode[] = [
       {
