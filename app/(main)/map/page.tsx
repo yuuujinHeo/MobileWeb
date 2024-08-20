@@ -95,14 +95,7 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     if (selectedMap) {
-      getMapData(selectedMap.name);
-      dispatch(
-        createAction({
-          command: CANVAS_ACTION.DRAW_CLOUD,
-          target: CANVAS_CLASSES.PREVIEW,
-        })
-      );
-      getTopoData(selectedMap.name);
+      drawPreview(selectedMap.name);
     }
   }, [selectedMap]);
 
@@ -184,6 +177,16 @@ const Map: React.FC = () => {
     }
   };
 
+  const drawPreview = async (name: string) => {
+    await getMapData(name);
+    dispatch(
+      createAction({
+        command: CANVAS_ACTION.DRAW_CLOUD,
+        target: CANVAS_CLASSES.PREVIEW,
+      })
+    );
+  };
+
   const getMapData = async (name: string) => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
@@ -208,13 +211,15 @@ const Map: React.FC = () => {
     fileNameRef.current = e.value.name;
   };
 
-  const handleLoadMap = () => {
+  const handleLoadMap = async () => {
+    if (selectedMap === null) return;
     // Draw cloud points to lidar canvas
+    await getTopoData(selectedMap.name);
     dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
     // Hide dialogue
     setIsDialogVisible(false);
 
-    // Send selected map data to slam
+    // Send the selected map data to SLAM.
     sendSelectedMapToSLAM();
   };
 
@@ -253,7 +258,7 @@ const Map: React.FC = () => {
   };
 
   const syncCanvasWithSlamNav = async () => {
-    if (map !== "") {
+    if (map !== "" && cloudData === null && topoData === null) {
       await getMapData(map);
       await getTopoData(map);
       dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
