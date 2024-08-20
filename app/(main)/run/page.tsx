@@ -14,15 +14,16 @@ import { DataView } from "primereact/dataview";
 import { ScrollTop } from "primereact/scrolltop";
 import { v4 as uuidv4 } from "uuid";
 import { Dialog } from "primereact/dialog";
-import { useSelector } from "react-redux";
+import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "../../../store/store";
 import { getMobileAPIURL } from "../api/url";
 import { TreeNode } from "primereact/treenode";
 import emitter from "@/lib/eventBus";
-import { selectTask } from "@/store/taskSlice";
+import { selectTask, updateRunningTaskName } from "@/store/taskSlice";
 import "./style.scss";
 
 const Run: React.FC = () => {
+  const dispatch = useDispatch();
   const taskState = useSelector((state: RootState) => selectTask(state));
   const [mobileURL, setMobileURL] = useState("");
   const toast = useRef<Toast | null>(null);
@@ -38,6 +39,10 @@ const Run: React.FC = () => {
   });
 
   const [tasks, setTasks] = useState<string[]>([]);
+
+  // [TEMP]
+  const task = useSelector((state: RootState): any => state.task);
+  const url = useRef<string | null>(null);
 
   useEffect(() => {
     setURL();
@@ -81,6 +86,12 @@ const Run: React.FC = () => {
 
   async function setURL() {
     setMobileURL(await getMobileAPIURL());
+
+    // [TEMP]
+    url.current = await getMobileAPIURL();
+    if (task.runningTaskName !== "" && task.runningTaskName !== undefined) {
+      getNodes(task.runningTaskName);
+    }
   }
 
   async function getTaskList() {
@@ -235,7 +246,7 @@ const Run: React.FC = () => {
 
   async function getNodes(name) {
     try {
-      const response = await axios.get(mobileURL + "/task/" + name);
+      const response = await axios.get(url.current + "/task/" + name);
       node_num = 0;
       setCurTask(name);
 
@@ -258,6 +269,8 @@ const Run: React.FC = () => {
                 <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
                   <Button
                     onClick={() => {
+                      // [TEMP]
+                      dispatch(updateRunningTaskName(task));
                       getNodes(task);
                       setListVisible(false);
                     }}
