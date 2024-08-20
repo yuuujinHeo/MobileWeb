@@ -29,16 +29,20 @@ import { TreeNode } from "primereact/treenode";
 import "./style.scss";
 import { MenuItem } from "primereact/menuitem";
 import { RootState, AppDispatch } from "@/store/store";
-import { selectTask } from "@/store/taskSlice";
+import { selectTask, updateTaskName } from "@/store/taskSlice";
 
 const Move: React.FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
+  const dispatch = useDispatch();
   const taskState = useSelector((state: RootState) => selectTask(state));
   const [mobileURL, setMobileURL] = useState("");
   const toast = useRef<Toast | null>(null);
 
   const store = useStore<RootState>();
   const Status = useRef<StatusState>(store.getState().status);
+
+  // [TEMP]
+  const task = useSelector((state: RootState): any => state.task);
+  const url = useRef<string | null>(null);
 
   useEffect(() => {
     const handleChange = () => {
@@ -84,23 +88,28 @@ const Move: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    console.log(mobileURL);
     if (mobileURL != "") {
       getTaskList();
     }
   }, [mobileURL]);
 
-  useEffect(() => {
-    console.log(selectNode);
-  }, [selectNode]);
+  // useEffect(() => {
+  //   console.log(selectNode);
+  // }, [selectNode]);
 
-  useEffect(() => {
-    console.log("nodes = ", nodes);
-  }, [nodes]);
+  // useEffect(() => {
+  //   console.log("nodes = ", nodes);
+  // }, [nodes]);
 
   async function setURL() {
     setMobileURL(await getMobileAPIURL());
-    console.log("??????????????");
+
+    // [TEMP]
+    url.current = await getMobileAPIURL();
+    if (task.name !== "" && task.name !== undefined) {
+      console.log(123, mobileURL);
+      getNodes(task.name);
+    }
   }
 
   async function getTaskList() {
@@ -172,7 +181,7 @@ const Move: React.FC = () => {
 
   async function getNodes(name) {
     try {
-      const response = await axios.get(mobileURL + "/task/" + name);
+      const response = await axios.get(url.current + "/task/" + name);
       setTaskName(name);
       setNodes(makeNodes(response.data));
     } catch (e) {
@@ -221,16 +230,6 @@ const Move: React.FC = () => {
     parentKey: string = "0"
   ): TreeNode[] => {
     return nodes;
-    return nodes.map((node, index) => {
-      const key = parentKey ? `${parentKey}-${index}` : `${index}`;
-      return {
-        ...node,
-        realkey: key,
-        children: node.children
-          ? updateKeys(node.children, node.realkey as string)
-          : node.children,
-      };
-    });
   };
 
   function findTreeNodeByKey(treeNodes, key) {
@@ -670,6 +669,8 @@ const Move: React.FC = () => {
                 <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
                   <Button
                     onClick={() => {
+                      // [TEMP]
+                      dispatch(updateTaskName(task));
                       getNodes(task);
                       setListVisible(false);
                     }}
