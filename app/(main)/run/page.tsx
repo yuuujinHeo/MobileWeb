@@ -12,6 +12,7 @@ import {
 } from "primereact/tree";
 import { DataView } from "primereact/dataview";
 import { ScrollTop } from "primereact/scrolltop";
+import { Chip } from "primereact/chip";
 import { v4 as uuidv4 } from "uuid";
 import { Dialog } from "primereact/dialog";
 import { useSelector, useDispatch } from "react-redux";
@@ -238,6 +239,7 @@ const Run: React.FC = () => {
               disabled={taskState.running}
               onClick={openPopup}
             ></Button>
+            <Chip label={curTask as string}></Chip>
           </React.Fragment>
         }
         center={
