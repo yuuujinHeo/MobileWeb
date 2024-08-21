@@ -26,3 +26,5 @@ export const NODE_TYPE = {
 };
 
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];
+
+export const SCALE_FACTOR = 31.5;
