@@ -20,7 +20,7 @@ import { Dropdown } from "primereact/dropdown";
 import { Divider } from "primereact/divider";
 import { Slider } from "primereact/slider";
 
-import { CANVAS_ACTION, NODE_TYPE } from "@/constants";
+import { CANVAS_ACTION, NODE_TYPE, SCALE_FACTOR } from "@/constants";
 
 import axios from "axios";
 
@@ -33,6 +33,15 @@ interface LocReqPayload {
   rz?: string;
 }
 
+interface DisplayInfo {
+  id: string;
+  name: string;
+  links: [];
+  pose: string;
+  type: string;
+  info: string;
+}
+
 type Severity = "success" | "info" | "warn" | "error";
 
 export default function PropertyPanel() {
@@ -42,7 +51,6 @@ export default function PropertyPanel() {
   const { sceneInfo, robotHelper, selectedObjectInfo } = useSelector(
     (state: RootState) => state.canvas
   );
-
   // state
   const [displayInfo, setDisplayInfo] = useState({
     name: "",
@@ -73,23 +81,42 @@ export default function PropertyPanel() {
 
   useEffect(() => {
     if (selectedObjectInfo && selectedObjectInfo.pose) {
+      const { x, y, z } = getParsedPose(selectedObjectInfo.pose);
       setDisplayInfo({
         name: selectedObjectInfo.name,
-        x: selectedObjectInfo.pose.split(",")[0],
-        y: selectedObjectInfo.pose.split(",")[1],
-        z: selectedObjectInfo.pose.split(",")[2],
+        x: x,
+        y: y,
+        z: z,
         rz: selectedObjectInfo.pose.split(",")[5],
       });
     }
   }, [selectedObjectInfo]);
 
+  const getParsedPose = (pose: string) => {
+    const x = (Number(pose.split(",")[0]) / SCALE_FACTOR)
+      .toString()
+      .slice(0, 6);
+    const y = (Number(pose.split(",")[1]) / SCALE_FACTOR)
+      .toString()
+      .slice(0, 6);
+    const z = (Number(pose.split(",")[2]) / SCALE_FACTOR)
+      .toString()
+      .slice(0, 6);
+    const parsedPose = {
+      x: x,
+      y: y,
+      z: z,
+    };
+    return parsedPose;
+  };
+
   const sendLOCRequest = async (command: string) => {
     try {
       const r2d = (Number(robotHelper.rz) * (180 / Math.PI)).toString();
       // [TEMP]
-      const scaledX = Number(robotHelper.x) / 31.5;
-      const scaledY = Number(robotHelper.y) / 31.5;
-      const scaledZ = Number(robotHelper.z) / 31.5;
+      const scaledX = Number(robotHelper.x) / SCALE_FACTOR;
+      const scaledY = Number(robotHelper.y) / SCALE_FACTOR;
+      const scaledZ = Number(robotHelper.z) / SCALE_FACTOR;
       const payload: LocReqPayload = {
         time: getCurrentTime(),
         command: command,
@@ -170,9 +197,8 @@ export default function PropertyPanel() {
         requestBody["preset"] = goalPreset;
         requestBody["method"] = "pp";
       } else if (command === "target") {
-        // [TEMP]
-        requestBody["x"] = targetX / 31.5;
-        requestBody["y"] = targetY / 31.5;
+        requestBody["x"] = targetX;
+        requestBody["y"] = targetY;
         requestBody["z"] = 0;
         requestBody["rz"] = targetRZ;
         requestBody["preset"] = targetPreset;
@@ -223,8 +249,8 @@ export default function PropertyPanel() {
   }
 
   const getTargetFromRobotHelper = () => {
-    setTargetX(Number(robotHelper.x));
-    setTargetY(Number(robotHelper.y));
+    setTargetX(Number(robotHelper.x) / SCALE_FACTOR);
+    setTargetY(Number(robotHelper.y) / SCALE_FACTOR);
     setTargetRZ(Number(robotHelper.rz) * (180 / Math.PI));
   };
 

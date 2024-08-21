@@ -30,7 +30,12 @@ import {
 import { io } from "socket.io-client";
 import axios from "axios";
 
-import { CANVAS_CLASSES, CANVAS_ACTION, NODE_TYPE } from "@/constants";
+import {
+  CANVAS_CLASSES,
+  CANVAS_ACTION,
+  NODE_TYPE,
+  SCALE_FACTOR,
+} from "@/constants";
 
 interface LidarCanvasProps {
   className: string;
@@ -281,12 +286,12 @@ const LidarCanvas = ({
 
         break;
       case "pose-x":
-        selectedObj.position.x = Number(value);
+        selectedObj.position.x = Number(value) * SCALE_FACTOR;
         removeAllLinksRelateTo(selectedObj.uuid);
         updateLinks(selectedObj);
         break;
       case "pose-y":
-        selectedObj.position.y = Number(value);
+        selectedObj.position.y = Number(value) * SCALE_FACTOR;
         removeAllLinksRelateTo(selectedObj.uuid);
         updateLinks(selectedObj);
         break;
@@ -912,7 +917,7 @@ const LidarCanvas = ({
     const originPoint = new THREE.Mesh(originGeometry, originMaterial);
 
     const axesHelperOrin = new THREE.AxesHelper(1);
-    originPoint.scale.set(31.5, 31.5, 31.5);
+    originPoint.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
     originPoint.add(axesHelperOrin);
     sceneRef.current.add(originPoint);
 
@@ -988,8 +993,8 @@ const LidarCanvas = ({
           const res = JSON.parse(data);
           // [TEMP]
           robotPose = {
-            x: parseFloat(res.pose.x) * 31.5,
-            y: parseFloat(res.pose.y) * 31.5,
+            x: parseFloat(res.pose.x) * SCALE_FACTOR,
+            y: parseFloat(res.pose.y) * SCALE_FACTOR,
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
           driveRobot(robotPose);
@@ -1001,11 +1006,11 @@ const LidarCanvas = ({
 
   const updateRobotState = (data) => {
     // [TEMP]
-    const parsedX = (Number(data.pose.x) * 31.5).toString().slice(0, 6);
-    const parsedY = (Number(data.pose.y) * 31.5).toString().slice(0, 6);
+    // const parsedX = (Number(data.pose.x) * SCALE_FACTOR).toString().slice(0, 6);
+    // const parsedY = (Number(data.pose.y) * SCALE_FACTOR).toString().slice(0, 6);
     const parsedData: RobotState = {
-      x: parsedX,
-      y: parsedY,
+      x: data.pose.x.slice(0, 6),
+      y: data.pose.y.slice(0, 6),
       rz: data.pose.rz,
       localization: data.state.localization,
       auto_state: data.condition.auto_state,
@@ -1084,7 +1089,7 @@ const LidarCanvas = ({
     });
 
     const points = new THREE.Points(geo, material);
-    points.scale.set(31.5, 31.5, 31.5);
+    points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
     lidarPoints.current = points.id;
 
     sceneRef.current?.add(points);
@@ -1122,7 +1127,7 @@ const LidarCanvas = ({
 
       const points = new THREE.Points(geo, material);
       points.name = "PointCloud";
-      points.scale.set(31.5, 31.5, 31.5);
+      points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 
       mappingPointsArr.current.push(points.id);
       sceneRef.current?.add(points);
@@ -1141,9 +1146,9 @@ const LidarCanvas = ({
 
       const nodePose: NodePose = {
         // [TEMP]
-        x: Number(poseArr[0]) * 31.5,
-        y: Number(poseArr[1]) * 31.5,
-        z: Number(poseArr[2]) * 31.5,
+        x: Number(poseArr[0]) * SCALE_FACTOR,
+        y: Number(poseArr[1]) * SCALE_FACTOR,
+        z: Number(poseArr[2]) * SCALE_FACTOR,
         rz: Number(poseArr[5]),
         idx: i,
       };
@@ -1432,7 +1437,7 @@ const LidarCanvas = ({
       const position = node.position.toArray();
       const parsedPos = position
         // [TEMP]
-        .map((pos) => (pos / 31.5).toString().slice(0, 6))
+        .map((pos) => (pos / SCALE_FACTOR).toString().slice(0, 6))
         .toString();
       const rotation = node.rotation.toArray().slice(0, 3);
       const parsedRot = (rotation as number[])
