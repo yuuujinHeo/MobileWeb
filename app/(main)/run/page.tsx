@@ -60,28 +60,29 @@ const Run: React.FC = () => {
   }, [nodes]);
 
   useEffect(() => {
-    const handlerTask = (event) => {
-      console.log("task handler ", event);
-      if (event == "start") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Task Start",
-          life: 3000,
-        });
-      } else {
-        toast.current?.show({
-          severity: "success",
-          summary: "Task Stop",
-          life: 3000,
-        });
-      }
-    };
-
-    emitter.on("task", handlerTask);
-
-    return () => {
-      emitter.off("task", handlerTask);
-    };
+    // [TEMP]
+    // const handlerTask = (event) => {
+    //   console.log("task handler ", event);
+    //   if (event == "start") {
+    //     toast.current?.show({
+    //       severity: "success",
+    //       summary: "Task Start",
+    //       life: 3000,
+    //     });
+    //   } else {
+    //     toast.current?.show({
+    //       severity: "success",
+    //       summary: "Task Stop",
+    //       life: 3000,
+    //     });
+    //   }
+    // };
+    //
+    // emitter.on("task", handlerTask);
+    //
+    // return () => {
+    //   emitter.off("task", handlerTask);
+    // };
   }, []);
 
   async function setURL() {
@@ -183,7 +184,14 @@ const Run: React.FC = () => {
         } else {
           const response = await axios.get(mobileURL + "/task/load/" + curTask);
           if (response.data == "success") {
+            // [TEMP]
             const response2 = await axios.get(mobileURL + "/task/run");
+            if (response2.data === "success")
+              toast.current?.show({
+                severity: "success",
+                summary: "Task Start",
+                life: 3000,
+              });
           } else {
             toast.current?.show({
               severity: "error",
@@ -203,6 +211,14 @@ const Run: React.FC = () => {
       if (curTask != "") {
         if (taskState.running) {
           const response = await axios.get(mobileURL + "/task/stop");
+          // [TEMP]
+          if (response.data === "success") {
+            toast.current?.show({
+              severity: "info",
+              summary: "Task Stop",
+              life: 3000,
+            });
+          }
         } else {
         }
       }
