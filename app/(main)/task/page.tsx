@@ -537,10 +537,22 @@ const Move: React.FC = () => {
       const new_nodes = unmakeNodes(nodes);
 
       //post
-      const response = await axios.post(mobileURL + "/task/" + name, new_nodes);
-      console.log("saveTask : ", response);
+      await axios.post(mobileURL + "/task/" + name, new_nodes);
+      toast.current?.show({
+        severity: "success",
+        summary: "Success",
+        detail: "Save Succeed",
+      });
+      // Task list update
+      getTaskList();
     } catch (e) {
       console.error(e);
+
+      toast.current?.show({
+        severity: "error",
+        summary: "Error",
+        detail: "Save Failed",
+      });
     }
   };
 
@@ -637,11 +649,11 @@ const Move: React.FC = () => {
                 taskName == "temp_12546a" ? openSave() : saveTask(undefined)
               }
               model={[
-                {
-                  label: "업로드",
-                  icon: "pi pi-upload",
-                  command: () => {},
-                },
+                // {
+                //   label: "업로드",
+                //   icon: "pi pi-upload",
+                //   command: () => {},
+                // },
                 {
                   label: "다른 이름으로 저장",
                   command: () => {
