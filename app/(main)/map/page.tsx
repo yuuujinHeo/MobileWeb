@@ -14,7 +14,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Menubar } from "primereact/menubar";
-import { InputSwitch } from "primereact/inputswitch";
+import { InputSwitch, InputSwitchChangeEvent } from "primereact/inputswitch";
 import { Toast } from "primereact/toast";
 
 import UtilityPanel from "@/components/UtilityPanel";
@@ -53,7 +53,7 @@ const Map: React.FC = () => {
   const dispatch = useDispatch();
 
   // root state
-  const { transformControlMode } = useSelector(
+  const { transformControlMode, isMarkingMode } = useSelector(
     (state: RootState) => state.canvas
   );
   const { map } = useSelector(
@@ -68,8 +68,6 @@ const Map: React.FC = () => {
   const [selectedMap, setSelectedMap] = useState<MapData | null>(null);
   const [cloudData, setCloudData] = useState<string[][] | null>(null);
   const [topoData, setTopoData] = useState<UserData[] | null>(null);
-
-  const [isMarkingMode, setIsMarkingMode] = useState<boolean>(false);
 
   const fileNameRef = useRef<string | null>(null);
   const toast = useRef<Toast>(null);
@@ -102,6 +100,10 @@ const Map: React.FC = () => {
   useEffect(() => {
     syncCanvasWithSlamNav();
   }, [map]);
+
+  useEffect(() => {
+    handleMarkingModeChange(isMarkingMode);
+  }, [isMarkingMode]);
 
   const menuItems = [
     {
@@ -152,7 +154,6 @@ const Map: React.FC = () => {
   };
 
   const handleMarkingModeChange = (isMarkingMode: boolean) => {
-    setIsMarkingMode(isMarkingMode);
     dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
   };
 
@@ -162,7 +163,9 @@ const Map: React.FC = () => {
       <div>Marker</div>
       <InputSwitch
         checked={isMarkingMode}
-        onChange={(e) => handleMarkingModeChange(e.value)}
+        onChange={(e: InputSwitchChangeEvent): void =>
+          handleMarkingModeChange(e.value)
+        }
       ></InputSwitch>
       <Tooltip target=".marking-mode" />
     </div>

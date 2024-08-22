@@ -202,7 +202,7 @@ export default function PropertyPanel() {
         requestBody["z"] = 0;
         requestBody["rz"] = targetRZ;
         requestBody["preset"] = targetPreset;
-        requestBody["method"] = "pp";
+        requestBody["methed"] = "pp";
       }
       const requestJson = JSON.stringify(requestBody);
 
@@ -213,35 +213,16 @@ export default function PropertyPanel() {
       });
 
       if (response.data.result == "accept") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Move Start",
-          life: 3000,
-        });
-
+        showToast("success", "Move start");
         const response = await axios.get(url + "/control/move");
 
         if (response.data.result == "success") {
-          toast.current?.show({
-            severity: "success",
-            summary: "Move Done",
-            life: 3000,
-          });
+          showToast("success", "Move done");
         } else {
-          toast.current?.show({
-            severity: "error",
-            summary: "Move Failed",
-            detail: response.data.message,
-            life: 3000,
-          });
+          showToast("error", response.data.message);
         }
       } else {
-        toast.current?.show({
-          severity: "error",
-          summary: "Move Failed",
-          detail: response.data.message,
-          life: 3000,
-        });
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -265,18 +246,9 @@ export default function PropertyPanel() {
       });
 
       if (response.data.result == "accept") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Move Paused",
-          life: 3000,
-        });
+        showToast("success", "Move paused");
       } else {
-        toast.current?.show({
-          severity: "error",
-          summary: "Move Paused Fail",
-          detail: response.data.message,
-          life: 3000,
-        });
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -294,18 +266,9 @@ export default function PropertyPanel() {
       });
 
       if (response.data.result == "accept") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Move Resumed",
-          life: 3000,
-        });
+        showToast("success", "Move resumed");
       } else {
-        toast.current?.show({
-          severity: "error",
-          summary: "Move Resumed Fail",
-          detail: response.data.message,
-          life: 3000,
-        });
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -321,25 +284,28 @@ export default function PropertyPanel() {
           "Content-Type": "application/json",
         },
       });
-
       if (response.data.result == "accept") {
-        toast.current?.show({
-          severity: "success",
-          summary: "Move Stopped",
-          life: 3000,
-        });
+        showToast("success", "Move stopped");
       } else {
-        toast.current?.show({
-          severity: "error",
-          summary: "Move Stopped Fail",
-          detail: response.data.message,
-          life: 3000,
-        });
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
     }
   }
+
+  const showToast = (
+    severity: Severity,
+    detail: string,
+    life: number = 2500
+  ) => {
+    toast.current?.show({
+      severity: severity,
+      summary: severity,
+      detail: detail,
+      life: life,
+    });
+  };
 
   return (
     <Panel>

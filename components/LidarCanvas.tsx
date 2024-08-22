@@ -70,6 +70,8 @@ interface RobotState {
   obs_state: string;
 }
 
+type Severity = "success" | "info" | "warn" | "error";
+
 const LidarCanvas = ({
   className,
   cloudData = null,
@@ -109,6 +111,7 @@ const LidarCanvas = ({
   const routeNum = useRef<number>(0);
 
   const toast = useRef<Toast>(null);
+  let lastToastMsg = "";
 
   const isMarkingModeRef = useRef<boolean>(false);
 
@@ -200,11 +203,11 @@ const LidarCanvas = ({
           updateProperty(action.category, action.value);
           break;
         case CANVAS_ACTION.ADD_LINK:
-          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
           break;
         case CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK:
-          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
-          addLinks(selectedNodesArray[1], selectedNodesArray[0]);
+          linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
+          linkNodes(selectedNodesArray[1], selectedNodesArray[0]);
           break;
         case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
@@ -482,6 +485,11 @@ const LidarCanvas = ({
     } else {
       transformControlRef.current.detach();
       controlRef.current.enableRotate = true;
+      // Delete Helper
+      const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+      if (robotHelper) {
+        sceneRef.current?.remove(robotHelper);
+      }
     }
   };
 
@@ -1167,7 +1175,7 @@ const LidarCanvas = ({
 
       node.links.forEach((link) => {
         const to = scene.getObjectByName(link);
-        if (from && to) addLinks(from, to);
+        if (from && to) linkNodes(from, to);
       });
     });
   };
@@ -1227,7 +1235,11 @@ const LidarCanvas = ({
   };
 
   // Returns "Promise" because it includes a callback method.
-  const addGoalNode = (nodePose: NodePose): Promise<void> => {
+  const addGoalNode = (nodePose: NodePose): Promise<void> | null => {
+    if (!isMarkingMode) {
+      showToast("warn", "Not in marking mode. Switch to enable.");
+      return null;
+    }
     const loader = new ThreeMFLoader();
     return new Promise((resolve, reject) => {
       try {
@@ -1277,6 +1289,10 @@ const LidarCanvas = ({
   };
 
   const addRouteNode = (nodePose: NodePose) => {
+    if (!isMarkingMode) {
+      showToast("warn", "Not in marking mode. Switch to enable.");
+      return;
+    }
     const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
     const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
     const route = new THREE.Mesh(geometry, material);
@@ -1483,35 +1499,19 @@ const LidarCanvas = ({
     const cloudRes = await saveCloud(filename);
 
     if (annoRes && cloudRes) {
-      toast.current?.show({
-        severity: "success",
-        summary: "Success",
-        detail: "Save Succeed",
-        life: 2500,
-      });
+      showToast("success", "Save Succeed");
     } else if (!annoRes && cloudRes) {
-      toast.current?.show({
-        severity: "warn",
-        summary: "Warn",
-        detail:
-          "The cloud data was saved successfully. However, The annotation data storage failed...",
-        life: 2500,
-      });
+      showToast(
+        "warn",
+        "The cloud data was saved successfully. However, The annotation data storage failed..."
+      );
     } else if (annoRes && !cloudRes) {
-      toast.current?.show({
-        severity: "warn",
-        summary: "Warn",
-        detail:
-          "The annotation data was saved successfully. However, The cloud data storage failed...",
-        life: 2500,
-      });
+      showToast(
+        "warn",
+        "The annotation data was saved successfully. However, The cloud data storage failed..."
+      );
     } else if (!annoRes && !cloudRes) {
-      toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Save Failed...",
-        life: 2500,
-      });
+      showToast("error", "Save Failed");
     }
   };
 
@@ -1582,8 +1582,15 @@ const LidarCanvas = ({
     render();
   };
 
-  const addLinks = (from: THREE.Object3D, to: THREE.Object3D) => {
-    if (!from || !to) return;
+  const linkNodes = (from: THREE.Object3D, to: THREE.Object3D) => {
+    if (!isMarkingMode) {
+      showToast("warn", "Not in marking mode. Switch to enable.");
+      return;
+    }
+    if (!from || !to) {
+      showToast("warn", "Not a valid request. Select the Nodes to connect to");
+      return;
+    }
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
     createArrow(from, to);
@@ -1741,7 +1748,7 @@ const LidarCanvas = ({
     for (const link of tempLinks) {
       const to = scene.getObjectByProperty("uuid", link);
       if (to) {
-        addLinks(selectedObj, to);
+        linkNodes(selectedObj, to);
       }
     }
     tempLinks = [...selectedObj.userData.links_from];
@@ -1750,7 +1757,7 @@ const LidarCanvas = ({
     for (const link of tempLinks) {
       const from = scene.getObjectByProperty("uuid", link);
       if (from) {
-        addLinks(from, selectedObj);
+        linkNodes(from, selectedObj);
       }
     }
   };
@@ -1761,6 +1768,23 @@ const LidarCanvas = ({
   //   }
   //   return num < 10 ? `0${num}` : `${num}`;
   // };
+  //
+  const showToast = (
+    severity: Severity,
+    detail: string,
+    life: number = 2500
+  ) => {
+    if (lastToastMsg === detail) {
+      return;
+    }
+    toast.current?.show({
+      severity: severity,
+      summary: severity,
+      detail: detail,
+      life: life,
+    });
+    lastToastMsg = detail;
+  };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
     <div id="lidar-canvas__container">
