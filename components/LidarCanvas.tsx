@@ -1227,10 +1227,6 @@ const LidarCanvas = ({
 
   // Returns "Promise" because it includes a callback method.
   const addGoalNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
-    if (!isMarkingMode) {
-      showToast("warn", "Not in marking mode. Switch to enable.");
-      return null;
-    }
     const loader = new ThreeMFLoader();
     return new Promise((resolve, reject) => {
       try {
@@ -1280,10 +1276,6 @@ const LidarCanvas = ({
   };
 
   const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
-    if (!isMarkingMode) {
-      showToast("warn", "Not in marking mode. Switch to enable.");
-      return null;
-    }
     return new Promise((resolve, reject) => {
       const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
       const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
@@ -1609,16 +1601,6 @@ const LidarCanvas = ({
   };
 
   const linkNodes = (from: THREE.Object3D, to: THREE.Object3D) => {
-    // [TEMP] Toast casue an unidentified error...
-
-    // if (!isMarkingMode) {
-    //   showToast("warn", "Not in marking mode. Switch to enable.");
-    //   return;
-    // }
-    // if (!from || !to) {
-    //   showToast("warn", "Not a valid request. Select the Nodes to connect to");
-    //   return;
-    // }
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
     createArrow(from, to);
