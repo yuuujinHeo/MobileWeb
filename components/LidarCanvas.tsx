@@ -306,16 +306,7 @@ const LidarCanvas = ({
         selectedObj.rotation.z = Number(value);
         break;
       case "type":
-        if (selectedObj.userData.type !== value) {
-          const selectedObj = selectedNodeRef.current;
-          if (selectedObj) removeNode(selectedObj);
-
-          if (value === NODE_TYPE.GOAL) {
-            addGoalNode(removedNodePose as NodePose);
-          } else if (value === NODE_TYPE.ROUTE) {
-            addRouteNode(removedNodePose as NodePose);
-          }
-        }
+        changeNodeType(value);
         break;
       case "info":
         selectedObj.userData.info = value;
@@ -1235,7 +1226,7 @@ const LidarCanvas = ({
   };
 
   // Returns "Promise" because it includes a callback method.
-  const addGoalNode = (nodePose: NodePose): Promise<void> | null => {
+  const addGoalNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
     if (!isMarkingMode) {
       showToast("warn", "Not in marking mode. Switch to enable.");
       return null;
@@ -1280,7 +1271,7 @@ const LidarCanvas = ({
           raycastTargetsRef.current.push(group);
 
           selectObject(group);
-          resolve();
+          resolve(group);
         });
       } catch (e) {
         reject(e);
@@ -1288,35 +1279,38 @@ const LidarCanvas = ({
     });
   };
 
-  const addRouteNode = (nodePose: NodePose) => {
+  const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
     if (!isMarkingMode) {
       showToast("warn", "Not in marking mode. Switch to enable.");
-      return;
+      return null;
     }
-    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
-    const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
-    const route = new THREE.Mesh(geometry, material);
-    route.scale.set(0.38, 0.38, 0.38);
+    return new Promise((resolve, reject) => {
+      const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+      const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
+      const route = new THREE.Mesh(geometry, material);
+      route.scale.set(0.38, 0.38, 0.38);
 
-    const geo = new THREE.PlaneGeometry(1, 1);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      side: THREE.DoubleSide,
+      const geo = new THREE.PlaneGeometry(1, 1);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        side: THREE.DoubleSide,
+      });
+      const plane = new THREE.Mesh(geo, mat);
+      plane.scale.set(30, 30, 1);
+      plane.visible = false;
+      route.add(plane);
+
+      setupNode(route, NODE_TYPE.ROUTE, nodePose);
+
+      routeNum.current += 1;
+      dispatch(updateRouteNum(routeNum.current));
+
+      addLabelToNode(route);
+      sceneRef.current?.add(route);
+      raycastTargetsRef.current.push(route);
+      selectObject(route);
+      resolve(route);
     });
-    const plane = new THREE.Mesh(geo, mat);
-    plane.scale.set(30, 30, 1);
-    plane.visible = false;
-    route.add(plane);
-
-    setupNode(route, NODE_TYPE.ROUTE, nodePose);
-
-    routeNum.current += 1;
-    dispatch(updateRouteNum(routeNum.current));
-
-    addLabelToNode(route);
-    sceneRef.current?.add(route);
-    raycastTargetsRef.current.push(route);
-    selectObject(route);
   };
 
   const setupNode = (
@@ -1446,6 +1440,38 @@ const LidarCanvas = ({
         info: "",
       })
     );
+  };
+
+  const changeNodeType = async (value: string) => {
+    const selectedObj = selectedNodeRef.current;
+    if (selectedObj === null) return;
+
+    if (selectedObj.userData.type !== value) {
+      const selectedObj = selectedNodeRef.current;
+      const links = [...selectedObj?.userData.links];
+      const links_from = [...selectedObj?.userData.links_from];
+
+      if (selectedObj) removeNode(selectedObj);
+
+      let newNode: THREE.Object3D | null = null;
+      if (value === NODE_TYPE.GOAL) {
+        newNode = await addGoalNode(removedNodePose as NodePose);
+      } else if (value === NODE_TYPE.ROUTE) {
+        newNode = await addRouteNode(removedNodePose as NodePose);
+      }
+
+      if (newNode === null) return;
+      // Link node from newNode
+      for (const uuid of links) {
+        const targetNode = sceneRef.current?.getObjectByProperty("uuid", uuid);
+        if (targetNode) linkNodes(newNode, targetNode);
+      }
+      // Link node to newNode
+      for (const uuid of links_from) {
+        const targetNode = sceneRef.current?.getObjectByProperty("uuid", uuid);
+        if (targetNode) linkNodes(targetNode, newNode);
+      }
+    }
   };
 
   const saveAnnotation = async (filename: string): Promise<any> => {
@@ -1583,14 +1609,16 @@ const LidarCanvas = ({
   };
 
   const linkNodes = (from: THREE.Object3D, to: THREE.Object3D) => {
-    if (!isMarkingMode) {
-      showToast("warn", "Not in marking mode. Switch to enable.");
-      return;
-    }
-    if (!from || !to) {
-      showToast("warn", "Not a valid request. Select the Nodes to connect to");
-      return;
-    }
+    // [TEMP] Toast casue an unidentified error...
+
+    // if (!isMarkingMode) {
+    //   showToast("warn", "Not in marking mode. Switch to enable.");
+    //   return;
+    // }
+    // if (!from || !to) {
+    //   showToast("warn", "Not a valid request. Select the Nodes to connect to");
+    //   return;
+    // }
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
     createArrow(from, to);
