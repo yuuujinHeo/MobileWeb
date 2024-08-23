@@ -202,7 +202,7 @@ export default function PropertyPanel() {
         requestBody["z"] = 0;
         requestBody["rz"] = targetRZ;
         requestBody["preset"] = targetPreset;
-        requestBody["methed"] = "pp";
+        requestBody["method"] = "pp";
       }
       const requestJson = JSON.stringify(requestBody);
 
