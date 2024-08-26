@@ -980,8 +980,6 @@ const LidarCanvas = ({
 
         if (className !== CANVAS_CLASSES.PREVIEW) {
           socketRef.current.on("lidar", (data) => {
-            // [TEMP]
-            console.log("lidar!");
             drawLidar(data.data, {
               x: parseFloat(data.pose.x),
               y: parseFloat(data.pose.y),
@@ -991,8 +989,6 @@ const LidarCanvas = ({
         }
 
         socketRef.current.on("status", (data) => {
-          // [TEMP]
-          console.log("status!");
           const res = JSON.parse(data);
           // [TEMP]
           robotPose = {
