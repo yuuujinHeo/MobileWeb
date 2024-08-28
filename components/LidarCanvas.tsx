@@ -857,6 +857,7 @@ const LidarCanvas = ({
         }
         break;
       case "KeyX":
+        // [TEMP]
         if (e.metaKey) {
           redoCommand();
         }
@@ -878,7 +879,6 @@ const LidarCanvas = ({
     const cmd = redo.current.pop();
     if (cmd) {
       cmd.redo();
-      // undo.current.push(cmd);
     }
   };
 
