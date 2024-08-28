@@ -30,6 +30,10 @@ import {
 import { io } from "socket.io-client";
 import axios from "axios";
 
+// libs
+import { Command } from "@/lib/Command";
+import { AddGoalCommand } from "@/lib/commands/AddGoalCommand";
+
 import {
   CANVAS_CLASSES,
   CANVAS_ACTION,
@@ -109,6 +113,9 @@ const LidarCanvas = ({
   const goalNum = useRef<number>(0);
   const routes = useRef<number[]>([0]);
   const routeNum = useRef<number>(0);
+
+  const undo = useRef<Command[]>([]);
+  const redo = useRef<Command[]>([]);
 
   const toast = useRef<Toast>(null);
   let lastToastMsg = "";
@@ -844,10 +851,37 @@ const LidarCanvas = ({
       case "KeyR":
         setTransformControlsMode("scale");
         break;
+      case "KeyZ":
+        if (e.metaKey) {
+          undoCommand();
+        }
+        break;
+      case "KeyX":
+        if (e.metaKey) {
+          redoCommand();
+        }
+        break;
       default:
         break;
     }
   };
+
+  const undoCommand = (): void => {
+    const command = undo.current.pop();
+    if (command) {
+      command.undo();
+      redo.current.push(command);
+    }
+  };
+
+  const redoCommand = (): void => {
+    const cmd = redo.current.pop();
+    if (cmd) {
+      cmd.redo();
+      // undo.current.push(cmd);
+    }
+  };
+
   const setTransformControlsMode = (mode: TransformControlsMode) => {
     if (!transformControlRef.current) return;
     const tfControl = transformControlRef.current;
@@ -1258,21 +1292,33 @@ const LidarCanvas = ({
           axesHelper.scale.set(800, 800, 0);
           group.add(axesHelper);
 
-          goalNum.current += 1;
-          dispatch(updateGoalNum(goalNum.current));
-
-          addLabelToNode(group);
           sceneRef.current?.add(group);
-
-          raycastTargetsRef.current.push(group);
-
-          selectObject(group);
+          postProcessAddGoal(group);
           resolve(group);
         });
       } catch (e) {
         reject(e);
       }
     });
+  };
+
+  const restoreGoalNode = (object: THREE.Object3D) => {
+    sceneRef.current?.add(object);
+    postProcessAddGoal(object);
+    updateLinks(object);
+  };
+
+  const postProcessAddGoal = (object: THREE.Object3D) => {
+    goalNum.current += 1;
+    dispatch(updateGoalNum(goalNum.current));
+
+    addLabelToNode(object);
+
+    raycastTargetsRef.current.push(object);
+
+    selectObject(object);
+
+    undo.current.push(new AddGoalCommand(restoreGoalNode, removeNode, object));
   };
 
   const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
