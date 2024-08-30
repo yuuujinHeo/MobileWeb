@@ -1268,9 +1268,7 @@ const LidarCanvas = ({
     return new Promise((resolve, reject) => {
       try {
         loader.load("amr.3MF", function (group) {
-          setupNode(group, NODE_TYPE.GOAL, nodePose);
           group.scale.set(0.02835, 0.02835, 0.02835);
-          // group.rotation.z = Number(createHelper.rz);
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
@@ -1296,7 +1294,7 @@ const LidarCanvas = ({
           group.add(axesHelper);
 
           sceneRef.current?.add(group);
-          postProcessAddGoal(group);
+          postProcessAddGoal(group, nodePose);
           resolve(group);
         });
       } catch (e) {
@@ -1305,13 +1303,14 @@ const LidarCanvas = ({
     });
   };
 
-  const restoreGoalNode = (object: THREE.Object3D) => {
+  const restoreGoalNode = (object: THREE.Object3D, nodePose: NodePose) => {
     sceneRef.current?.add(object);
-    postProcessAddGoal(object);
+    postProcessAddGoal(object, nodePose);
     updateLinks(object);
   };
 
-  const postProcessAddGoal = (object: THREE.Object3D) => {
+  const postProcessAddGoal = (object: THREE.Object3D, nodePose: NodePose) => {
+    setupNode(object, NODE_TYPE.GOAL, nodePose);
     goalNum.current += 1;
     dispatch(updateGoalNum(goalNum.current));
 
@@ -1319,7 +1318,9 @@ const LidarCanvas = ({
     raycastTargetsRef.current.push(object);
     selectObject(object);
 
-    undo.current.push(new AddGoalCommand(restoreGoalNode, removeNode, object));
+    undo.current.push(
+      new AddGoalCommand(removeNode, restoreGoalNode, object, nodePose)
+    );
   };
 
   const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
@@ -1340,26 +1341,30 @@ const LidarCanvas = ({
       route.add(plane);
 
       sceneRef.current?.add(route);
-      setupNode(route, NODE_TYPE.ROUTE, nodePose);
-      postProcessAddRoute(route);
+
+      postProcessAddRoute(route, nodePose);
       resolve(route);
     });
   };
 
-  const restoreRouteNode = (object: THREE.Object3D) => {
+  const restoreRouteNode = (object: THREE.Object3D, nodePose: NodePose) => {
     sceneRef.current?.add(object);
-    postProcessAddRoute(object);
+    postProcessAddRoute(object, nodePose);
     updateLinks(object);
   };
 
-  const postProcessAddRoute = (route: THREE.Object3D) => {
+  const postProcessAddRoute = (route: THREE.Object3D, nodePose: NodePose) => {
+    setupNode(route, NODE_TYPE.ROUTE, nodePose);
+    routeNum.current += 1;
     dispatch(updateRouteNum(routeNum.current));
 
     addLabelToNode(route);
     raycastTargetsRef.current.push(route);
     selectObject(route);
 
-    undo.current.push(new AddRouteCommand(restoreRouteNode, removeNode, route));
+    undo.current.push(
+      new AddRouteCommand(removeNode, restoreRouteNode, route, nodePose)
+    );
   };
 
   const setupNode = (
