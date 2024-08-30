@@ -32,7 +32,7 @@ import axios from "axios";
 
 // libs
 import { Command } from "@/lib/Command";
-import { AddNodeCommand } from "@/lib/commands/Commands";
+import { AddNodeCommand, DeleteNodeCommand } from "@/lib/commands/Commands";
 
 import {
   CANVAS_CLASSES,
@@ -169,15 +169,18 @@ const LidarCanvas = ({
             z: Number(robotHelper.z),
             rz: Number(robotHelper.rz),
           };
-          if (action.category === NODE_TYPE.ROUTE) {
-            addRouteNode(nodePose);
-          } else if (action.category === NODE_TYPE.GOAL) {
-            addGoalNode(nodePose);
-          }
+          // if (action.category === NODE_TYPE.ROUTE) {
+          //   addRouteNode(nodePose);
+          // } else if (action.category === NODE_TYPE.GOAL) {
+          //   addGoalNode(nodePose);
+          // }
+          addNode(action.category, nodePose);
           break;
         case CANVAS_ACTION.DELETE_NODE:
           const selectedObject = selectedNodeRef.current;
-          if (selectedObject) removeNode(selectedObject);
+          if (selectedObject) {
+            removeNode(selectedObject);
+          }
           break;
         case CANVAS_ACTION.UPDATE_PROPERTY:
           updateProperty(action.category, action.value);
@@ -853,6 +856,7 @@ const LidarCanvas = ({
     const cmd = redo.current.pop();
     if (cmd) {
       cmd.redo();
+      undo.current.push(cmd);
     }
   };
 
@@ -1233,6 +1237,22 @@ const LidarCanvas = ({
     rendererRef.current.render(sceneRef.current, cameraRef.current);
   };
 
+  const addNode = async (category: string, nodePose: NodePose) => {
+    let node: null | THREE.Object3D;
+    let redoFunction: (object: THREE.Object3D, nodePose: NodePose) => void;
+    if (category === NODE_TYPE.GOAL) {
+      node = await addGoalNode(nodePose);
+      redoFunction = restoreGoalNode;
+    } else {
+      node = await addRouteNode(nodePose);
+      redoFunction = restoreRouteNode;
+    }
+    if (node === null) return;
+    undo.current.push(
+      new AddNodeCommand(removeNode, redoFunction, node, nodePose)
+    );
+  };
+
   // Returns "Promise" because it includes a callback method.
   const addGoalNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
     const loader = new ThreeMFLoader();
@@ -1288,10 +1308,9 @@ const LidarCanvas = ({
     addLabelToNode(object);
     raycastTargetsRef.current.push(object);
     selectObject(object);
-
-    undo.current.push(
-      new AddNodeCommand(removeNode, restoreGoalNode, object, nodePose)
-    );
+    // undo.current.push(
+    //   new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
+    // );
   };
 
   const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
@@ -1333,9 +1352,9 @@ const LidarCanvas = ({
     raycastTargetsRef.current.push(route);
     selectObject(route);
 
-    undo.current.push(
-      new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
-    );
+    // undo.current.push(
+    //   new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
+    // );
   };
 
   const setupNode = (

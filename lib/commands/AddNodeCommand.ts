@@ -3,7 +3,6 @@ import { NodePose } from "@/interface/canvas.js";
 import * as THREE from "three";
 
 class AddNodeCommand extends Command {
-  type: string;
   undoFunc: (object: THREE.Object3D) => void;
   redoFunc: (object: THREE.Object3D, nodePose: NodePose) => void;
   object: THREE.Object3D;
@@ -15,8 +14,8 @@ class AddNodeCommand extends Command {
     nodePose: NodePose
   ) {
     super();
-    this.redoFunc = redoFunc;
     this.undoFunc = undoFunc;
+    this.redoFunc = redoFunc;
     this.object = object;
     this.nodePose = nodePose;
   }
