@@ -32,7 +32,8 @@ import axios from "axios";
 
 // libs
 import { Command } from "@/lib/Command";
-import { AddGoalCommand } from "@/lib/commands/AddGoalCommand";
+// import { AddGoalCommand } from "@/lib/commands/AddGoalCommand";
+import { AddGoalCommand, AddRouteCommand } from "@/lib/commands/Commands";
 
 import {
   CANVAS_CLASSES,
@@ -159,6 +160,7 @@ const LidarCanvas = ({
 
     return () => {
       window.removeEventListener("resize", onWindowResize);
+      window.removeEventListener("keydown", handleKeyDown);
       if (canvasRef.current) {
         canvasRef.current.removeEventListener("mousedown", handleMouseDown);
         canvasRef.current.removeEventListener("mousemove", handleMouseMove);
@@ -166,7 +168,7 @@ const LidarCanvas = ({
         canvasRef.current.removeEventListener("touchstart", handleTouchStart);
         canvasRef.current.removeEventListener("touchmove", handleMouseMove);
         canvasRef.current.removeEventListener("touchend", handleTouchEnd);
-        canvasRef.current.removeEventListener("keydown", handleKeyDown);
+        // canvasRef.current.removeEventListener("keydown", handleKeyDown);
       }
       rendererRef.current?.setAnimationLoop(null);
 
@@ -456,6 +458,7 @@ const LidarCanvas = ({
 
     // resize handling
     window.addEventListener("resize", onWindowResize);
+    window.addEventListener("keydown", handleKeyDown);
 
     // mouse & touch handling
     canvasRef.current.addEventListener("mousedown", handleMouseDown);
@@ -466,7 +469,7 @@ const LidarCanvas = ({
     canvasRef.current.addEventListener("touchend", handleTouchEnd);
 
     // key input handling
-    canvasRef.current.addEventListener("keydown", handleKeyDown);
+    // canvasRef.current.addEventListener("keydown", handleKeyDown);
   };
 
   const toggleMarkingMode = () => {
@@ -1313,9 +1316,7 @@ const LidarCanvas = ({
     dispatch(updateGoalNum(goalNum.current));
 
     addLabelToNode(object);
-
     raycastTargetsRef.current.push(object);
-
     selectObject(object);
 
     undo.current.push(new AddGoalCommand(restoreGoalNode, removeNode, object));
@@ -1338,17 +1339,27 @@ const LidarCanvas = ({
       plane.visible = false;
       route.add(plane);
 
-      setupNode(route, NODE_TYPE.ROUTE, nodePose);
-
-      routeNum.current += 1;
-      dispatch(updateRouteNum(routeNum.current));
-
-      addLabelToNode(route);
       sceneRef.current?.add(route);
-      raycastTargetsRef.current.push(route);
-      selectObject(route);
+      setupNode(route, NODE_TYPE.ROUTE, nodePose);
+      postProcessAddRoute(route);
       resolve(route);
     });
+  };
+
+  const restoreRouteNode = (object: THREE.Object3D) => {
+    sceneRef.current?.add(object);
+    postProcessAddRoute(object);
+    updateLinks(object);
+  };
+
+  const postProcessAddRoute = (route: THREE.Object3D) => {
+    dispatch(updateRouteNum(routeNum.current));
+
+    addLabelToNode(route);
+    raycastTargetsRef.current.push(route);
+    selectObject(route);
+
+    undo.current.push(new AddRouteCommand(restoreRouteNode, removeNode, route));
   };
 
   const setupNode = (
