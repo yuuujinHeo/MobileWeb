@@ -32,8 +32,7 @@ import axios from "axios";
 
 // libs
 import { Command } from "@/lib/Command";
-// import { AddGoalCommand } from "@/lib/commands/AddGoalCommand";
-import { AddGoalCommand, AddRouteCommand } from "@/lib/commands/Commands";
+import { AddNodeCommand } from "@/lib/commands/Commands";
 
 import {
   CANVAS_CLASSES,
@@ -41,41 +40,13 @@ import {
   NODE_TYPE,
   SCALE_FACTOR,
 } from "@/constants";
-
-interface LidarCanvasProps {
-  className: string;
-  cloudData?: string[][] | null;
-  topoData?: UserData[] | null;
-}
-
-interface UserData {
-  id: string;
-  info: string;
-  links: string[];
-  links_from?: string[];
-  name: string;
-  pose: string;
-  type: string;
-}
-
-interface NodePose {
-  x: number;
-  y: number;
-  z: number;
-  rz: number;
-  idx?: number;
-}
-
-interface RobotState {
-  x: string;
-  y: string;
-  rz: string;
-  localization: string;
-  auto_state: string;
-  obs_state: string;
-}
-
-type Severity = "success" | "info" | "warn" | "error";
+import {
+  LidarCanvasProps,
+  UserData,
+  NodePose,
+  RobotState,
+  Severity,
+} from "@/interface/canvas";
 
 const LidarCanvas = ({
   className,
@@ -1319,7 +1290,7 @@ const LidarCanvas = ({
     selectObject(object);
 
     undo.current.push(
-      new AddGoalCommand(removeNode, restoreGoalNode, object, nodePose)
+      new AddNodeCommand(removeNode, restoreGoalNode, object, nodePose)
     );
   };
 
@@ -1363,7 +1334,7 @@ const LidarCanvas = ({
     selectObject(route);
 
     undo.current.push(
-      new AddRouteCommand(removeNode, restoreRouteNode, route, nodePose)
+      new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
     );
   };
 
