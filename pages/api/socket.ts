@@ -1,17 +1,15 @@
 import { Server } from "socket.io";
 import io from "socket.io-client";
-import {AppDispatch, RootState} from '@/store/store';
-import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from "@/store/store";
+import { useDispatch, useSelector } from "react-redux";
 import type { NextApiRequest, NextApiResponse } from "next";
 
 async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
     // First use, starting socket.io
-
     const ioServer = new Server((res.socket as any).server);
-    const url =
-      process.env.NEXT_PUBLIC_WEB_SOCKET_URL ?? "http://10.108.1.40:10334";
-    const socket = io(url);
+    const url = process.env.NEXT_PUBLIC_WEB_SOCKET_URL;
+    const socket = io(url as string);
     let connectedClients = [];
 
     socket.on("connect", () => {
@@ -21,7 +19,7 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       socket.on("lidar", (data: string[][]) => {
         ioServer.emit("lidar", data);
       });
-      socket.on("status", async(data: JSON) => {
+      socket.on("status", async (data: JSON) => {
         ioServer.emit("status", data);
       });
       socket.on("move", (data: JSON) => {
@@ -39,7 +37,6 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
 
     ioServer.on("connection", (newsocket) => {
       console.log(`${newsocket.id} connected`);
-      console.log("count : ", ioServer.engine.clientsCount);
 
       newsocket.on("disconnect", () => {
         console.log(`${newsocket.id} disconnected`);

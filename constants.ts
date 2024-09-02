@@ -1,7 +1,7 @@
 export const CANVAS_CLASSES = {
   DEFAULT: "canvas-default",
-  OVERLAY: "canvas-overlay",
-  SIDEBAR: "canvas-sidebar",
+  PREVIEW: "canvas-preview",
+  MAPPING: "canvas-mapping",
 } as const;
 
 export const CANVAS_ACTION = {
@@ -10,6 +10,7 @@ export const CANVAS_ACTION = {
   // SAVE_ANNOTATION: "SAVE_ANNOTATION",
   UPDATE_PROPERTY: "UPDATE_PROPERTY",
   ADD_LINK: "ADD_LINK",
+  ADD_BIDIRECTIONAL_LINK: "ADD_BIDIRECTIONAL_LINK",
   REMOVE_LINK: "REMOVE_LINK",
   DRAW_CLOUD: "DRAW_CLOUD",
   DRAW_CLOUD_TOPO: "DRAW_CLOUD_TOPO",
@@ -25,3 +26,5 @@ export const NODE_TYPE = {
 };
 
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];
+
+export const SCALE_FACTOR = 31.5;

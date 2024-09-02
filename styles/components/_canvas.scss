@@ -13,7 +13,7 @@ canvas:focus {
   justify-content: space-between;
   width: 100%;
   height: 100%;
-  .canvas-sidebar {
+  .canvas-mapping {
     width: 100% !important;
     height: 100% !important;
   }
@@ -29,7 +29,7 @@ canvas:focus {
       0px 1px 4px rgba(0, 0, 0, 0.08);
   }
 
-  .canvas-sidebar {
+  .canvas-mapping {
     position: absolute;
     width: 100% !important;
     height: 100% !important;
@@ -50,7 +50,7 @@ canvas:focus {
 
 .preview {
   flex-grow: 1;
-  .canvas-overlay {
+  .canvas-preview {
     flex-grow: 1;
   }
 }

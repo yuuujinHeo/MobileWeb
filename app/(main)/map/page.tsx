@@ -14,7 +14,7 @@ import { DataTable } from "primereact/datatable";
 import { Dialog } from "primereact/dialog";
 import { Tooltip } from "primereact/tooltip";
 import { Menubar } from "primereact/menubar";
-import { InputSwitch } from "primereact/inputswitch";
+import { InputSwitch, InputSwitchChangeEvent } from "primereact/inputswitch";
 import { Toast } from "primereact/toast";
 
 import UtilityPanel from "@/components/UtilityPanel";
@@ -53,9 +53,14 @@ const Map: React.FC = () => {
   const dispatch = useDispatch();
 
   // root state
-  const { transformControlMode } = useSelector(
+  const { transformControlMode, isMarkingMode } = useSelector(
     (state: RootState) => state.canvas
   );
+  const { map } = useSelector(
+    (state: RootState) => state.status.state,
+    (prev, next) => prev.map === next.map
+  );
+
   // state
   const [isSidebarVisible, setIsSidebarVisible] = useState<boolean>(false);
   const [isDialogVisible, setIsDialogVisible] = useState<boolean>(false);
@@ -64,12 +69,41 @@ const Map: React.FC = () => {
   const [cloudData, setCloudData] = useState<string[][] | null>(null);
   const [topoData, setTopoData] = useState<UserData[] | null>(null);
 
-  const [isMarkingMode, setIsMarkingMode] = useState<boolean>(false);
-
   const fileNameRef = useRef<string | null>(null);
   const toast = useRef<Toast>(null);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
+
+  useEffect(() => {
+    handleTransformModeChange(transformControlMode);
+  }, [transformControlMode]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    getMapList();
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedMap) {
+      drawPreview(selectedMap.name);
+    }
+  }, [selectedMap]);
+
+  useEffect(() => {
+    syncCanvasWithSlamNav();
+  }, [map]);
+
+  useEffect(() => {
+    handleMarkingModeChange(isMarkingMode);
+  }, [isMarkingMode]);
 
   const menuItems = [
     {
@@ -120,7 +154,6 @@ const Map: React.FC = () => {
   };
 
   const handleMarkingModeChange = (isMarkingMode: boolean) => {
-    setIsMarkingMode(isMarkingMode);
     dispatch(toggleMarkingMode({ isMarkingMode: isMarkingMode }));
   };
 
@@ -130,26 +163,13 @@ const Map: React.FC = () => {
       <div>Marker</div>
       <InputSwitch
         checked={isMarkingMode}
-        onChange={(e) => handleMarkingModeChange(e.value)}
+        onChange={(e: InputSwitchChangeEvent): void =>
+          handleMarkingModeChange(e.value)
+        }
       ></InputSwitch>
       <Tooltip target=".marking-mode" />
     </div>
   );
-
-  useEffect(() => {
-    handleTransformModeChange(transformControlMode);
-  }, [transformControlMode]);
-
-  useEffect(() => {
-    getMapList();
-  }, []);
-
-  useEffect(() => {
-    if (selectedMap) {
-      getMapData(selectedMap.name);
-      getTopoData(selectedMap.name);
-    }
-  }, [selectedMap]);
 
   const getMapList = async () => {
     try {
@@ -160,16 +180,20 @@ const Map: React.FC = () => {
     }
   };
 
+  const drawPreview = async (name: string) => {
+    await getMapData(name);
+    dispatch(
+      createAction({
+        command: CANVAS_ACTION.DRAW_CLOUD,
+        target: CANVAS_CLASSES.PREVIEW,
+      })
+    );
+  };
+
   const getMapData = async (name: string) => {
     try {
       const res = await axios.get(url + `/map/cloud/${name}`);
       setCloudData(res.data);
-      dispatch(
-        createAction({
-          command: CANVAS_ACTION.DRAW_CLOUD,
-          target: CANVAS_CLASSES.OVERLAY,
-        })
-      );
     } catch (e) {
       console.error(e);
     }
@@ -190,13 +214,15 @@ const Map: React.FC = () => {
     fileNameRef.current = e.value.name;
   };
 
-  const handleLoadMap = () => {
+  const handleLoadMap = async () => {
+    if (selectedMap === null) return;
     // Draw cloud points to lidar canvas
+    await getTopoData(selectedMap.name);
     dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
     // Hide dialogue
     setIsDialogVisible(false);
 
-    // Send selected map data to slam
+    // Send the selected map data to SLAM.
     sendSelectedMapToSLAM();
   };
 
@@ -232,6 +258,14 @@ const Map: React.FC = () => {
     dispatch(
       createAction({ command: CANVAS_ACTION.TFC_SET_MODE, name: selectedBtn })
     );
+  };
+
+  const syncCanvasWithSlamNav = async () => {
+    if (map !== "" && cloudData === null && topoData === null) {
+      await getMapData(map);
+      await getTopoData(map);
+      dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
+    }
   };
 
   return (
@@ -299,7 +333,7 @@ const Map: React.FC = () => {
               <span className="text-xl text-900 font-bold">Preview</span>
             </div>
             <LidarCanvas
-              className={CANVAS_CLASSES.OVERLAY}
+              className={CANVAS_CLASSES.PREVIEW}
               cloudData={cloudData}
             />
             <Button
@@ -320,7 +354,7 @@ const Map: React.FC = () => {
       >
         <div id="sidebar-container">
           <UtilityPanel />
-          <LidarCanvas className="canvas-sidebar" />
+          <LidarCanvas className="canvas-mapping" />
           <Joystick />
         </div>
       </Sidebar>

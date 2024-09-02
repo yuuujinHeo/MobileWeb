@@ -30,7 +30,12 @@ import {
 import { io } from "socket.io-client";
 import axios from "axios";
 
-import { CANVAS_CLASSES, CANVAS_ACTION, NODE_TYPE } from "@/constants";
+import {
+  CANVAS_CLASSES,
+  CANVAS_ACTION,
+  NODE_TYPE,
+  SCALE_FACTOR,
+} from "@/constants";
 
 interface LidarCanvasProps {
   className: string;
@@ -64,6 +69,8 @@ interface RobotState {
   auto_state: string;
   obs_state: string;
 }
+
+type Severity = "success" | "info" | "warn" | "error";
 
 const LidarCanvas = ({
   className,
@@ -104,6 +111,7 @@ const LidarCanvas = ({
   const routeNum = useRef<number>(0);
 
   const toast = useRef<Toast>(null);
+  let lastToastMsg = "";
 
   const isMarkingModeRef = useRef<boolean>(false);
 
@@ -134,9 +142,11 @@ const LidarCanvas = ({
   // 3D Scene setting when the component is mounted
   useEffect(() => {
     init3DScene();
-    if (className !== CANVAS_CLASSES.OVERLAY) {
+    if (className !== CANVAS_CLASSES.PREVIEW) {
       initRobot();
       connectSocket();
+    }
+    if (className === CANVAS_CLASSES.MAPPING) {
       reloadMappingData();
     }
 
@@ -153,7 +163,7 @@ const LidarCanvas = ({
       }
       rendererRef.current?.setAnimationLoop(null);
 
-      if (socketRef.current && className !== CANVAS_CLASSES.OVERLAY) {
+      if (socketRef.current && className !== CANVAS_CLASSES.PREVIEW) {
         console.log("Socket disconnect ", socketRef.current.id);
         socketRef.current.disconnect();
       }
@@ -168,6 +178,8 @@ const LidarCanvas = ({
       clearMapPoints(action.target);
       drawCloud(action.target, cloudData);
     } else if (className === CANVAS_CLASSES.DEFAULT) {
+      const selectedNodesArray = selectedNodesArrayRef.current;
+
       switch (action.command) {
         case CANVAS_ACTION.ADD_NODE:
           if (className !== CANVAS_CLASSES.DEFAULT) break;
@@ -191,8 +203,11 @@ const LidarCanvas = ({
           updateProperty(action.category, action.value);
           break;
         case CANVAS_ACTION.ADD_LINK:
-          const selectedNodesArray = selectedNodesArrayRef.current;
-          addLinks(selectedNodesArray[0], selectedNodesArray[1]);
+          linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
+          break;
+        case CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK:
+          linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
+          linkNodes(selectedNodesArray[1], selectedNodesArray[0]);
           break;
         case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
@@ -211,13 +226,13 @@ const LidarCanvas = ({
         default:
           break;
       }
-    } else if (className === CANVAS_CLASSES.SIDEBAR) {
+    } else if (className === CANVAS_CLASSES.MAPPING) {
       switch (action.command) {
         case CANVAS_ACTION.MAPPING_START:
           addMappingListener();
           break;
         case CANVAS_ACTION.MAPPING_STOP:
-          clearMapPoints(CANVAS_CLASSES.SIDEBAR);
+          clearMapPoints(CANVAS_CLASSES.MAPPING);
           removeMappingListener();
           break;
         default:
@@ -250,7 +265,9 @@ const LidarCanvas = ({
     const scene = sceneRef.current;
     const selectedObj = selectedNodeRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
-    if (!scene || !selectedObj || !currSelectionBox) return;
+    const transformControl = transformControlRef.current;
+    if (!scene || !selectedObj || !currSelectionBox || !transformControl)
+      return;
 
     switch (category) {
       case "name":
@@ -272,12 +289,12 @@ const LidarCanvas = ({
 
         break;
       case "pose-x":
-        selectedObj.position.x = Number(value);
+        selectedObj.position.x = Number(value) * SCALE_FACTOR;
         removeAllLinksRelateTo(selectedObj.uuid);
         updateLinks(selectedObj);
         break;
       case "pose-y":
-        selectedObj.position.y = Number(value);
+        selectedObj.position.y = Number(value) * SCALE_FACTOR;
         removeAllLinksRelateTo(selectedObj.uuid);
         updateLinks(selectedObj);
         break;
@@ -289,16 +306,7 @@ const LidarCanvas = ({
         selectedObj.rotation.z = Number(value);
         break;
       case "type":
-        if (selectedObj.userData.type !== value) {
-          const selectedObj = selectedNodeRef.current;
-          if (selectedObj) removeNode(selectedObj);
-
-          if (value === NODE_TYPE.GOAL) {
-            addGoalNode(removedNodePose as NodePose);
-          } else if (value === NODE_TYPE.ROUTE) {
-            addRouteNode(removedNodePose as NodePose);
-          }
-        }
+        changeNodeType(value);
         break;
       case "info":
         selectedObj.userData.info = value;
@@ -307,12 +315,17 @@ const LidarCanvas = ({
         break;
     }
 
-    // selection box
-    if (transformControlRef.current?.object)
-      currSelectionBox.setFromObject(transformControlRef.current.object);
-
     // update selected object info
     dispatchChange();
+
+    // selection box update
+    const transformedObj = transformControl.object;
+    if (!transformedObj) return;
+    if (transformedObj.name.includes("goal")) {
+      currSelectionBox.setFromObject(transformedObj.children[0]);
+    } else {
+      currSelectionBox.setFromObject(transformedObj);
+    }
   };
 
   const init3DScene = () => {
@@ -463,6 +476,11 @@ const LidarCanvas = ({
     } else {
       transformControlRef.current.detach();
       controlRef.current.enableRotate = true;
+      // Delete Helper
+      const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+      if (robotHelper) {
+        sceneRef.current?.remove(robotHelper);
+      }
     }
   };
 
@@ -535,23 +553,6 @@ const LidarCanvas = ({
 
       selectedNodeRef.current = topParent;
       transformControl.attach(topParent);
-      // console.log("selected Object: ", topParent);
-
-      // nodes push
-      // if (!selectedNodesArray.includes(topParent)) {
-      //   selectedNodesArray.push(topParent);
-      // } else {
-      //   // if the selectedNodesRef array includes the passed intersect,
-      //   // reorder selectedNodesRef so that the selected node move to the front.
-      //   // This helpls in managing the order of selection.
-      //
-      //   // e.g) Given selctedNodeRef is [1, 2, 3, 4, 5],
-      //   // selecting node 4 will reorder it to [4, 1, 2, 3, 5]
-      //   const index = selectedNodesArray.indexOf(topParent);
-      //   selectedNodesArray.splice(index, 1);
-      //   selectedNodesArray.unshift(topParent);
-      // }
-      //
 
       // Limit the number of nodes that can be selectd to two
       // The code above is the original(multiselect).
@@ -571,7 +572,7 @@ const LidarCanvas = ({
         }
       }
 
-      hilightObject();
+      showSelectionHelper(topParent.children[0]);
       dispatchChange();
     } else {
       selectedNodeRef.current = null;
@@ -591,23 +592,26 @@ const LidarCanvas = ({
     }
   };
 
-  const hilightObject = () => {
+  const showSelectionHelper = (obj: THREE.Object3D) => {
     const scene = sceneRef.current;
     const selectedNodesArray = selectedNodesArrayRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
     const prevSelectionBox = prevSelectionBoxRef.current;
-    const transformControl = transformControlRef.current;
-    if (!scene || !currSelectionBox || !prevSelectionBox || !transformControl)
-      return;
+    if (!scene || !currSelectionBox || !prevSelectionBox) return;
 
     hideSelectionHelpers();
 
-    if (transformControl.object) {
-      currSelectionBox.setFromObject(transformControl.object);
-      currSelectionBox.visible = true;
-    }
+    if (obj.name.includes("goal"))
+      currSelectionBox.setFromObject(obj.children[0]);
+    else currSelectionBox.setFromObject(obj);
+
+    currSelectionBox.visible = true;
+
     if (selectedNodesArray.length > 1) {
-      prevSelectionBox.setFromObject(selectedNodesArray[0]);
+      const prev = selectedNodesArray[0];
+      if (prev.name.includes("goal"))
+        prevSelectionBox.setFromObject(prev.children[0]);
+      else prevSelectionBox.setFromObject(prev);
       prevSelectionBox.visible = true;
     }
   };
@@ -652,8 +656,8 @@ const LidarCanvas = ({
           }
         });
 
-        const axesHelper = new THREE.AxesHelper(2);
-        axesHelper.scale.set(1000, 1000, 1000);
+        const axesHelper = new THREE.AxesHelper(1);
+        axesHelper.scale.set(800, 800, 0);
         group.add(axesHelper);
 
         sceneRef.current?.add(group);
@@ -782,9 +786,10 @@ const LidarCanvas = ({
             event,
             raycastTargetsRef.current
           );
+          if (isMouseDragged) break;
           if (intersect !== null) {
             selectObject(intersect.object);
-          } else if (!isMouseDragged) {
+          } else {
             selectObject(null);
           }
         } else {
@@ -799,7 +804,6 @@ const LidarCanvas = ({
           );
           erasePoint(intersect);
         }
-
         break;
       default:
         break;
@@ -907,25 +911,25 @@ const LidarCanvas = ({
   const initRobot = async () => {
     if (!sceneRef.current) return;
 
-    const originGeometry = new THREE.SphereGeometry(0.1); // 점의 모양을 구형으로 정의
-    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // 빨간색으로 재질 정의
-    const originPoint = new THREE.Mesh(originGeometry, originMaterial); // 메쉬 생성
+    const originGeometry = new THREE.SphereGeometry(0.1);
+    const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    const originPoint = new THREE.Mesh(originGeometry, originMaterial);
 
-    const axesHelperOrin = new THREE.AxesHelper(2); // 길이 5의 축 생성
-    // [TEMP]
-    originPoint.scale.set(31.5, 31.5, 31.5);
-    sceneRef.current.add(axesHelperOrin); // scene에 추가
+    const axesHelperOrin = new THREE.AxesHelper(1);
+    originPoint.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+    originPoint.add(axesHelperOrin);
     sceneRef.current.add(originPoint);
 
     const loader = new ThreeMFLoader();
 
-    loader.load("amr_texture.3MF", function (group) {
+    loader.load("amr.3MF", function (group) {
       group.name = "amr";
       group.scale.set(0.0315, 0.0315, 0.0315);
 
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.material.color.set(new THREE.Color(0x0087fc));
+
           const edges = new THREE.EdgesGeometry(obj.geometry);
           const lineMaterial = new THREE.LineBasicMaterial({
             color: 0xffffff,
@@ -939,7 +943,7 @@ const LidarCanvas = ({
       robotModel.current = group;
 
       // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
-      const axesHelper = new THREE.AxesHelper(2);
+      const axesHelper = new THREE.AxesHelper(1);
       robotModel.current.add(axesHelper);
 
       axesHelper.scale.set(1000, 1000, 1000);
@@ -974,7 +978,7 @@ const LidarCanvas = ({
           console.log("Socket connected ", socketRef.current.id);
         });
 
-        if (className !== CANVAS_CLASSES.OVERLAY) {
+        if (className !== CANVAS_CLASSES.PREVIEW) {
           socketRef.current.on("lidar", (data) => {
             drawLidar(data.data, {
               x: parseFloat(data.pose.x),
@@ -988,8 +992,8 @@ const LidarCanvas = ({
           const res = JSON.parse(data);
           // [TEMP]
           robotPose = {
-            x: parseFloat(res.pose.x) * 31.5,
-            y: parseFloat(res.pose.y) * 31.5,
+            x: parseFloat(res.pose.x) * SCALE_FACTOR,
+            y: parseFloat(res.pose.y) * SCALE_FACTOR,
             rz: (parseFloat(res.pose.rz) * Math.PI) / 180,
           };
           driveRobot(robotPose);
@@ -1001,11 +1005,11 @@ const LidarCanvas = ({
 
   const updateRobotState = (data) => {
     // [TEMP]
-    const parsedX = (Number(data.pose.x) * 31.5).toString().slice(0, 6);
-    const parsedY = (Number(data.pose.y) * 31.5).toString().slice(0, 6);
+    // const parsedX = (Number(data.pose.x) * SCALE_FACTOR).toString().slice(0, 6);
+    // const parsedY = (Number(data.pose.y) * SCALE_FACTOR).toString().slice(0, 6);
     const parsedData: RobotState = {
-      x: parsedX,
-      y: parsedY,
+      x: data.pose.x.slice(0, 6),
+      y: data.pose.y.slice(0, 6),
       rz: data.pose.rz,
       localization: data.state.localization,
       auto_state: data.condition.auto_state,
@@ -1084,7 +1088,7 @@ const LidarCanvas = ({
     });
 
     const points = new THREE.Points(geo, material);
-    points.scale.set(31.5, 31.5, 31.5);
+    points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
     lidarPoints.current = points.id;
 
     sceneRef.current?.add(points);
@@ -1094,7 +1098,7 @@ const LidarCanvas = ({
     if (!cloud) return;
     if (className !== targetCanvas) return;
 
-    if (className !== CANVAS_CLASSES.SIDEBAR) resetCamera();
+    if (className !== CANVAS_CLASSES.MAPPING) resetCamera();
 
     if (cloud) {
       const geo = new THREE.BufferGeometry();
@@ -1122,7 +1126,7 @@ const LidarCanvas = ({
 
       const points = new THREE.Points(geo, material);
       points.name = "PointCloud";
-      points.scale.set(31.5, 31.5, 31.5);
+      points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 
       mappingPointsArr.current.push(points.id);
       sceneRef.current?.add(points);
@@ -1141,9 +1145,9 @@ const LidarCanvas = ({
 
       const nodePose: NodePose = {
         // [TEMP]
-        x: Number(poseArr[0]) * 31.5,
-        y: Number(poseArr[1]) * 31.5,
-        z: Number(poseArr[2]) * 31.5,
+        x: Number(poseArr[0]) * SCALE_FACTOR,
+        y: Number(poseArr[1]) * SCALE_FACTOR,
+        z: Number(poseArr[2]) * SCALE_FACTOR,
         rz: Number(poseArr[5]),
         idx: i,
       };
@@ -1162,7 +1166,7 @@ const LidarCanvas = ({
 
       node.links.forEach((link) => {
         const to = scene.getObjectByName(link);
-        if (from && to) addLinks(from, to);
+        if (from && to) linkNodes(from, to);
       });
     });
   };
@@ -1178,10 +1182,10 @@ const LidarCanvas = ({
   };
 
   const addMappingListener = () => {
-    if (className === CANVAS_CLASSES.SIDEBAR) {
+    if (className === CANVAS_CLASSES.MAPPING) {
+      clearMapPoints(CANVAS_CLASSES.MAPPING);
       socketRef.current.on("mapping", (data) => {
-        clearMapPoints(CANVAS_CLASSES.SIDEBAR);
-        drawCloud(CANVAS_CLASSES.SIDEBAR, data);
+        drawCloud(CANVAS_CLASSES.MAPPING, data);
       });
     }
   };
@@ -1222,7 +1226,7 @@ const LidarCanvas = ({
   };
 
   // Returns "Promise" because it includes a callback method.
-  const addGoalNode = (nodePose: NodePose): Promise<void> => {
+  const addGoalNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
     const loader = new ThreeMFLoader();
     return new Promise((resolve, reject) => {
       try {
@@ -1233,12 +1237,12 @@ const LidarCanvas = ({
 
           group.traverse((obj) => {
             if (obj instanceof THREE.Mesh) {
-              // obj.material.color.set(new THREE.Color(0x33ff52));
               obj.material.color.set(new THREE.Color(0xf7ff00));
 
               obj.material.transparent = true;
-              obj.material.opacity = 0.95;
+              obj.material.opacity = 0.85;
 
+              // Add Edge line
               const edges = new THREE.EdgesGeometry(obj.geometry);
               const lineMaterial = new THREE.LineBasicMaterial({
                 color: 0xffffff,
@@ -1249,6 +1253,11 @@ const LidarCanvas = ({
             }
           });
 
+          // axes helper
+          const axesHelper = new THREE.AxesHelper(1);
+          axesHelper.scale.set(800, 800, 0);
+          group.add(axesHelper);
+
           goalNum.current += 1;
           dispatch(updateGoalNum(goalNum.current));
 
@@ -1258,7 +1267,7 @@ const LidarCanvas = ({
           raycastTargetsRef.current.push(group);
 
           selectObject(group);
-          resolve();
+          resolve(group);
         });
       } catch (e) {
         reject(e);
@@ -1266,31 +1275,34 @@ const LidarCanvas = ({
     });
   };
 
-  const addRouteNode = (nodePose: NodePose) => {
-    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
-    const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
-    const route = new THREE.Mesh(geometry, material);
-    route.scale.set(0.38, 0.38, 0.38);
+  const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
+    return new Promise((resolve, reject) => {
+      const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+      const material = new THREE.MeshBasicMaterial({ color: 0x76d7c4 });
+      const route = new THREE.Mesh(geometry, material);
+      route.scale.set(0.38, 0.38, 0.38);
 
-    const geo = new THREE.PlaneGeometry(1, 1);
-    const mat = new THREE.MeshBasicMaterial({
-      color: 0xffff00,
-      side: THREE.DoubleSide,
+      const geo = new THREE.PlaneGeometry(1, 1);
+      const mat = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        side: THREE.DoubleSide,
+      });
+      const plane = new THREE.Mesh(geo, mat);
+      plane.scale.set(30, 30, 1);
+      plane.visible = false;
+      route.add(plane);
+
+      setupNode(route, NODE_TYPE.ROUTE, nodePose);
+
+      routeNum.current += 1;
+      dispatch(updateRouteNum(routeNum.current));
+
+      addLabelToNode(route);
+      sceneRef.current?.add(route);
+      raycastTargetsRef.current.push(route);
+      selectObject(route);
+      resolve(route);
     });
-    const plane = new THREE.Mesh(geo, mat);
-    plane.scale.set(30, 30, 1);
-    plane.visible = false;
-    route.add(plane);
-
-    setupNode(route, NODE_TYPE.ROUTE, nodePose);
-
-    routeNum.current += 1;
-    dispatch(updateRouteNum(routeNum.current));
-
-    addLabelToNode(route);
-    sceneRef.current?.add(route);
-    raycastTargetsRef.current.push(route);
-    selectObject(route);
   };
 
   const setupNode = (
@@ -1311,14 +1323,13 @@ const LidarCanvas = ({
     const isZeroExist = (element: number) => element === 0;
     const zeroIndex = nodes.findIndex(isZeroExist);
 
+    // If zero index is larger than 0, It means that there is empty slot in nodes.
     if (zeroIndex >= 0) {
       nodes[zeroIndex] = 1;
-      node.name = `${prefix}-${formatNumber(zeroIndex + 1)}`;
-      node.userData.index = zeroIndex;
+      node.name = `${prefix}_${zeroIndex + 1}`;
     } else {
       nodes.push(1);
-      node.name = `${prefix}_${formatNumber(nodes.length)}`;
-      node.userData.index = nodes.length - 1;
+      node.name = `${prefix}_${nodes.length}`;
     }
     node.userData.links = [];
     node.userData.links_from = [];
@@ -1369,11 +1380,15 @@ const LidarCanvas = ({
 
     // Num update
     if (target.userData.type === NODE_TYPE.GOAL) {
-      goals.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      goals.current[Number(index as string) - 1] = 0;
       goalNum.current -= 1;
       dispatch(updateGoalNum(goalNum.current));
     } else if (target.userData.type === NODE_TYPE.ROUTE) {
-      routes.current[target.userData.index] = 0;
+      const match = target.name.match(/_(\d+)$/);
+      const index = match ? match[1] : null;
+      routes.current[Number(index as string) - 1] = 0;
       routeNum.current -= 1;
       dispatch(updateRouteNum(routeNum.current));
     }
@@ -1419,12 +1434,44 @@ const LidarCanvas = ({
     );
   };
 
+  const changeNodeType = async (value: string) => {
+    const selectedObj = selectedNodeRef.current;
+    if (selectedObj === null) return;
+
+    if (selectedObj.userData.type !== value) {
+      const selectedObj = selectedNodeRef.current;
+      const links = [...selectedObj?.userData.links];
+      const links_from = [...selectedObj?.userData.links_from];
+
+      if (selectedObj) removeNode(selectedObj);
+
+      let newNode: THREE.Object3D | null = null;
+      if (value === NODE_TYPE.GOAL) {
+        newNode = await addGoalNode(removedNodePose as NodePose);
+      } else if (value === NODE_TYPE.ROUTE) {
+        newNode = await addRouteNode(removedNodePose as NodePose);
+      }
+
+      if (newNode === null) return;
+      // Link node from newNode
+      for (const uuid of links) {
+        const targetNode = sceneRef.current?.getObjectByProperty("uuid", uuid);
+        if (targetNode) linkNodes(newNode, targetNode);
+      }
+      // Link node to newNode
+      for (const uuid of links_from) {
+        const targetNode = sceneRef.current?.getObjectByProperty("uuid", uuid);
+        if (targetNode) linkNodes(targetNode, newNode);
+      }
+    }
+  };
+
   const saveAnnotation = async (filename: string): Promise<any> => {
     const nodeArr = Array.from(nodesRef.current, ([key, node]) => {
       const position = node.position.toArray();
       const parsedPos = position
         // [TEMP]
-        .map((pos) => (pos / 31.5).toString().slice(0, 6))
+        .map((pos) => (pos / SCALE_FACTOR).toString().slice(0, 6))
         .toString();
       const rotation = node.rotation.toArray().slice(0, 3);
       const parsedRot = (rotation as number[])
@@ -1470,35 +1517,19 @@ const LidarCanvas = ({
     const cloudRes = await saveCloud(filename);
 
     if (annoRes && cloudRes) {
-      toast.current?.show({
-        severity: "success",
-        summary: "Success",
-        detail: "Save Succeed",
-        life: 2500,
-      });
+      showToast("success", "Save Succeed");
     } else if (!annoRes && cloudRes) {
-      toast.current?.show({
-        severity: "warn",
-        summary: "Warn",
-        detail:
-          "The cloud data was saved successfully. However, The annotation data storage failed...",
-        life: 2500,
-      });
+      showToast(
+        "warn",
+        "The cloud data was saved successfully. However, The annotation data storage failed..."
+      );
     } else if (annoRes && !cloudRes) {
-      toast.current?.show({
-        severity: "warn",
-        summary: "Warn",
-        detail:
-          "The annotation data was saved successfully. However, The cloud data storage failed...",
-        life: 2500,
-      });
+      showToast(
+        "warn",
+        "The annotation data was saved successfully. However, The cloud data storage failed..."
+      );
     } else if (!annoRes && !cloudRes) {
-      toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Save Failed...",
-        life: 2500,
-      });
+      showToast("error", "Save Failed");
     }
   };
 
@@ -1554,7 +1585,11 @@ const LidarCanvas = ({
     const currSelectionBox = currSelectionBoxRef.current;
     const transformControl = transformControlRef.current;
     if (currSelectionBox && transformControl && transformControl.object) {
-      currSelectionBox.setFromObject(transformControl.object);
+      if (transformControl.object.name.includes("goal")) {
+        currSelectionBox.setFromObject(transformControl.object.children[0]);
+      } else {
+        currSelectionBox.setFromObject(transformControl.object);
+      }
     }
     if (selectedNodeRef.current) {
       removeAllLinksRelateTo(selectedNodeRef.current.uuid);
@@ -1565,8 +1600,7 @@ const LidarCanvas = ({
     render();
   };
 
-  const addLinks = (from: THREE.Object3D, to: THREE.Object3D) => {
-    if (!from || !to) return;
+  const linkNodes = (from: THREE.Object3D, to: THREE.Object3D) => {
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
     createArrow(from, to);
@@ -1724,7 +1758,7 @@ const LidarCanvas = ({
     for (const link of tempLinks) {
       const to = scene.getObjectByProperty("uuid", link);
       if (to) {
-        addLinks(selectedObj, to);
+        linkNodes(selectedObj, to);
       }
     }
     tempLinks = [...selectedObj.userData.links_from];
@@ -1733,16 +1767,33 @@ const LidarCanvas = ({
     for (const link of tempLinks) {
       const from = scene.getObjectByProperty("uuid", link);
       if (from) {
-        addLinks(from, selectedObj);
+        linkNodes(from, selectedObj);
       }
     }
   };
 
-  const formatNumber = (num: number): string => {
-    if (num < 1 || num > 99) {
-      throw new Error("Input number must be between 1 and 99");
+  // const formatNumber = (num: number): string => {
+  //   if (num < 1 || num > 99) {
+  //     throw new Error("Input number must be between 1 and 99");
+  //   }
+  //   return num < 10 ? `0${num}` : `${num}`;
+  // };
+  //
+  const showToast = (
+    severity: Severity,
+    detail: string,
+    life: number = 2500
+  ) => {
+    if (lastToastMsg === detail) {
+      return;
     }
-    return num < 10 ? `0${num}` : `${num}`;
+    toast.current?.show({
+      severity: severity,
+      summary: severity,
+      detail: detail,
+      life: life,
+    });
+    lastToastMsg = detail;
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
