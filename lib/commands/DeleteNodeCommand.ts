@@ -4,27 +4,28 @@ import * as THREE from "three";
 
 class DeleteNodeCommand extends Command {
   undoFunc: (object: THREE.Object3D, nodePose: NodePose) => void;
-  // redoFunc: (object: THREE.Object3D, nodePose: NodePose) => void;
-  redoFunc: undefined;
+  redoFunc: (target: THREE.Object3D) => void;
   object: THREE.Object3D;
   nodePose: NodePose;
   constructor(
     undoFunc: (object: THREE.Object3D, nodePose: NodePose) => void,
-    redoFunc,
+    redoFunc: (target: THREE.Object3D) => void,
     object: THREE.Object3D,
     nodePose: NodePose
   ) {
     super();
-    this.redoFunc = redoFunc;
     this.undoFunc = undoFunc;
+    this.redoFunc = redoFunc;
     this.object = object;
     this.nodePose = nodePose;
   }
   undo() {
+    // restoreNode
     this.undoFunc(this.object, this.nodePose);
   }
   redo() {
-    // this.redoFunc(this.object, this.nodePose);
+    // removeNode
+    this.redoFunc(this.object);
   }
 }
 

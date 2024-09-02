@@ -159,27 +159,29 @@ const LidarCanvas = ({
       drawCloud(action.target, cloudData);
     } else if (className === CANVAS_CLASSES.DEFAULT) {
       const selectedNodesArray = selectedNodesArrayRef.current;
+      let nodePose: NodePose;
 
       switch (action.command) {
         case CANVAS_ACTION.ADD_NODE:
           if (className !== CANVAS_CLASSES.DEFAULT) break;
-          const nodePose: NodePose = {
+          nodePose = {
             x: Number(robotHelper.x),
             y: Number(robotHelper.y),
             z: Number(robotHelper.z),
             rz: Number(robotHelper.rz),
           };
-          // if (action.category === NODE_TYPE.ROUTE) {
-          //   addRouteNode(nodePose);
-          // } else if (action.category === NODE_TYPE.GOAL) {
-          //   addGoalNode(nodePose);
-          // }
           addNode(action.category, nodePose);
           break;
         case CANVAS_ACTION.DELETE_NODE:
           const selectedObject = selectedNodeRef.current;
           if (selectedObject) {
-            removeNode(selectedObject);
+            nodePose = {
+              x: Number(selectedObject.position.x),
+              y: Number(selectedObject.position.y),
+              z: Number(selectedObject.position.z),
+              rz: Number(selectedObject.rotation.z),
+            };
+            handleDeleteNode(selectedObject, nodePose);
           }
           break;
         case CANVAS_ACTION.UPDATE_PROPERTY:
@@ -1217,7 +1219,7 @@ const LidarCanvas = ({
     for (const id of nodeIds) {
       const node = scene.getObjectByProperty("uuid", id);
       if (node) {
-        removeNode(node);
+        deleteNode(node);
       }
     }
   };
@@ -1249,7 +1251,7 @@ const LidarCanvas = ({
     }
     if (node === null) return;
     undo.current.push(
-      new AddNodeCommand(removeNode, redoFunction, node, nodePose)
+      new AddNodeCommand(deleteNode, redoFunction, node, nodePose)
     );
   };
 
@@ -1418,7 +1420,20 @@ const LidarCanvas = ({
     if (label) node.remove(label);
   };
 
-  const removeNode = (target: THREE.Object3D) => {
+  const handleDeleteNode = (target: THREE.Object3D, nodePose: NodePose) => {
+    deleteNode(target);
+    if (target.userData.type === "GOAL") {
+      undo.current.push(
+        new DeleteNodeCommand(restoreGoalNode, deleteNode, target, nodePose)
+      );
+    } else if (target.userData.type === "ROUTE") {
+      undo.current.push(
+        new DeleteNodeCommand(restoreRouteNode, deleteNode, target, nodePose)
+      );
+    }
+  };
+
+  const deleteNode = (target: THREE.Object3D) => {
     const scene = sceneRef.current;
     const nodes = nodesRef.current;
     if (!scene) return;
@@ -1495,7 +1510,7 @@ const LidarCanvas = ({
       const links = [...selectedObj?.userData.links];
       const links_from = [...selectedObj?.userData.links_from];
 
-      if (selectedObj) removeNode(selectedObj);
+      if (selectedObj) deleteNode(selectedObj);
 
       let newNode: THREE.Object3D | null = null;
       if (value === NODE_TYPE.GOAL) {
