@@ -28,7 +28,7 @@ import { selectTask } from '@/store/taskSlice';
 
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
-    const taskState = useSelector((state:RootState) => selectTask(state));   
+    // const taskState = useSelector((state:RootState) => selectTask(state));   
     const [mobileURL, setMobileURL] = useState('');
     const toast = useRef<Toast | null>(null);
 
@@ -163,10 +163,18 @@ const Move: React.FC = () =>{
         const temp = cloneValue(nodes);
         temp['0'].children = e.value;
 
-        console.log(e.dropNode);
+        console.log("drop:",e.dropNode);
+        console.log("drag:",e.dragNode);
         if(e.dropNode == null){
-            if(e.dropIndex > 0 && e.dropIndex < temp['0'].children?.length!){
-                setNodes(makeNodes(temp));
+            if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
+                console.log(e.dropIndex, nodes['0'].children?.length);
+                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
+                    setNodes(makeNodes(temp));
+                }
+            }else{
+                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
+                    setNodes(makeNodes(temp));
+                }
             }
         }else if(e.dropNode.label == "repeat" || e.dropNode.label == "if" || e.dropNode.label == "else if"){
             // setNodes(temp);
@@ -177,8 +185,14 @@ const Move: React.FC = () =>{
             parent.children.push(e.dragNode);
             setNodes(makeNodes(temp));
         }else if(e.dropNode.label == "root"){
-            if(e.dropIndex > 0 && e.dropIndex < temp['0'].children?.length!){
-                setNodes(makeNodes(temp));
+            if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
+                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
+                    setNodes(makeNodes(temp));
+                }
+            }else{
+                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
+                    setNodes(makeNodes(temp));
+                }
             }
         }
     }
@@ -859,36 +873,46 @@ const Move: React.FC = () =>{
                 <div className='tool-detail card p-fluid'>
                     {/* <NamePanel></NamePanel> */}
                     {selectNode?.label=="script" &&
-                        <InputTextarea value={selectNode?.data} onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        <div className='field '>
+                            <label htmlFor="name3" className="font-bold">
+                                Script
+                            </label>
+                        <InputTextarea value={selectNode?.data} autoResize rows={5} cols={30} onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        </div>
                     }
                     {selectNode?.label=="wait" &&
-                        <div className='field grid gap-3'>
-                            <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                        <div className='field'>
+                            <label htmlFor="name3" className="font-bold">
                                 Wait Time
                             </label>
-                            <div className="col-12 w-8 md:col-10">
-                                <InputNumber value={waitTime} onChange={(e) =>setWaitTime(e.value)} suffix=" sec" minFractionDigits={3}></InputNumber>
-                            </div>
+                            <InputNumber value={waitTime} showButtons min={0} onChange={(e) =>setWaitTime(e.value)} suffix=" sec" minFractionDigits={3}></InputNumber>
                         </div>
                     }   
                     {selectNode?.label=="repeat" &&
-                        <div className='field grid gap-3'>
-                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                        <div className='field '>
+                        <label htmlFor="name3" className="font-bold">
                             Repeat times
                         </label>
-                        <div className="col-12 w-8 md:col-10">
-                            <InputNumber value={repeatTime} onChange={(e) =>setRepeatTime(e.value)} suffix=" times"></InputNumber>
-                        </div>
+                        <InputNumber value={repeatTime} showButtons onChange={(e) =>setRepeatTime(e.value)} min={-1} suffix=" times" className='mb-3'></InputNumber>
+                        
+                        * 무한루프 = -1 times
                     </div>
                     }   
                     {selectNode?.label=="if" &&
-                        <InputTextarea value={selectNode?.data} onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        <div className='field'>
+                            <label htmlFor="name3" className="font-bold">
+                                Conditions
+                            </label>
+                            <InputTextarea value={selectNode?.data} autoResize onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        </div>
                     }
                     {selectNode?.label=="else if" &&
-                        <InputTextarea value={selectNode?.data} onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
-                    }
-                    {selectNode?.label=="else" &&
-                        <InputTextarea value={selectNode?.data} onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        <div className='field'>
+                            <label htmlFor="name3" className="font-bold">
+                                Conditions
+                            </label>
+                            <InputTextarea value={selectNode?.data} autoResize onChange={(e) => setSelectNode({...selectNode,data:e.target.value})}></InputTextarea>
+                        </div>
                     }
                     {selectNode?.label=="move" &&
                         <div>
@@ -921,7 +945,7 @@ const Move: React.FC = () =>{
                                         <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
                                             Preset
                                         </label>
-                                        <InputNumber className='input_detail' min={0} max={5} value={movePreset} onChange={(e) => setMovePreset(e.value)} suffix=""></InputNumber>
+                                        <InputNumber className='input_detail' min={0} max={5} showButtons value={movePreset} onChange={(e) => setMovePreset(e.value)} suffix=""></InputNumber>
                                     </div>
                                     <Button label='현재위치 가져오기' onClick={getcurPos}></Button>
                                 </div>
@@ -929,8 +953,19 @@ const Move: React.FC = () =>{
                             
                             {selectMove == 'goal' &&
                                 <div className='card'>
-                                    <InputText value={moveGoal} onChange={(e) => setMoveGoal(e.target.value)}></InputText>
-                                    <Button  label='list' onClick={openGoalList}></Button>
+                                    <div className='field'>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            Goal
+                                        </label>
+                                        <InputText value={moveGoal} onChange={(e) => setMoveGoal(e.target.value)}></InputText>
+                                    </div>
+                                    <div className='field'>
+                                        <label htmlFor="name3" className="font-bold w-3 col-12 mb-2 md:col-2 md:mb-0">
+                                            Preset
+                                        </label>
+                                        <InputNumber className='input_detail' min={0} max={5} showButtons value={movePreset} onChange={(e) => setMovePreset(e.value)} suffix=""></InputNumber>
+                                    </div>
+                                    <Button  label='골 리스트' onClick={openGoalList}></Button>
                                 </div>
                             }
                         </div>
