@@ -32,7 +32,12 @@ import axios from "axios";
 
 // libs
 import { Command } from "@/lib/Command";
-import { AddNodeCommand, DeleteNodeCommand } from "@/lib/commands/Commands";
+import {
+  AddNodeCommand,
+  DeleteNodeCommand,
+  AddLinkCommand,
+  RemoveLinkCommand,
+} from "@/lib/commands/Commands";
 
 import {
   CANVAS_CLASSES,
@@ -189,6 +194,14 @@ const LidarCanvas = ({
           break;
         case CANVAS_ACTION.ADD_LINK:
           linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
+          undo.current.push(
+            new AddLinkCommand(
+              removeLink,
+              linkNodes,
+              selectedNodesArray[0],
+              selectedNodesArray[1]
+            )
+          );
           break;
         case CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK:
           linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
@@ -196,6 +209,19 @@ const LidarCanvas = ({
           break;
         case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
+          const from = sceneRef.current?.getObjectByProperty(
+            "uuid",
+            action.target
+          );
+          const to = sceneRef.current?.getObjectByName(action.value);
+          undo.current.push(
+            new RemoveLinkCommand(
+              linkNodes,
+              removeLink,
+              from as THREE.Object3D,
+              to as THREE.Object3D
+            )
+          );
           break;
         case CANVAS_ACTION.DRAW_CLOUD_TOPO:
           clearMapPoints(CANVAS_CLASSES.DEFAULT);

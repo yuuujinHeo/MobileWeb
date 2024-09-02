@@ -28,6 +28,8 @@ export const NODE_TYPE = {
 export const COMMAND_TYPE = {
   ADD_NODE: "ADD_NODE",
   DELETE_NODE: "DELETE_NODE",
+  LINK_NODES: "LINK_NODES",
+  REMOVE_LINK: "REMOVE_LINK",
 };
 
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];

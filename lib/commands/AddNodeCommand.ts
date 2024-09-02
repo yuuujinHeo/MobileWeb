@@ -8,7 +8,6 @@ class AddNodeCommand extends Command {
   redoFunc: (object: THREE.Object3D, nodePose: NodePose) => void;
   object: THREE.Object3D;
   nodePose: NodePose;
-  type: string;
   constructor(
     undoFunc: (object: THREE.Object3D) => void,
     redoFunc: (object: THREE.Object3D, nodepose: NodePose) => void,
