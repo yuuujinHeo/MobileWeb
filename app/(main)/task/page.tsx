@@ -955,7 +955,7 @@ const Move: React.FC = () =>{
   ]
 
   return(
-      <main>
+    <main>
       <ConfirmDialog></ConfirmDialog>
       <PopupLoad></PopupLoad>
       <PopupSave></PopupSave>
@@ -1080,12 +1080,12 @@ const Move: React.FC = () =>{
                       </div>
                   }
               </div>
-              </div>
-              </div>s/remotes/origin/main
+            </div>
           </div>
         </div>
       </div>
-    );
-  };
+    </main>
+  );
+};
 
 export default Move;
