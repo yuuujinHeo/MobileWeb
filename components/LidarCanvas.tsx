@@ -847,10 +847,13 @@ const LidarCanvas = ({
   };
 
   const undoCommand = (): void => {
-    const command = undo.current.pop();
-    if (command) {
-      command.undo();
-      redo.current.push(command);
+    const cmd: Command | undefined = undo.current.pop();
+    if (cmd instanceof Command) {
+      cmd.undo();
+      showToast("success", `Undo ${cmd.type}`, 1500, true);
+      redo.current.push(cmd);
+    } else if (cmd === undefined) {
+      showToast("warn", "Nothing to undo", 5000);
     }
   };
 
@@ -858,7 +861,10 @@ const LidarCanvas = ({
     const cmd = redo.current.pop();
     if (cmd) {
       cmd.redo();
+      showToast("success", `Redo ${cmd.type}`, 1500, true);
       undo.current.push(cmd);
+    } else if (cmd === undefined) {
+      showToast("warn", "Already at newest change", 5000);
     }
   };
 
@@ -1849,9 +1855,10 @@ const LidarCanvas = ({
   const showToast = (
     severity: Severity,
     detail: string,
-    life: number = 2500
+    life: number = 2500,
+    enableRepeat: boolean = false
   ) => {
-    if (lastToastMsg === detail) {
+    if (lastToastMsg === detail && enableRepeat === false) {
       return;
     }
     toast.current?.show({

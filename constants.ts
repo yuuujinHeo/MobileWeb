@@ -25,6 +25,11 @@ export const NODE_TYPE = {
   ROUTE: "ROUTE",
 };
 
+export const COMMAND_TYPE = {
+  ADD_NODE: "ADD_NODE",
+  DELETE_NODE: "DELETE_NODE",
+};
+
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];
 
 export const SCALE_FACTOR = 31.5;
