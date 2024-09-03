@@ -22,7 +22,7 @@ import {store,AppDispatch, RootState} from '../../../store/store';
 import { selectSetting, setRobot, setDebug, setLoc, setControl, setAnnotation, setDefault, setMotor, setMapping, setObs, MotorSetting } from '@/store/settingSlice';
 import {getMobileAPIURL} from '../api/url';
 import { selectStatus, setStatus } from '@/store/statusSlice';
-import { selectState, setState } from '@/store/stateSlice';
+import { selectState, setState } from '@/store/connectionSlice';
 import { io } from "socket.io-client";
 import { transStatus } from '../api/to';
 import { TabMenu } from 'primereact/tabmenu';

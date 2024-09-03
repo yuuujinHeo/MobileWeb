@@ -48,12 +48,14 @@ import {
   MotorSetting,
 } from "@/store/settingSlice";
 import axios from "axios";
-import { setTaskRunning, setTaskID } from "@/store/taskSlice";
+import { setTaskRunning, setTaskID, updateRunningTaskName } from "@/store/taskSlice";
 import emitter from "@/lib/eventBus";
+import { setSlamnavConnection, setTaskConnection } from "@/store/connectionSlice";
 
 const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const dispatch = useDispatch<AppDispatch>();
   const Status = useSelector((state: RootState) => state.status);
+  const Connection = useSelector((state: RootState) => state.connection);
 
   const { layoutConfig, layoutState, onMenuToggle, showProfileSidebar } =
     useContext(LayoutContext);
@@ -62,10 +64,6 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const topbarmenubuttonRef = useRef(null);
   const [mobileURL, setMobileURL] = useState("");
 
-  const [slamnav, setSlamnav] = useState(false);
-  const [task, setTask] = useState(false);
-  const [map, setMap] = useState<string>("");
-  const [local, setLocal] = useState<string>("none");
   const socketRef = useRef<any>();
 
   useEffect(() => {
@@ -105,11 +103,12 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       console.error(e);
     }
   };
+
   const get_connection = async () => {
     try {
       const response = await axios.get(mobileURL + "/connection");
-      setSlamnav(response.data.SLAMNAV);
-      setTask(response.data.TASK);
+      dispatch(setSlamnavConnection(response.data.SLAMNAV));
+      dispatch(setTaskConnection(response.data.TASK));
     } catch (e) {
       console.error(e);
     }
@@ -120,9 +119,10 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       fetch("/api/socket").finally(() => {
         socketRef.current = io();
         emitter.emit("socket", "connected");
+        socketRef.current.emit("init");
 
         socketRef.current.on("connect", () => {
-          console.log("Socket connected ", socketRef.current.id);
+          console.log("Topbar Socket connected ", socketRef.current.id);
         });
 
         socketRef.current.on("status", async (data) => {
@@ -141,28 +141,42 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
           dispatch(setTime(json_re.time));
         });
 
+        socketRef.current.on("init", (data) =>{
+          console.log("TopBar get Init : ", data);
+          dispatch(setTaskRunning(data.task.running));
+          dispatch(setTaskID(data.task.id));
+          dispatch(updateRunningTaskName(data.task.file));
+        });
+
         socketRef.current.on("task_id", (data) => {
           dispatch(setTaskID(data));
         });
 
-        socketRef.current.on("task", (data) => {
-          console.log("socket task in", data);
-          emitter.emit("task", data);
-          if (data == "start") {
-            dispatch(setTaskRunning(true));
-          } else {
-            dispatch(setTaskRunning(false));
-          }
+        socketRef.current.on("task_start", (data) => {
+          emitter.emit("task_start", data);
+          console.log("???????????????",data);
+          dispatch(setTaskRunning(data.running));
+          dispatch(setTaskID(data.id));
+          dispatch(updateRunningTaskName(data.file));
         });
-        //         socketRef.on("move", (data) =>{
-        //             console.log("move response1 : ",data);
-        //         })
-        return () => {
-          console.log("Socket disconnect ", socketRef.current.id);
-          emitter.emit("socket", "disconnected");
-          socketRef.current.disconnect();
-        };
+
+      socketRef.current.on("task_done", (data) => {
+        emitter.emit("task_done", data);
+        dispatch(setTaskRunning(false));
+        dispatch(setTaskID('0'));
       });
+
+      socketRef.current.on("task_error", (data) => {
+        emitter.emit("task_error", data);
+        dispatch(setTaskRunning(false));
+      });
+
+      return () => {
+        console.log("Socket disconnect ", socketRef.current.id);
+        emitter.emit("socket", "disconnected");
+        socketRef.current.disconnect();
+      };
+    });
     }
   }, []);
 
@@ -175,9 +189,9 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const SLAMContent = (
     <>
       <span
-        style={{ backgroundColor: slamnav == true ? "#12d27c" : "#ea594e" }}
+        style={{ backgroundColor: Connection.slamnav == true ? "#12d27c" : "#ea594e" }}
         className={
-          slamnav == true
+          Connection.slamnav == true
             ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
             : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
         }
@@ -185,7 +199,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
         <i className="pi pi-compass" style={{ color: "white" }} />
       </span>
       <span className="ml-2 font-medium">
-        SLAM {slamnav == true ? "Con" : "Discon"}
+        SLAM {Connection.slamnav == true ? "Con" : "Discon"}
       </span>
     </>
   );
@@ -193,9 +207,9 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const TASKContent = (
     <>
       <span
-        style={{ backgroundColor: task == true ? "#12d27c" : "#ea594e" }}
+        style={{ backgroundColor: Connection.task == true ? "#12d27c" : "#ea594e" }}
         className={
-          task == true
+          Connection.task == true
             ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
             : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
         }
@@ -203,7 +217,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
         <i className="pi pi-directions" style={{ color: "white" }} />
       </span>
       <span className="ml-2 font-medium">
-        TASK {task == true ? "Con" : "Discon"}
+        TASK {Connection.task == true ? "Con" : "Discon"}
       </span>
     </>
   );

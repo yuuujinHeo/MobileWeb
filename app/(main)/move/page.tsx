@@ -78,12 +78,10 @@ import {
 import { getMobileAPIURL } from "../api/url";
 import "./style.scss";
 import { transStatus } from "../api/to";
-import { selectMapName } from "@/store/loadSlice";
 
 const Move: React.FC = () => {
   const Status = useSelector((state: RootState) => selectStatus(state));
 
-  const mapName = useSelector((state: RootState) => selectMapName(state));
   const [mobileURL, setMobileURL] = useState("");
   const toast_main = useRef("");
 
@@ -151,7 +149,7 @@ const Move: React.FC = () => {
   const handleNodeSelect = (event) => {};
 
   const getGoals = async () => {
-    const response = await axios.get(mobileURL + "/map/goal/" + mapName);
+    const response = await axios.get(mobileURL + "/map/goal/" + Status.state.map);
     console.log("getgoals:", response.data);
     setGoals(response.data);
   };
@@ -470,7 +468,7 @@ const Move: React.FC = () => {
                       value={goalID}
                       onChange={(e) => setGoalID(e.target.value)}
                     ></InputText>
-                    <Button label="list" onClick={openGoalList}></Button>
+                    <Button label="list" disabled={Status.state.map==""} onClick={openGoalList}></Button>
                   </div>
                 </div>
               </div>
@@ -494,7 +492,7 @@ const Move: React.FC = () => {
                   ></Slider>
                 </div>
               </div>
-              <Button className="w-full" onClick={moveGoal}>
+              <Button className="w-full" disabled={goalID==""} onClick={moveGoal}>
                 GO
               </Button>
             </div>

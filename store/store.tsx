@@ -4,9 +4,8 @@ import { createWrapper } from "next-redux-wrapper";
 import networkReducer from "./networkSlice";
 import userReducer from "./userSlice";
 import settingReducer from "./settingSlice";
-import loadSlice from "./loadSlice";
 import statusReducer from "./statusSlice";
-import stateSlice from "./stateSlice";
+import connectionSlice from "./connectionSlice";
 import taskSlice from "./taskSlice";
 import canvasReducer from "./canvasSlice";
 import propertyPanelReducer from "./propertyPanelSlices";
@@ -16,11 +15,10 @@ export const store = configureStore({
     network: networkReducer,
     setting: settingReducer,
     status: statusReducer,
-    state1: stateSlice,
+    connection: connectionSlice,
     canvas: canvasReducer,
     propertyPanel: propertyPanelReducer,
     user: userReducer,
-    load: loadSlice,
     task: taskSlice
   },
 });

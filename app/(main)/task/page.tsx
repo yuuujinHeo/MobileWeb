@@ -29,7 +29,7 @@ import { TreeNode } from "primereact/treenode";
 import "./style.scss";
 import { MenuItem } from "primereact/menuitem";
 import { RootState, AppDispatch } from "@/store/store";
-import { selectTask, updateTaskName } from "@/store/taskSlice";
+import { selectTask, updateEditTaskName } from "@/store/taskSlice";
 
 const Move: React.FC = () =>{
     const dispatch = useDispatch<AppDispatch>();
@@ -79,9 +79,9 @@ const Move: React.FC = () =>{
         console.log(mobileURL);
         if(mobileURL != ''){
             getTaskList();
+            // getTaskName();
         }
     },[mobileURL])
-
     
     useEffect(()=>{
         console.log(selectNode);
@@ -95,23 +95,36 @@ const Move: React.FC = () =>{
     useEffect(() => {
       const handleChange = () => {
         Status.current = store.getState().status;
+        // console.log(store.getState().status.state.map)
       };
       const unsubscribe = store.subscribe(handleChange);
       return () => {
         unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
       };
     }, [store]);
-  
+
     async function setURL() {
       setMobileURL(await getMobileAPIURL());
   
       // [TEMP]
       url.current = await getMobileAPIURL();
-      if (task.name !== "" && task.name !== undefined) {
-        getNodes(task.name);
+      if (task.editTaskName !== "" && task.editTaskName !== undefined) {
+        getNodes(task.editTaskName);
       }
     }
     
+    // async function getTaskName() {
+    //   try {
+    //     const response = await axios.get(mobileURL + "/task/file");
+    //     console.log("getTaskName", response.data);
+    //     if(response.data != "" && response.data != "disconnect"){
+    //       getNodes(response.data);
+    //     }
+    //   } catch (e) {
+    //     console.error(e);
+    //   }
+    // }
+
     async function getTaskList() {
       try {
         const response = await axios.get(mobileURL + "/task");
@@ -133,18 +146,23 @@ const Move: React.FC = () =>{
         setGoalVisible(true);
     }
 
-  
     const PopupGoal = () =>{
       const renderListItem = (goal: string) => {
-          return (
-              <div className="col-12 column w-full gap-2">
-                  <Button 
-                  className='w-full' 
-                  onClick={()=>{setMoveGoal(goal); setGoalVisible(false);
-                      }} label={goal}></Button>
-              </div>
-          );
-        };
+        return (
+          <div className="col-12 column w-full gap-2">
+              <Button 
+                className='w-full' 
+                onClick={()=>{
+                  setMoveGoal(goal); 
+                  setGoalVisible(false);
+                  }
+                } 
+                label={goal}
+              >
+              </Button>
+          </div>
+        );
+      };
       const itemTemplate = (task: any) => {
           if (!task) {
           return;
@@ -153,13 +171,17 @@ const Move: React.FC = () =>{
           return renderListItem(task);
       };
       return(
-          <Dialog header = 'Goal 리스트'
-              style={{width: '300px'}}
-              visible={goalVisible} onHide={()=>setGoalVisible(false)}>
-              <DataView value={goals}
-              itemTemplate={itemTemplate}
-              />
-          </Dialog>
+        <Dialog 
+          header = 'Goal 리스트'
+          style={{width: '300px'}}
+          visible={goalVisible} 
+          onHide={()=>setGoalVisible(false)}
+        >
+          <DataView 
+            value={goals}
+            itemTemplate={itemTemplate}
+          />
+        </Dialog>
       );
   }
 
@@ -188,57 +210,49 @@ const Move: React.FC = () =>{
     }
 
     const handleDragDrop = (e:TreeDragDropEvent) =>{
-        if(e.dragNode.label == "root" || e.dragNode.label == "begin" || e.dragNode.label == "end"){
-            return;
-        }
+      if(e.dragNode.label == "root" || e.dragNode.label == "begin" || e.dragNode.label == "end"){
+          return;
+      }
 
-        const temp = cloneValue(nodes);
-        temp['0'].children = e.value;
+      const temp = cloneValue(nodes);
+      temp['0'].children = e.value;
 
-        console.log("drop:",e.dropNode);
-        console.log("drag:",e.dragNode);
-        if(e.dropNode == null){
-            if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
-                console.log(e.dropIndex, nodes['0'].children?.length);
-                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
-                    setNodes(makeNodes(temp));
-                }
-            }else{
-                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
-                    setNodes(makeNodes(temp));
-                }
+      console.log("drop:",e.dropNode);
+      console.log("drag:",e.dragNode);
+      if(e.dropNode == null){
+        if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
+            console.log(e.dropIndex, nodes['0'].children?.length);
+            if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
+                setNodes(makeNodes(temp));
             }
-        }else if(e.dropNode.label == "repeat" || e.dropNode.label == "if" || e.dropNode.label == "else if"){
-            // setNodes(temp);
-            setNodes(makeNodes(temp));
-        }else if(e.dropNode.label == "empty"){
-            const parent = findTreeParentNodeByKey(temp,e.dropNode.key);
-            // parent.children.pop();
-            parent.children.push(e.dragNode);
-            setNodes(makeNodes(temp));
-        }else if(e.dropNode.label == "root"){
-            if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
-                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
-                    setNodes(makeNodes(temp));
-                }
-            }else{
-                if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
-                    setNodes(makeNodes(temp));
-                }
+        }else{
+            if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
+                setNodes(makeNodes(temp));
             }
         }
+      }else if(e.dropNode.label == "repeat" || e.dropNode.label == "if" || e.dropNode.label == "else if"){
+          // setNodes(temp);
+          setNodes(makeNodes(temp));
+      }else if(e.dropNode.label == "empty"){
+          const parent = findTreeParentNodeByKey(temp,e.dropNode.key);
+          // parent.children.pop();
+          parent.children.push(e.dragNode);
+          setNodes(makeNodes(temp));
+      }else if(e.dropNode.label == "root"){
+        if(findTreeParentNodeByKey(temp, e.dragNode.key).label == "root"){
+            if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length!){
+                setNodes(makeNodes(temp));
+            }
+        }else{
+            if(e.dropIndex > 0 && e.dropIndex < nodes['0'].children?.length! - 1){
+                setNodes(makeNodes(temp));
+            }
+        }
+      }
     }
 
     const updateKeys = (nodes: TreeNode[], parentKey: string = '0'): TreeNode[] => {
         return nodes;
-        return nodes.map((node, index) => {
-            const key = parentKey ? `${parentKey}-${index}` : `${index}`;
-            return {
-                ...node,
-                realkey:key,
-                children: node.children ? updateKeys(node.children, node.realkey as string) : node.children
-            };
-        });
     }
 
 
@@ -371,7 +385,6 @@ const Move: React.FC = () =>{
       } else {
         _expandedKeys[e.value as string] = true;
       }
-
       setExpandedKeys(_expandedKeys);
     }
 
@@ -571,7 +584,7 @@ const Move: React.FC = () =>{
   const makeNewTask = () => {
     setTaskName("temp_12546a");
     // [TEMP]
-    dispatch(updateTaskName(""));
+    dispatch(updateEditTaskName(""));
 
     const newNode: TreeNode[] = [
       {
@@ -695,7 +708,7 @@ const Move: React.FC = () =>{
                   <Button
                     onClick={() => {
                       // [TEMP]
-                      dispatch(updateTaskName(task));
+                      dispatch(updateEditTaskName(task));
                       getNodes(task);
                       setListVisible(false);
                     }}

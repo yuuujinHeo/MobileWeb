@@ -20,19 +20,20 @@ import { RootState } from "../../../store/store";
 import { getMobileAPIURL } from "../api/url";
 import { TreeNode } from "primereact/treenode";
 import emitter from "@/lib/eventBus";
-import { selectTask, updateRunningTaskName } from "@/store/taskSlice";
+import { selectTask, setTaskID, setTaskRunning, updateRunningTaskName } from "@/store/taskSlice";
 import "./style.scss";
 
 const Run: React.FC = () => {
   const dispatch = useDispatch();
   const taskState = useSelector((state: RootState) => selectTask(state));
+  const Connection = useSelector((state:RootState) => state.connection);
   const [mobileURL, setMobileURL] = useState("");
   const toast = useRef<Toast | null>(null);
   const ScrollRef = useRef<any>(null);
   const TreeRef = useRef<any>(null);
   const [nodes, setNodes] = useState<TreeNode[]>([]);
 
-  const [curTask, setCurTask] = useState<String>("");
+  // const [curTask, setCurTask] = useState<String>("");
 
   const [listVisible, setListVisible] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<TreeExpandedKeysType>({
@@ -48,6 +49,34 @@ const Run: React.FC = () => {
   useEffect(() => {
     setURL();
   }, []);
+  useEffect(() => {
+    console.log(Connection);
+    
+  }, [Connection]);
+
+  useEffect(()  =>{
+    if(taskState.running){
+      toast.current?.show({
+        severity: "success",
+        summary: "Task Start",
+        life: 3000,
+      });
+    }else{
+      if(taskState.runningTaskName != ""){
+        toast.current?.show({
+          severity: "success",
+          summary: "Task Done",
+          life: 3000,
+        });
+      }
+    }
+  },[taskState.running])
+
+  useEffect(()  =>{
+    if(taskState.runningTaskName != ""){
+      getNodes(taskState.runningTaskName);
+    }
+  },[taskState.runningTaskName])
 
   useEffect(() => {
     console.log(mobileURL);
@@ -96,6 +125,7 @@ const Run: React.FC = () => {
     }
   }
 
+
   async function getTaskList() {
     try {
       const response = await axios.get(mobileURL + "/task");
@@ -111,7 +141,6 @@ const Run: React.FC = () => {
     for (let node of nodes) {
       expandNode(node, _expandedKeys);
     }
-
     setExpandedKeys(_expandedKeys);
   };
 
@@ -138,6 +167,7 @@ const Run: React.FC = () => {
         node.label == "else" ||
         node.label == "repeat"
       ) {
+
         if (node.children?.length == 0) {
           node.children.push({ key: uuidv4(), label: "empty", children: [] });
         } else if (node.children?.length! > 1) {
@@ -147,7 +177,6 @@ const Run: React.FC = () => {
               new_child.push(child);
             }
           });
-
           node.children = new_child;
         }
       }
@@ -175,7 +204,7 @@ const Run: React.FC = () => {
 
   const playTask = async () => {
     try {
-      if (curTask != "") {
+      if (taskState.runningTaskName != "") {
         if (taskState.running) {
           toast.current?.show({
             severity: "info",
@@ -183,16 +212,16 @@ const Run: React.FC = () => {
             life: 3000,
           });
         } else {
-          const response = await axios.get(mobileURL + "/task/load/" + curTask);
-          if (response.data == "success") {
+          const response = await axios.get(mobileURL + "/task/load/" + taskState.runningTaskName);
+          if (response.data.result == "success") {
             // [TEMP]
             const response2 = await axios.get(mobileURL + "/task/run");
-            if (response2.data === "success")
-              toast.current?.show({
-                severity: "success",
-                summary: "Task Start",
-                life: 3000,
-              });
+            // if (response2.data === "success"){
+              // toast.current?.show({
+              //   severity: "success",
+              //   summary: "Task Start",
+              //   life: 3000,
+              // });
           } else {
             toast.current?.show({
               severity: "error",
@@ -209,7 +238,7 @@ const Run: React.FC = () => {
 
   const stopTask = async () => {
     try {
-      if (curTask != "") {
+      if (taskState.runningTaskName != "") {
         if (taskState.running) {
           const response = await axios.get(mobileURL + "/task/stop");
           // [TEMP]
@@ -238,21 +267,22 @@ const Run: React.FC = () => {
               icon="pi pi-folder-open"
               disabled={taskState.running}
               onClick={openPopup}
+              className="mr-2"
             ></Button>
-            <Chip label={curTask as string}></Chip>
+            <Chip label={taskState.runningTaskName as string}></Chip>
           </React.Fragment>
         }
         center={
           <React.Fragment>
             <Button
               className="mr-5"
-              disabled={curTask == ""}
+              disabled={taskState.runningTaskName==""||Connection.task==false}
               icon={taskState.running ? "pi pi-pause" : "pi pi-play"}
               onClick={playTask}
             />
             <Button
               icon="pi pi-stop"
-              disabled={curTask == ""}
+              disabled={taskState.runningTaskName==""||Connection.task==false}
               onClick={stopTask}
             />
           </React.Fragment>
@@ -264,9 +294,11 @@ const Run: React.FC = () => {
 
   async function getNodes(name) {
     try {
+      console.log("getNodes : ", url.current + "/task/" + name)
       const response = await axios.get(url.current + "/task/" + name);
+      console.log(response.data);
       node_num = 0;
-      setCurTask(name);
+      // setCurTask(name);
 
       setNodes(makeNodes(response.data));
     } catch (e) {
@@ -288,6 +320,7 @@ const Run: React.FC = () => {
                   <Button
                     onClick={() => {
                       // [TEMP]
+                      axios.get(mobileURL + "/task/load/" + task);
                       dispatch(updateRunningTaskName(task));
                       getNodes(task);
                       setListVisible(false);

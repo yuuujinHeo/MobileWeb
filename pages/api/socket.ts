@@ -8,11 +8,14 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
   if (!(res.socket as any).server.io) {
     // First use, starting socket.io
     const ioServer = new Server((res.socket as any).server);
-    const url = process.env.NEXT_PUBLIC_WEB_SOCKET_URL;
+    const url = process.env.NEXT_PUBLIC_WEB_SOCKET_URL ?? 'http://10.108.1.10:11334';
     const socket = io(url as string);
     let connectedClients = [];
 
+    console.log("url : ", url);
+
     socket.on("connect", () => {
+      console.log("Server Connected");
       socket.on("mapping", (data: string[][]) => {
         ioServer.emit("mapping", data);
       });
@@ -29,9 +32,21 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
         console.log("taskid", data);
         ioServer.emit("task_id", data);
       });
-      socket.on("task", (data: string) => {
-        console.log("task", data);
-        ioServer.emit("task", data);
+      socket.on("init",(data:JSON) =>{
+        console.log("view init : ",data);
+        ioServer.emit("init",data);
+      });
+      socket.on("task_start", (data: JSON) => {
+        console.log("taskStart???",data);
+        ioServer.emit("task_start", data);
+      });
+      socket.on("task_done", (data: JSON) => {
+        console.log("taskDone???");
+        ioServer.emit("task_done", data);
+      });
+      socket.on("task_error", (data: JSON) => {
+        console.log("taskError???");
+        ioServer.emit("task_error", data);
       });
     });
 
@@ -41,6 +56,11 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       newsocket.on("disconnect", () => {
         console.log(`${newsocket.id} disconnected`);
       });
+
+      newsocket.on("init", () =>{
+        console.log("web init?");
+        socket.emit("init");
+      })
     });
     (res.socket as any).server.io = ioServer;
   } else {
