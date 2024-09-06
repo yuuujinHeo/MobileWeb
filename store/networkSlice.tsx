@@ -2,11 +2,11 @@ import { createSlice } from '@reduxjs/toolkit'
 import type { PayloadAction } from '@reduxjs/toolkit'
 import { RootState } from './store'
 
-interface CounterState {
-  value: number
+export interface NetworkState {
+  monitor: string,
+  mobile: string
 }
 
-const initialState = { value: 0 } as CounterState
 
 const networkSlice = createSlice({
   name: 'network',
@@ -16,16 +16,16 @@ const networkSlice = createSlice({
   },
   reducers: {
     setMonitorURL(state,action: PayloadAction<string>) {
+      console.log("Monitor---------->",state.mobile, action.payload);
       state.monitor = action.payload;
     },
     setMobileURL(state,action: PayloadAction<string>) {
-      console.log("---------->",state.mobile, action.payload);
+      console.log("Mobile---------->",state.mobile, action.payload);
       state.mobile = action.payload;
     }
   },
 })
 
 export const { setMonitorURL, setMobileURL } = networkSlice.actions
-export const selectMonitor = (state:RootState) => state.network.monitor;
-export const selectMobile = (state:RootState) => state.network.mobile;
+export const selectNetwork = (state:RootState) => state.network;
 export default networkSlice.reducer

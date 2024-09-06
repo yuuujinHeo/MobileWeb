@@ -2,6 +2,14 @@ import { createSlice } from "@reduxjs/toolkit";
 import type { PayloadAction } from "@reduxjs/toolkit";
 import { RootState } from "./store";
 
+export interface TaskState {
+  running: boolean,
+  taskID: string,
+  message: string,
+  editTaskName: string,
+  runningTaskName: string
+}
+
 const taskSlice = createSlice({
   name: "task",
   initialState: {

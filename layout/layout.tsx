@@ -17,7 +17,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {userContext} from '../interface/user'
 // import { store } from '@/store/store';
 import {store} from '@/store/store'
-import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
+import { setMonitorURL, setMobileURL } from '@/store/networkSlice';
     
 const Layout = ({ children }: ChildContainerProps) => {
     const {state,setState} = useContext(userContext);
@@ -142,7 +142,7 @@ const Layout = ({ children }: ChildContainerProps) => {
     });
 
     return (
-        <Provider store={store}>
+        // <Provider store={store}>
             <React.Fragment>
                 <div className={containerClass}>
                     <AppTopbar ref={topbarRef} />
@@ -157,7 +157,7 @@ const Layout = ({ children }: ChildContainerProps) => {
                     <div className="layout-mask"></div>
                 </div>
             </React.Fragment>
-        </Provider>
+        // </Provider>
     );
 };
 

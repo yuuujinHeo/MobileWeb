@@ -32,19 +32,20 @@ import { RootState, AppDispatch } from "@/store/store";
 import { selectTask, updateEditTaskName } from "@/store/taskSlice";
 
 const Move: React.FC = () =>{
-    const dispatch = useDispatch<AppDispatch>();
-    // const taskState = useSelector((state:RootState) => selectTask(state));   
-    const [mobileURL, setMobileURL] = useState('');
-    const toast = useRef<Toast | null>(null);
-
+  //**************************************Redux
+  const dispatch = useDispatch<AppDispatch>();
+  const taskState = useSelector((state:RootState) => selectTask(state));   
+  const Connection = useSelector((state:RootState) => state.connection);
+  const Network = useSelector((state:RootState) => state.network);
+  const toast = useRef<Toast | null>(null);
   const store = useStore<RootState>();
-  const Status = useRef<StatusState>(store.getState().status);
+  const Status = useRef<StatusState>();
 
-  // [TEMP]
-  const task = useSelector((state: RootState): any => state.task);
-  const url = useRef<string | null>(null);
 
+  //**************************************Ref
   const TreeRef = useRef<any>(null);
+
+  //**************************************State
   const [nodes, setNodes] = useState<TreeNode[]>([]);
   const [selectNodeKey, setSelectNodeKey] = useState<string>('');
   const [selectNode, setSelectNode] = useState<TreeNode | null>();
@@ -64,25 +65,46 @@ const Move: React.FC = () =>{
   const [repeatTime, setRepeatTime] = useState<any>(0);
   const [goals, setGoals] = useState<string[]>([]);
   const [goalVisible, setGoalVisible] = useState(false);
-
   const [copiedNode, setCopiedNode] = useState<TreeNode | null>(null);
-
   const [taskName, setTaskName] = useState('');
     
     useEffect(()=>{
-        setURL();
         setSelectNodeKey('');
         setSelectNode(null);
     },[])
-
-    useEffect(()=>{
-        console.log(mobileURL);
-        if(mobileURL != ''){
-            getTaskList();
-            // getTaskName();
-        }
-    },[mobileURL])
     
+  useEffect(()  =>{
+    if(taskState?.editTaskName != ""){
+      getNodes(taskState?.editTaskName);
+    }
+  },[taskState?.editTaskName])
+
+  useEffect(() => {
+    const handleChange = () => {
+      Status.current = store.getState().status;
+      // console.log(store.getState().status.state.map)
+    };
+    const unsubscribe = store.subscribe(handleChange);
+    return () => {
+      unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
+    };
+  }, [store]);
+
+  useEffect(() => {
+    console.log("[] : " , Status.current);
+  },[])
+
+  useEffect(() => {
+    console.log("Status : " , Status.current);
+  },[Status.current])
+
+  useEffect(() => {
+    console.log("NETWORK RUN : ", Network)
+    if (Network?.mobile != "") {
+      getTaskList();
+    }
+  }, [Network?.mobile]);
+
     useEffect(()=>{
         console.log(selectNode);
     },[selectNode])
@@ -92,42 +114,11 @@ const Move: React.FC = () =>{
     },[nodes])
 
 
-    useEffect(() => {
-      const handleChange = () => {
-        Status.current = store.getState().status;
-        // console.log(store.getState().status.state.map)
-      };
-      const unsubscribe = store.subscribe(handleChange);
-      return () => {
-        unsubscribe(); // 컴포넌트 언마운트 시 구독 해제
-      };
-    }, [store]);
 
-    async function setURL() {
-      setMobileURL(await getMobileAPIURL());
-  
-      // [TEMP]
-      url.current = await getMobileAPIURL();
-      if (task.editTaskName !== "" && task.editTaskName !== undefined) {
-        getNodes(task.editTaskName);
-      }
-    }
-    
-    // async function getTaskName() {
-    //   try {
-    //     const response = await axios.get(mobileURL + "/task/file");
-    //     console.log("getTaskName", response.data);
-    //     if(response.data != "" && response.data != "disconnect"){
-    //       getNodes(response.data);
-    //     }
-    //   } catch (e) {
-    //     console.error(e);
-    //   }
-    // }
 
     async function getTaskList() {
       try {
-        const response = await axios.get(mobileURL + "/task");
+        const response = await axios.get(Network?.mobile + "/task");
         console.log("getTask", response.data);
         setTasks(response.data);
       } catch (e) {
@@ -136,9 +127,9 @@ const Move: React.FC = () =>{
     }
 
     const getcurPos = () =>{
-        setMoveX(Status.current.pose.x);
-        setMoveY(Status.current.pose.y);
-        setMoveRZ(Status.current.pose.rz);
+        setMoveX(Status.current?.pose.x);
+        setMoveY(Status.current?.pose.y);
+        setMoveRZ(Status.current?.pose.rz);
     }
 
     const openGoalList = () =>{
@@ -147,6 +138,9 @@ const Move: React.FC = () =>{
     }
 
     const PopupGoal = () =>{
+      useEffect(() =>{
+        console.log('popup');
+      },[])
       const renderListItem = (goal: string) => {
         return (
           <div className="col-12 column w-full gap-2">
@@ -189,7 +183,7 @@ const Move: React.FC = () =>{
     const getGoals = async () => {
       try {
         const response = await axios.get(
-          mobileURL + "/map/goal/" + Status.current.state.map
+          Network?.mobile + "/map/goal/" + Status.current?.state.map
         );
         console.log("getgoals:", response.data);
         setGoals(response.data);
@@ -201,7 +195,7 @@ const Move: React.FC = () =>{
 
     async function getNodes(name) {
       try {
-        const response = await axios.get(url.current + "/task/" + name);
+        const response = await axios.get(Network?.mobile + "/task/" + name);
         setTaskName(name);
         setNodes(makeNodes(response.data));
       } catch (e) {
@@ -562,7 +556,7 @@ const Move: React.FC = () =>{
       const new_nodes = unmakeNodes(nodes);
 
       //post
-      await axios.post(mobileURL + "/task/" + name, new_nodes);
+      await axios.post(Network?.mobile + "/task/" + name, new_nodes);
       toast.current?.show({
         severity: "success",
         summary: "Success",

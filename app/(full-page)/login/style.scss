@@ -1,0 +1,17 @@
+.select-row{
+    width: 400px;
+    display: flex;
+    gap: 3rem;
+    justify-content: center; /* 가로 방향 가운데 정렬 */
+    align-items: center;     /* 세로 방향 가운데 정렬 */
+    padding: 20px;           /* 패널 내부 패딩 */  
+    // background-color: aqua;
+}
+
+.dialog-login{
+    display: flex;
+    flex-direction: column;  /* 세로 방향으로 정렬 */
+    align-items: center;     /* 세로 방향 가운데 정렬 */
+    // background-color:rgb(92, 35, 35);
+    padding: 20px;           /* 패널 내부 패딩 */  
+}

@@ -1,0 +1,52 @@
+
+.profile-panel{
+    display: flex;
+    width: 350px;
+    justify-content: center; /* 가로 방향 가운데 정렬 */
+    align-items: center;     /* 세로 방향 가운데 정렬 */
+    padding: 20px;           /* 패널 내부 패딩 */
+}
+.profile-panel-container {
+    display: flex;
+    flex-direction: column;  /* 세로 방향으로 정렬 */
+    align-items: center;     /* 컨테이너 내부 요소들을 가운데 정렬 */
+}
+
+.profile-panel .p-avatar{
+    width: 100px;
+    height: 100px;
+}
+.profile-panel .p-avatar .p-avatar-icon {
+  font-size: 4rem;
+}
+.profile-panel .p-avatar .p-avatar {
+  border: 2px solid #ffffff;
+}
+.center-content {
+    width: 400px;
+    display: flex;
+    justify-content: center; /* 가로 방향 가운데 정렬 */
+    align-items: center;     /* 세로 방향 가운데 정렬 */
+    padding: 20px;           /* 패널 내부 패딩 */
+  }
+
+
+.avatar-label {
+margin-top: 10px;        /* Avatar와 label 사이의 간격 */
+font-size: 1.2em;        /* 텍스트 크기 조정 (원하는 대로 수정 가능) */
+text-align: center;      /* 여러 줄일 경우 텍스트 중앙 정렬 */
+}
+
+.chip_hurry{
+  background-color: #e5e7eb;
+  color: #e41111;
+  border-radius: 16px;
+  padding: 0 0.75rem;
+  font-weight: 800;
+}
+.chip_normal{
+  background-color: #e5e7eb;
+  color: #4b5563;
+  border-radius: 16px;
+  padding: 0 0.75rem;
+}

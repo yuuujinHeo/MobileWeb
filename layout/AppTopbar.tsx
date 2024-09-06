@@ -9,6 +9,7 @@ import React, {
   useContext,
   useImperativeHandle,
   useRef,
+  useCallback,
 } from "react";
 import { AppTopbarRef } from "@/types";
 import { LayoutContext } from "./context/layoutcontext";
@@ -28,6 +29,11 @@ import {
   setState,
   StatusState,
 } from "@/store/statusSlice";
+import { Button } from "primereact/button";
+import { Divider } from "primereact/divider";
+import { OverlayPanel } from "primereact/overlaypanel";
+import { useRouter } from 'next/navigation';
+import { Dialog } from "primereact/dialog";
 import { Chip } from "primereact/chip";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
@@ -47,50 +53,129 @@ import {
   setObs,
   MotorSetting,
 } from "@/store/settingSlice";
+import { selectUser, setUser } from '@/store/userSlice';
 import axios from "axios";
 import { setTaskRunning, setTaskID, updateRunningTaskName } from "@/store/taskSlice";
 import emitter from "@/lib/eventBus";
 import { setSlamnavConnection, setTaskConnection } from "@/store/connectionSlice";
+import { Avatar } from "primereact/avatar";
+import { setMobileURL, selectNetwork } from "@/store/networkSlice";
+import './style.scss'
+import PopupLogout from "./popuplogout";
+import { Router } from "next/router";
+import { Before } from "v8";
+import { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime";
+import { prependListener } from "process";
+// import { Dialog } from "@mui/material";
 
 const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const dispatch = useDispatch<AppDispatch>();
   const Status = useSelector((state: RootState) => state.status);
   const Connection = useSelector((state: RootState) => state.connection);
+  const taskState = useSelector((state: RootState) => state.task);
+  const User = useSelector((state:RootState) => state.user);
+  const Network = useSelector((state:RootState) => state.network);
+  
+  const [loginTime, setLoginTime] = useState<number>(0);
+  const [visibleLogout, setVisibleLogout] = useState(false);
+  const [visibleRouter, setVisibleRouter] = useState(false);
 
   const { layoutConfig, layoutState, onMenuToggle, showProfileSidebar } =
     useContext(LayoutContext);
   const menubuttonRef = useRef(null);
   const topbarmenuRef = useRef(null);
   const topbarmenubuttonRef = useRef(null);
-  const [mobileURL, setMobileURL] = useState("");
+  // const [mobileURL, setMobileURL] = useState("");
+  const profile = useRef<OverlayPanel | null>(null);
+  const router = useRouter();
 
+  const [pendingNav, setPendingNav] = useState<{href:string, options:NavigateOptions| undefined}>({href:'', options:undefined});
   const socketRef = useRef<any>();
 
   useEffect(() => {
-    setURL();
+    console.log("hi")
+    if(Network?.mobile == ""){
+      setURL();
+    }
   }, []);
 
-  async function setURL() {
-    setMobileURL(await getMobileAPIURL());
-  }
+  useEffect(()=>{
+    console.log("User : ", User);
+  },[User])
 
   useEffect(() => {
-    if (mobileURL != "") {
+    console.log("Network : ", Network);
+  },[Network])
+
+  const BeforeUnloadHandler = useCallback(
+    (event: BeforeUnloadEvent) =>{
+      console.log("before!!!!!!!!!!!!");
+      event.preventDefault();
+      event.returnValue = true;
+    },[]
+  )
+
+  useEffect(()=>{
+    const originalPush = router.push;
+    const newPush = (
+      href: string,
+      options: NavigateOptions | undefined,
+    ): void =>{
+      if(window.location.pathname == "/task" || window.location.pathname == "map"){
+        if(!confirm("페이지를 이동하시면 저장되지 않은 내용이 사라집니다. 계속 진행하시겠습니까?")){
+          return;
+        }
+        // setPendingNav({href, options});
+        // setVisibleRouter(true);
+      }
+
+      originalPush(href, options);
+      return;
+    };
+
+    console.log(originalPush, 
+      window.location, newPush);
+    
+    router.push = newPush;
+    window.onbeforeunload = BeforeUnloadHandler;
+    return () =>{
+      router.push = originalPush;
+      window.onbeforeunload = null;
+    }
+  },[router, BeforeUnloadHandler]);
+
+
+
+  async function setURL() {
+    const url = await getMobileAPIURL();
+    console.log("setURL TopBar : ",url);
+    dispatch(setMobileURL(url));
+  }
+
+  var interval_timer;
+
+  useEffect(() => {
+    if (Network?.mobile != "") {
       default_setting();
 
-      const interval = setInterval(() => {
-        get_connection();
-      }, 3000);
+        interval_timer = setInterval(() => {
+          get_connection();
+          get_user();
+        }, 1000);
 
       return () => {
-        clearInterval(interval);
+        clearInterval(interval_timer);
       };
     }
-  }, [mobileURL]);
+  }, [Network?.mobile]);
+
+  useEffect(()=>{
+    console.log(router);
+  },[router]);
 
   const default_setting = async () => {
     try {
-      const response = await axios.get(mobileURL + "/setting");
+      const response = await axios.get(Network?.mobile + "/setting");
       dispatch(setRobot(response.data.robot));
       dispatch(setDebug(response.data.debug));
       dispatch(setLoc(response.data.loc));
@@ -104,9 +189,85 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     }
   };
 
+  useEffect(() =>{
+    console.log("useEffect Topbar : ", User)
+    if(User?.state=="guest"){
+      clearInterval(interval_timer);
+    }else if(User?.token == ""){
+      if(User?.state == ""){
+        console.log("page go to login");
+        router.push('/login');
+        clearInterval(interval_timer);
+      }else if(User?.state == "force"){
+        setVisibleLogout(true);
+      }else if(User?.state == "timeout"){
+        setVisibleLogout(true);
+      }
+    }
+  },[User])
+
+  const logout = (_state:string) =>{
+    console.log("logout : ",_state);
+    dispatch(setUser({
+      user_id:"temp",
+      user_name:"",
+      permission:[],
+      token:"",
+      state:_state
+    }));
+    // if(_state == ""){
+    //   console.log("page go to login2");
+    //   router.push('/login');
+    // }
+  }
+
+  const renewLogin = async() =>{
+    try{
+      const json = JSON.stringify({ user_id: User?.user_id, token: User?.token });
+      const response = await axios.post(Network?.monitor + "/login/renew",json, {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      console.log("renewLogin : ", response.data);
+    }catch(e){
+      console.error(e);
+    }
+  }
+
+  const get_user = async() =>{
+    try{
+      if(User?.state == "" || User?.state == "user"){
+        const response = await axios.get(Network?.monitor + "/user/login/"+User?.user_id);
+        console.log("get user : ", response.data);
+        if(response.data.error){
+          console.log("login nothing");
+          logout("");
+        }else{
+          if(response.data.token != User?.token){
+            clearInterval(interval_timer);
+            console.log("강제 로그아웃");
+            logout("force");
+          }else{
+            setLoginTime(response.data.time);
+            if(response.data.time > 0){
+    
+            }else{
+              clearInterval(interval_timer);
+              console.log("login over");
+              logout("timeout");
+            }
+          }
+        }
+      }
+    }catch(e) {
+      console.error("getUser error : ", e);
+    }
+  }
+
   const get_connection = async () => {
     try {
-      const response = await axios.get(mobileURL + "/connection");
+      const response = await axios.get(Network?.mobile + "/connection");
       dispatch(setSlamnavConnection(response.data.SLAMNAV));
       dispatch(setTaskConnection(response.data.TASK));
     } catch (e) {
@@ -189,17 +350,14 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const SLAMContent = (
     <>
       <span
-        style={{ backgroundColor: Connection.slamnav == true ? "#12d27c" : "#ea594e" }}
-        className={
-          Connection.slamnav == true
-            ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-            : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-        }
+        style={{ backgroundColor: Connection?.slamnav == true ? "#12d27c" : "#ea594e" }}
+        
+        className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
         <i className="pi pi-compass" style={{ color: "white" }} />
       </span>
       <span className="ml-2 font-medium">
-        SLAM {Connection.slamnav == true ? "Con" : "Discon"}
+        SLAM {Connection?.slamnav == true ? "Con" : "Discon"}
       </span>
     </>
   );
@@ -207,35 +365,45 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const TASKContent = (
     <>
       <span
-        style={{ backgroundColor: Connection.task == true ? "#12d27c" : "#ea594e" }}
-        className={
-          Connection.task == true
-            ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-            : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-        }
+        style={{ backgroundColor: Connection?.task == true ? taskState?.running == true ? "#12d27c" : "#aaaaaa" : "#ea594e" }}
+        className="border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
-        <i className="pi pi-directions" style={{ color: "white" }} />
+        <i className={taskState?.running == true
+          ? "pi pi-spin pi-spinner"
+          : "pi pi-spinner"} style={{ color: "white" }} />
       </span>
       <span className="ml-2 font-medium">
-        TASK {Connection.task == true ? "Con" : "Discon"}
+        TASK : {Connection?.task == true ? taskState?.runningTaskName : "Discon"}
       </span>
     </>
   );
+
+  const TASKRunContent = (
+    <>
+      <span
+        style={{ backgroundColor: taskState?.running == true ? "#12d27c" : "#aaaaaa" }}
+        
+        className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
+      >
+        
+      </span>
+      <span className="ml-2 font-medium">
+        TASK : {taskState?.runningTaskName}
+      </span>
+    </>
+  );
+
   const MAPContent = (
     <>
       <span
         style={{
-          backgroundColor: Status.state.map != "" ? "#12d27c" : "#ea594e",
+          backgroundColor: Status?.state.map != "" ? "#12d27c" : "#ea594e",
         }}
-        className={
-          Status.state.map != ""
-            ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-            : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-        }
+        className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
         <i className="pi pi-map" style={{ color: "white" }} />
       </span>
-      <span className="ml-2 font-medium">MAP : {Status.state.map}</span>
+      <span className="ml-2 font-medium">MAP : {Status?.state.map}</span>
     </>
   );
   const LocalContent = (
@@ -243,23 +411,75 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       <span
         style={{
           backgroundColor:
-            Status.state.localization == "good" ? "#12d27c" : "#ea594e",
+            Status?.state.localization == "good" ? "#12d27c" : "#ea594e",
         }}
-        className={
-          Status.state.localization == "good"
-            ? "bg-good border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-            : "bg-error border-circle w-2rem h-2rem flex align-items-center justify-content-center"
-        }
+        className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
         <i className="pi pi-map-marker" style={{ color: "white" }} />
       </span>
       <span className="ml-2 font-medium">
-        LOCAL : {Status.state.localization}
+        LOCAL : {Status?.state.localization}
       </span>
     </>
   );
+  const RobotContent = (
+    <>
+      <span
+        style={{
+          backgroundColor:
+            Status?.condition.auto_state == "stop" ? "#aaaaaa" : "#12d27c"
+        }}
+        className="border-circle w-2rem h-2rem flex align-items-center justify-content-center"
+      >
+      <i className={Status?.condition.auto_state == "move"
+        ? "pi pi-spin pi-spinner"
+        : "pi pi-spinner"} style={{ color: "white" }} />
+      </span>
+      <span className="ml-2 font-medium">
+        Move : {Status?.condition.auto_state}
+      </span>
+    </>
+  );
+
+  const handleRouter = () =>{
+    setVisibleRouter(false);
+    console.log("??");
+    if(pendingNav.href.startsWith('/')){
+      console.log("??", pendingNav.href, pendingNav.options);
+      router.push(pendingNav.href);
+      router.push('/');
+    }
+
+  }
   return (
     <div className="layout-topbar">
+      <PopupLogout 
+      visibleLogout = {visibleLogout}
+      setVisibleLogout={setVisibleLogout}
+      state={User!.state}
+      logout={logout}
+      />
+      <Dialog 
+        header="페이지 이동"
+        visible={visibleRouter}
+        modal
+        onHide={()=>setVisibleRouter(false)}
+        position="top"
+      >
+        <p>페이지를 이동하시면 저장되지 않은 내용이 사라집니다. 계속 진행하시겠습니까?</p>
+        <div className="p-d-flex p-jc-end">
+          <Button label="확인" icon="pi pi-check" 
+          onClick={handleRouter}
+            className="p-mr-2"
+          />
+          <Button label="취소" icon="pi pi-times" onClick={(e) =>{
+            setVisibleRouter(false);
+          }}
+          />
+        </div>
+      </Dialog>
+
+
       <Link href="/" className="layout-topbar-logo">
         <img src={`rb_logo_black.png`} alt="logo" />
       </Link>
@@ -284,8 +504,9 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
 
       <Chip className="pl-0 pr-3 mr-2" template={SLAMContent}></Chip>
       <Chip className="pl-0 pr-3 mr-2" template={TASKContent}></Chip>
-      <Chip className="pl-0 pr-3 mr-2" template={MAPContent}></Chip>
-      <Chip className="pl-0 pr-3 mr-2" template={LocalContent}></Chip>
+      {Connection?.slamnav && <Chip className="pl-0 pr-3 mr-2" template={MAPContent}></Chip>}
+      {Connection?.slamnav && <Chip className="pl-0 pr-3 mr-2" template={LocalContent}></Chip>}
+      {Connection?.slamnav && <Chip className="pl-0 pr-3 mr-2" template={RobotContent}></Chip>}
 
       <div
         ref={topbarmenuRef}
@@ -293,10 +514,36 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
           "layout-topbar-menu-mobile-active": layoutState.profileSidebarVisible,
         })}
       >
-        <button type="button" className="p-link layout-topbar-button">
+
+        {User?.state != "guest" &&
+        <div className="flex">
+          <Chip icon="pi pi-clock" className={loginTime>60?"chip_normal":"chip_hurry"} label={String(Math.floor(loginTime/60)).padStart(2,'0')+":"+String(loginTime%60).padStart(2,'0')}></Chip>
+          <Button label="초기화" severity="secondary" className="ml-1" text onClick={renewLogin}></Button>
+        </div>
+        }
+        <button type="button" className="p-link layout-topbar-button" onClick={(e) => profile.current?.toggle(e)}>
           <i className="pi pi-user"></i>
-          <span>Profile</span>
         </button>
+        <OverlayPanel ref={profile} className="profile-panel">
+          <div className="profile-panel-container">
+            <Avatar icon = "pi pi-user" shape="circle" ></Avatar>
+            <h5 className="font-bold ">{User?.user_name==""?"Unknown":User?.user_name}</h5>
+              {User?.state != "guest" &&
+              <div className="flex">
+                <Chip icon="pi pi-clock" className={loginTime>60?"chip_normal":"chip_hurry"} label={String(Math.floor(loginTime/60)).padStart(2,'0')+":"+String(loginTime%60).padStart(2,'0')}></Chip>
+                <Button label="초기화" severity="secondary" className="ml-3" text onClick={renewLogin}></Button>
+              </div>
+              }
+              <Divider />
+            </div> 
+            <div className="flex p-fluidw-full gap-8">
+
+              {User?.state != "guest" &&
+              <Button label="계정설정"  ></Button>
+              }
+              <Button label="로그아웃" onClick={(e)=>logout("")} ></Button>
+            </div>
+        </OverlayPanel>
       </div>
     </div>
   );

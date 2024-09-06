@@ -8,12 +8,21 @@ import "../styles/layout/layout.scss";
 import "../styles/components/components.scss";
 import { Provider } from "react-redux";
 import { GlobalUserProvider } from "../interface/user";
-import {store} from "@/store/store";
+import {store, persistor} from "@/store/store";
+import { persistStore, persistReducer } from 'redux-persist';
+import storage from "redux-persist/lib/storage";
+import { PersistGate } from "redux-persist/integration/react";
+import { rootReducer } from "@/store/reducers";
 import { useEffect } from "react";
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
+const persistConfig = {
+    key: 'root',
+    storage,
+};
+
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
@@ -26,13 +35,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
         ></link>
       </head>
       <body>
-        {/* <Provider store={store}> */}
-          <PrimeReactProvider>
-            <GlobalUserProvider>
-              <LayoutProvider>{children}</LayoutProvider>
-            </GlobalUserProvider>
-          </PrimeReactProvider>
-        {/* </Provider>  */}
+        <Provider store={store}>
+          <PersistGate loading={null} persistor={persistor}>
+            <PrimeReactProvider>
+              <GlobalUserProvider>
+                <LayoutProvider>{children}</LayoutProvider>
+              </GlobalUserProvider>
+            </PrimeReactProvider>
+          </PersistGate>
+        </Provider>
       </body>
     </html>
   );

@@ -6,13 +6,15 @@ interface UserState {
     user_id:string;
     user_name:string;
     token:string;
-    permission:[];    
+    permission:string[];    
+    state:string;
 }
 const defaultUser = {
     user_id:"temp",
     user_name:"",
     token:"",
-    permission:[]
+    permission:[],
+    state:""
 }
 
 const userSlice = createSlice({
@@ -21,16 +23,19 @@ const userSlice = createSlice({
     user_id:"temp",
     user_name:"",
     token:"",
-    permission:[]
+    permission:[],
+    state:""
     },
   reducers: {
-    setUser(state,action: PayloadAction<UserState>){
+    setUser(state:UserState,action: PayloadAction<UserState>){
+      console.log("setUser : ", action.payload.user_id)
         state.user_id = action.payload.user_id;
         state.user_name = action.payload.user_name;
         state.token = action.payload.token;
         state.permission = action.payload.permission;
+        state.state = action.payload.state;
     },
-    setUserPermission(state,action: PayloadAction<[]>){
+    setUserPermission(state:UserState,action: PayloadAction<[]>){
         state.permission = action.payload;
     }
   },
@@ -38,8 +43,5 @@ const userSlice = createSlice({
 
 export const { setUser } = userSlice.actions
 export const selectUser = (state:RootState) => state.user;
-export const selectUserPermission = (state:RootState) => state.user.permission;
-export const selectUserId = (state:RootState) => state.user.user_id;
-export const selectUserName = (state:RootState) => state.user.user_name;
-export const selectUserToken = (state:RootState) => state.user.token;
+export const selectUserPermission = (state:RootState) => state.user?.permission;
 export default userSlice.reducer

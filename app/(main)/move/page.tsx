@@ -33,6 +33,7 @@ import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import fs from "fs";
 import { Dialog } from "primereact/dialog";
+import PopupGoal from "./popupgoal";
 // import { ListBox } from 'primereact/listbox';
 import {
   FileUpload,
@@ -78,30 +79,30 @@ import {
 import { getMobileAPIURL } from "../api/url";
 import "./style.scss";
 import { transStatus } from "../api/to";
+import { StatusState } from "@/store/statusSlice";
+import { shallowEqual, useStore } from "react-redux";
+
 
 const Move: React.FC = () => {
-  const Status = useSelector((state: RootState) => selectStatus(state));
+  //**************************************Redux
+  const dispatch = useDispatch<AppDispatch>();
+  const store = useStore<RootState>();
+  const Status = useSelector((state: RootState) => state.status);
+  const Network = useSelector((state:RootState) => state.network);
+  const Connection = useSelector((state:RootState) => state.connection);
 
-  const [mobileURL, setMobileURL] = useState("");
-  const toast_main = useRef("");
-
+  //**************************************Ref
   const toast = useRef<Toast | null>(null);
+
+  //**************************************State
   const [targetX, setTargetX] = useState(0);
   const [targetY, setTargetY] = useState(0);
   const [targetRZ, setTargetRZ] = useState(0);
   const [goalID, setGoalID] = useState("");
   const [preset, setPreset] = useState<number>(3);
-
   const [goals, setGoals] = useState<string[]>([]);
+
   const [goalVisible, setGoalVisible] = useState(false);
-
-  useEffect(() => {
-    setURL();
-  }, []);
-
-  async function setURL() {
-    setMobileURL(await getMobileAPIURL());
-  }
 
   async function moveTarget() {
     console.log("moveTarget");
@@ -123,7 +124,7 @@ const Move: React.FC = () => {
 
     console.log("PUSH", targetRZ);
 
-    const response = await axios.post(mobileURL + "/control/move", json, {
+    const response = await axios.post(Network?.mobile + "/control/move", json, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -146,52 +147,24 @@ const Move: React.FC = () => {
     }
   }
 
-  const handleNodeSelect = (event) => {};
-
-  const getGoals = async () => {
-    const response = await axios.get(mobileURL + "/map/goal/" + Status.state.map);
-    console.log("getgoals:", response.data);
-    setGoals(response.data);
-  };
-
   const openGoalList = () => {
     getGoals();
     setGoalVisible(true);
   };
 
-  const PopupGoal = () => {
-    const renderListItem = (goal: string) => {
-      return (
-        <div className="col-12 column w-full gap-2">
-          <Button
-            className="w-full"
-            onClick={() => {
-              setGoalID(goal);
-              setGoalVisible(false);
-            }}
-            label={goal}
-          ></Button>
-        </div>
+  const getGoals = async () => {
+    try {
+      const response = await axios.get(
+        Network?.mobile + "/map/goal/" + Status?.state.map
       );
-    };
-    const itemTemplate = (task: any) => {
-      if (!task) {
-        return;
-      }
-
-      return renderListItem(task);
-    };
-    return (
-      <Dialog
-        header="Goal 리스트"
-        style={{ width: "300px" }}
-        visible={goalVisible}
-        onHide={() => setGoalVisible(false)}
-      >
-        <DataView value={goals} itemTemplate={itemTemplate} />
-      </Dialog>
-    );
+      console.log("getgoals:", response.data);
+      setGoals(response.data);
+    } catch (e) {
+      console.error(e);
+    }
   };
+
+
 
   async function moveGoal() {
     console.log("moveGoal");
@@ -209,7 +182,7 @@ const Move: React.FC = () => {
       time: currentTime,
     });
 
-    const response = await axios.post(mobileURL + "/control/move", json, {
+    const response = await axios.post(Network?.mobile + "/control/move", json, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -241,7 +214,7 @@ const Move: React.FC = () => {
       .replace("Z", "");
 
     const json = JSON.stringify({ command: "pause", time: currentTime });
-    const response = await axios.post(mobileURL + "/control/move", json, {
+    const response = await axios.post(Network?.mobile + "/control/move", json, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -264,7 +237,7 @@ const Move: React.FC = () => {
   }
 
   async function moveResume() {
-    console.log("movePause");
+    console.log("moveResume");
 
     const currentTime = new Date()
       .toISOString()
@@ -272,7 +245,7 @@ const Move: React.FC = () => {
       .replace("Z", "");
 
     const json = JSON.stringify({ command: "resume", time: currentTime });
-    const response = await axios.post(mobileURL + "/control/move", json, {
+    const response = await axios.post(Network?.mobile + "/control/move", json, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -303,7 +276,7 @@ const Move: React.FC = () => {
       .replace("Z", "");
 
     const json = JSON.stringify({ command: "stop", time: currentTime });
-    const response = await axios.post(mobileURL + "/control/move", json, {
+    const response = await axios.post(Network?.mobile + "/control/move", json, {
       headers: {
         "Content-Type": "application/json",
       },
@@ -328,7 +301,12 @@ const Move: React.FC = () => {
   return (
     <main>
       <Toast ref={toast}></Toast>
-      <PopupGoal></PopupGoal>
+      <PopupGoal 
+        goalVisible={goalVisible}
+        goals={goals}
+        setGoalID={setGoalID}
+        setGoalVisible={setGoalVisible}
+      />
       <div className="card">
         <h5 className="font-bold">Move State</h5>
         <div className="card p-fluid">
@@ -341,7 +319,7 @@ const Move: React.FC = () => {
             </label>
             <div className="col-12 w-8 md:col-10">
               <SelectButton
-                value={Status.condition.auto_state}
+                value={Status?.condition.auto_state}
                 readOnly
                 options={[
                   { label: "Stop", value: "stop" },
@@ -362,7 +340,7 @@ const Move: React.FC = () => {
             </label>
             <div className="col-12 w-8  md:col-10">
               <SelectButton
-                value={Status.condition.obs_state}
+                value={Status?.condition.obs_state}
                 readOnly
                 options={[
                   { label: "None", value: "none" },
@@ -468,7 +446,7 @@ const Move: React.FC = () => {
                       value={goalID}
                       onChange={(e) => setGoalID(e.target.value)}
                     ></InputText>
-                    <Button label="list" disabled={Status.state.map==""} onClick={openGoalList}></Button>
+                    <Button label="list" disabled={Status?.state.map==""} onClick={openGoalList}></Button>
                   </div>
                 </div>
               </div>
