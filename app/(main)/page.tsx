@@ -18,9 +18,31 @@ import {AppDispatch, RootState} from '@/store/store';
 import { selectSetting } from '@/store/settingSlice';
 import { selectStatus,  setStatus, StatusState } from '@/store/statusSlice';
 import { transStatus } from '@/app/(main)/api/to'
+import './style.scss'
+import LidarCanvas from '@/components/LidarCanvas';
+import TaskView from '@/components/TaskView';
 
 const Dashboard = () => {
-
+return(
+    <main>
+        <div className='card'>
+            State
+        </div>
+        <div className='layout-under'>
+            <div className='card box-map'>
+                <LidarCanvas 
+                    className="canvas-default"
+                    cloudData={null}
+                    topoData={null}
+                />
+            </div>
+            <div className='card box-task'>
+                <TaskView></TaskView>
+            </div>
+        </div>
+    
+    </main>
+);
 }
 
 export default Dashboard;

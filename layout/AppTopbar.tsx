@@ -121,9 +121,11 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       href: string,
       options: NavigateOptions | undefined,
     ): void =>{
-      if(window.location.pathname == "/task" || window.location.pathname == "map"){
-        if(!confirm("페이지를 이동하시면 저장되지 않은 내용이 사라집니다. 계속 진행하시겠습니까?")){
-          return;
+      if(window.location.pathname == "/task" || window.location.pathname == "/map"){
+        if(href != "/login"){
+          if(!confirm("페이지를 이동하시면 저장되지 않은 내용이 사라집니다. 계속 진행하시겠습니까?")){
+            return;
+          }
         }
         // setPendingNav({href, options});
         // setVisibleRouter(true);
@@ -206,8 +208,11 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     }
   },[User])
 
-  const logout = (_state:string) =>{
+  const logout = async(_state:string) =>{
     console.log("logout : ",_state);
+    const response = await axios.post(Network?.monitor + "/logout", {user_id:User?.user_id, token:User?.token});
+    console.log("Response : ", response.data);
+
     dispatch(setUser({
       user_id:"temp",
       user_name:"",
@@ -215,10 +220,6 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       token:"",
       state:_state
     }));
-    // if(_state == ""){
-    //   console.log("page go to login2");
-    //   router.push('/login');
-    // }
   }
 
   const renewLogin = async() =>{
