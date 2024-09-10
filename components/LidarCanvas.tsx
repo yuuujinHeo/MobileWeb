@@ -1331,8 +1331,8 @@ const LidarCanvas = ({
   const restoreGoalNode = (
     object: THREE.Object3D,
     nodePose: NodePose,
-    links: string[],
-    links_from: string[]
+    links: string[] = [],
+    links_from: string[] = []
   ) => {
     sceneRef.current?.add(object);
     postProcessAddGoal(object, nodePose);
@@ -1340,7 +1340,8 @@ const LidarCanvas = ({
     // Bug: userData of the passed object3D is lost ("links" and "links_from" become empty arrays).
     // Temporary solution: added "restoreLinks" due to unidentified cause.
     // updateLinks(object);
-    restoreLinks(object, links, links_from);
+    if (links.length || links_from.length)
+      restoreLinks(object, links, links_from);
   };
 
   const postProcessAddGoal = (object: THREE.Object3D, nodePose: NodePose) => {
@@ -1380,13 +1381,14 @@ const LidarCanvas = ({
   const restoreRouteNode = (
     object: THREE.Object3D,
     nodePose: NodePose,
-    links: string[],
-    links_from: string[]
+    links: string[] = [],
+    links_from: string[] = []
   ) => {
     sceneRef.current?.add(object);
     postProcessAddRoute(object, nodePose);
     // updateLinks(object);
-    restoreLinks(object, links, links_from);
+    if (links.length || links_from.length)
+      restoreLinks(object, links, links_from);
   };
 
   const postProcessAddRoute = (route: THREE.Object3D, nodePose: NodePose) => {
@@ -1407,17 +1409,21 @@ const LidarCanvas = ({
     const scene = sceneRef.current;
     if (!scene || !object) return;
 
-    for (const link of links) {
-      const to = scene.getObjectByProperty("uuid", link);
-      if (to) {
-        linkNodes(object, to);
+    if (links.length) {
+      for (const link of links) {
+        const to = scene.getObjectByProperty("uuid", link);
+        if (to) {
+          linkNodes(object, to);
+        }
       }
     }
 
-    for (const link of links_from) {
-      const from = scene.getObjectByProperty("uuid", link);
-      if (from) {
-        linkNodes(from, object);
+    if (links_from.length) {
+      for (const link of links_from) {
+        const from = scene.getObjectByProperty("uuid", link);
+        if (from) {
+          linkNodes(from, object);
+        }
       }
     }
   };
