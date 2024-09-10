@@ -193,7 +193,7 @@ const LidarCanvas = ({
         case CANVAS_ACTION.UPDATE_PROPERTY:
           const selectedObj = selectedNodeRef.current;
           if (!selectedObj) return;
-          handleUndoRedo(action.category, action.value);
+          setPropertyUndoRedo(action.category, action.value);
           updateProperty(selectedObj, action.category, action.value);
           break;
         case CANVAS_ACTION.ADD_LINK:
@@ -256,19 +256,15 @@ const LidarCanvas = ({
     }
   }, [action]);
 
-  const handleUndoRedo = (category: string, value: string): void => {
+  const setUndoRedo = (command: string): void => {};
+
+  const setPropertyUndoRedo = (category: string, value: string): void => {
     const selectedObj = selectedNodeRef.current;
     if (!selectedObj) return;
     switch (category) {
       case "name":
         undo.current.push(
-          new ChangeNameCommand(
-            updateProperty,
-            selectedObj,
-            category,
-            selectedObj.name,
-            value
-          )
+          new ChangeNameCommand(updateProperty, selectedObj, category, value)
         );
       default:
         break;

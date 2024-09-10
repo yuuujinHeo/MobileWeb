@@ -12,7 +12,6 @@ class ChangeNameCommand extends Command {
     func: (target: THREE.Object3D, category: string, value: string) => void,
     target: THREE.Object3D,
     category: string,
-    originName: string,
     newName: string
   ) {
     super();
@@ -20,7 +19,7 @@ class ChangeNameCommand extends Command {
     this.func = func;
     this.target = target;
     this.category = category;
-    this.originName = originName;
+    this.originName = target.name;
     this.newName = newName;
   }
   undo() {
