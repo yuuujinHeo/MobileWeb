@@ -30,6 +30,7 @@ export const COMMAND_TYPE = {
   DELETE_NODE: "DELETE_NODE",
   LINK_NODES: "LINK_NODES",
   REMOVE_LINK: "REMOVE_LINK",
+  CHANGE_NAME: "CHANGE_NAME",
 };
 
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];

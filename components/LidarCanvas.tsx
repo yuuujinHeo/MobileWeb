@@ -37,6 +37,7 @@ import {
   DeleteNodeCommand,
   AddLinkCommand,
   RemoveLinkCommand,
+  ChangeNameCommand,
 } from "@/lib/commands/Commands";
 
 import {
@@ -190,7 +191,10 @@ const LidarCanvas = ({
           }
           break;
         case CANVAS_ACTION.UPDATE_PROPERTY:
-          updateProperty(action.category, action.value);
+          const selectedObj = selectedNodeRef.current;
+          if (!selectedObj) return;
+          handleUndoRedo(action.category, action.value);
+          updateProperty(selectedObj, action.category, action.value);
           break;
         case CANVAS_ACTION.ADD_LINK:
           linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
@@ -252,6 +256,25 @@ const LidarCanvas = ({
     }
   }, [action]);
 
+  const handleUndoRedo = (category: string, value: string): void => {
+    const selectedObj = selectedNodeRef.current;
+    if (!selectedObj) return;
+    switch (category) {
+      case "name":
+        undo.current.push(
+          new ChangeNameCommand(
+            updateProperty,
+            selectedObj,
+            category,
+            selectedObj.name,
+            value
+          )
+        );
+      default:
+        break;
+    }
+  };
+
   useEffect(() => {
     if (className === CANVAS_CLASSES.DEFAULT) {
       if (isMarkingMode) {
@@ -272,13 +295,15 @@ const LidarCanvas = ({
     cloudRef.current = cloudData;
   }, [cloudData]);
 
-  const updateProperty = (category: string, value: string) => {
+  const updateProperty = (
+    target: THREE.Object3D,
+    category: string,
+    value: string
+  ): void => {
     const scene = sceneRef.current;
-    const selectedObj = selectedNodeRef.current;
     const currSelectionBox = currSelectionBoxRef.current;
     const transformControl = transformControlRef.current;
-    if (!scene || !selectedObj || !currSelectionBox || !transformControl)
-      return;
+    if (!scene || !target || !currSelectionBox || !transformControl) return;
 
     switch (category) {
       case "name":
@@ -292,35 +317,34 @@ const LidarCanvas = ({
         }
         // TODO If isDuplicatedName is true. Warn!
         if (!isDuplicatedName) {
-          selectedObj.name = value;
+          target.name = value;
           // update label
-          removeLabelFromNode(selectedObj);
-          addLabelToNode(selectedObj);
+          removeLabelFromNode(target);
+          addLabelToNode(target);
         }
-
         break;
       case "pose-x":
-        selectedObj.position.x = Number(value) * SCALE_FACTOR;
-        removeAllLinksRelateTo(selectedObj.uuid);
-        updateLinks(selectedObj);
+        target.position.x = Number(value) * SCALE_FACTOR;
+        removeAllLinksRelateTo(target.uuid);
+        updateLinks(target);
         break;
       case "pose-y":
-        selectedObj.position.y = Number(value) * SCALE_FACTOR;
-        removeAllLinksRelateTo(selectedObj.uuid);
-        updateLinks(selectedObj);
+        target.position.y = Number(value) * SCALE_FACTOR;
+        removeAllLinksRelateTo(target.uuid);
+        updateLinks(target);
         break;
       // case "pose-z":
       //   selectedObj.position.z = Number(value);
       //   updateLinks(selectedObj)
       //   break;
       case "pose-rz":
-        selectedObj.rotation.z = Number(value);
+        target.rotation.z = Number(value);
         break;
       case "type":
         changeNodeType(value);
         break;
       case "info":
-        selectedObj.userData.info = value;
+        target.userData.info = value;
         break;
       default:
         break;
