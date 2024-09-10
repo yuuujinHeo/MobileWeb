@@ -1328,10 +1328,19 @@ const LidarCanvas = ({
     });
   };
 
-  const restoreGoalNode = (object: THREE.Object3D, nodePose: NodePose) => {
+  const restoreGoalNode = (
+    object: THREE.Object3D,
+    nodePose: NodePose,
+    links: string[],
+    links_from: string[]
+  ) => {
     sceneRef.current?.add(object);
     postProcessAddGoal(object, nodePose);
-    updateLinks(object);
+    // [Note]
+    // Bug: userData of the passed object3D is lost ("links" and "links_from" become empty arrays).
+    // Temporary solution: added "restoreLinks" due to unidentified cause.
+    // updateLinks(object);
+    restoreLinks(object, links, links_from);
   };
 
   const postProcessAddGoal = (object: THREE.Object3D, nodePose: NodePose) => {
@@ -1342,9 +1351,6 @@ const LidarCanvas = ({
     addLabelToNode(object);
     raycastTargetsRef.current.push(object);
     selectObject(object);
-    // undo.current.push(
-    //   new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
-    // );
   };
 
   const addRouteNode = (nodePose: NodePose): Promise<THREE.Object3D> | null => {
@@ -1371,10 +1377,16 @@ const LidarCanvas = ({
     });
   };
 
-  const restoreRouteNode = (object: THREE.Object3D, nodePose: NodePose) => {
+  const restoreRouteNode = (
+    object: THREE.Object3D,
+    nodePose: NodePose,
+    links: string[],
+    links_from: string[]
+  ) => {
     sceneRef.current?.add(object);
     postProcessAddRoute(object, nodePose);
-    updateLinks(object);
+    // updateLinks(object);
+    restoreLinks(object, links, links_from);
   };
 
   const postProcessAddRoute = (route: THREE.Object3D, nodePose: NodePose) => {
@@ -1385,10 +1397,29 @@ const LidarCanvas = ({
     addLabelToNode(route);
     raycastTargetsRef.current.push(route);
     selectObject(route);
+  };
 
-    // undo.current.push(
-    //   new AddNodeCommand(removeNode, restoreRouteNode, route, nodePose)
-    // );
+  const restoreLinks = (
+    object: THREE.Object3D,
+    links: string[],
+    links_from: string[]
+  ): void => {
+    const scene = sceneRef.current;
+    if (!scene || !object) return;
+
+    for (const link of links) {
+      const to = scene.getObjectByProperty("uuid", link);
+      if (to) {
+        linkNodes(object, to);
+      }
+    }
+
+    for (const link of links_from) {
+      const from = scene.getObjectByProperty("uuid", link);
+      if (from) {
+        linkNodes(from, object);
+      }
+    }
   };
 
   const setupNode = (
@@ -1453,7 +1484,6 @@ const LidarCanvas = ({
   };
 
   const handleDeleteNode = (target: THREE.Object3D, nodePose: NodePose) => {
-    deleteNode(target);
     if (target.userData.type === "GOAL") {
       undo.current.push(
         new DeleteNodeCommand(restoreGoalNode, deleteNode, target, nodePose)
@@ -1463,6 +1493,7 @@ const LidarCanvas = ({
         new DeleteNodeCommand(restoreRouteNode, deleteNode, target, nodePose)
       );
     }
+    deleteNode(target);
   };
 
   const deleteNode = (target: THREE.Object3D) => {
@@ -1702,6 +1733,7 @@ const LidarCanvas = ({
   const linkNodes = (from: THREE.Object3D, to: THREE.Object3D) => {
     // This function should be called before updating the links
     // I mean, before 'Update links' logic...
+    if (from === undefined || to === undefined) return;
     createArrow(from, to);
 
     // Update links
@@ -1851,8 +1883,12 @@ const LidarCanvas = ({
     const scene = sceneRef.current;
     if (!scene || !selectedObj) return;
 
-    let tempLinks = [...selectedObj.userData.links];
+    // let tempLinks = [...selectedObj.userData.links];
+    const tempLinks = selectedObj.userData.links.slice();
+    const tempLinksFrom = selectedObj.userData.links_from.slice();
+
     selectedObj.userData.links = [];
+    selectedObj.userData.links_from = [];
 
     for (const link of tempLinks) {
       const to = scene.getObjectByProperty("uuid", link);
@@ -1860,10 +1896,8 @@ const LidarCanvas = ({
         linkNodes(selectedObj, to);
       }
     }
-    tempLinks = [...selectedObj.userData.links_from];
-    selectedObj.userData.links_from = [];
 
-    for (const link of tempLinks) {
+    for (const link of tempLinksFrom) {
       const from = scene.getObjectByProperty("uuid", link);
       if (from) {
         linkNodes(from, selectedObj);

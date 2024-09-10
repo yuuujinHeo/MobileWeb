@@ -21,11 +21,9 @@ class RemoveLinkCommand extends Command {
     this.type = COMMAND_TYPE.REMOVE_LINK;
   }
   undo() {
-    console.log("from, to", this.from, this.to);
     this.undoFunc(this.from, this.to);
   }
   redo() {
-    console.log(this.from.uuid, this.to.name);
     this.redoFunc(this.from.uuid, this.to.name);
   }
 }
