@@ -213,6 +213,15 @@ const LidarCanvas = ({
         case CANVAS_ACTION.ADD_BIDIRECTIONAL_LINK:
           linkNodes(selectedNodesArray[0], selectedNodesArray[1]);
           linkNodes(selectedNodesArray[1], selectedNodesArray[0]);
+          undo.current.push(
+            new AddLinkCommand(
+              removeLink,
+              linkNodes,
+              selectedNodesArray[0],
+              selectedNodesArray[1],
+              true
+            )
+          );
           break;
         case CANVAS_ACTION.REMOVE_LINK:
           removeLink(action.target, action.value);
