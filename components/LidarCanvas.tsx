@@ -39,6 +39,7 @@ import {
   RemoveLinkCommand,
   ChangeNameCommand,
   TransformNodeCommand,
+  // ChangeNodeTypeCommand,
 } from "@/lib/commands/Commands";
 
 import {
@@ -95,6 +96,7 @@ const LidarCanvas = ({
 
   const undo = useRef<Command[]>([]);
   const redo = useRef<Command[]>([]);
+  // const lastObjectId = useRef<number>(-1);
 
   const toast = useRef<Toast>(null);
   let lastToastMsg = "";
@@ -273,6 +275,8 @@ const LidarCanvas = ({
           new TransformNodeCommand(updateProperty, selectedObj, category, value)
         );
         break;
+      // case "type":
+      //   undo.current.push(new ChangeNodeTypeCommand(undoChangeNodeType, value));
       default:
         break;
     }
@@ -344,7 +348,7 @@ const LidarCanvas = ({
         target.rotation.z = Number(value);
         break;
       case "type":
-        changeNodeType(value);
+        changeNodeType(target, value);
         break;
       case "info":
         target.userData.info = value;
@@ -1597,16 +1601,25 @@ const LidarCanvas = ({
     );
   };
 
-  const changeNodeType = async (value: string) => {
-    const selectedObj = selectedNodeRef.current;
-    if (selectedObj === null) return;
+  // [TEMP]
+  // const undoChangeNodeType = (value: string) => {
+  //   const scene = sceneRef.current;
+  //   if (!scene) return;
+  //   const last = scene.getObjectById(lastObjectId.current);
+  //   if (!last) return;
+  //   changeNodeType(last, value);
+  // };
 
-    if (selectedObj.userData.type !== value) {
-      const selectedObj = selectedNodeRef.current;
-      const links = [...selectedObj?.userData.links];
-      const links_from = [...selectedObj?.userData.links_from];
+  const changeNodeType = async (
+    target: THREE.Object3D,
+    value: string
+  ): Promise<void> => {
+    if (!target) return;
+    if (target.userData.type !== value) {
+      const links = [...target?.userData.links];
+      const links_from = [...target?.userData.links_from];
 
-      if (selectedObj) deleteNode(selectedObj);
+      if (target) deleteNode(target);
 
       let newNode: THREE.Object3D | null = null;
       if (value === NODE_TYPE.GOAL) {
@@ -1626,6 +1639,9 @@ const LidarCanvas = ({
         const targetNode = sceneRef.current?.getObjectByProperty("uuid", uuid);
         if (targetNode) linkNodes(targetNode, newNode);
       }
+
+      // Set last object
+      // lastObjectId.current = newNode.id;
     }
   };
 
