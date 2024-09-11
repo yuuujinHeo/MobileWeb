@@ -38,6 +38,7 @@ import {
   AddLinkCommand,
   RemoveLinkCommand,
   ChangeNameCommand,
+  TransformNodeCommand,
 } from "@/lib/commands/Commands";
 
 import {
@@ -256,8 +257,6 @@ const LidarCanvas = ({
     }
   }, [action]);
 
-  const setUndoRedo = (command: string): void => {};
-
   const setPropertyUndoRedo = (category: string, value: string): void => {
     const selectedObj = selectedNodeRef.current;
     if (!selectedObj) return;
@@ -266,6 +265,14 @@ const LidarCanvas = ({
         undo.current.push(
           new ChangeNameCommand(updateProperty, selectedObj, category, value)
         );
+        break;
+      case "pose-x":
+      case "pose-y":
+      case "pose-rz":
+        undo.current.push(
+          new TransformNodeCommand(updateProperty, selectedObj, category, value)
+        );
+        break;
       default:
         break;
     }

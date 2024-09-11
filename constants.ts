@@ -31,6 +31,7 @@ export const COMMAND_TYPE = {
   LINK_NODES: "LINK_NODES",
   REMOVE_LINK: "REMOVE_LINK",
   CHANGE_NAME: "CHANGE_NAME",
+  TRANSFROM_CHANGE: "TRANSFROM_CHANGE",
 };
 
 export type CanvasType = (typeof CANVAS_CLASSES)[keyof typeof CANVAS_CLASSES];
