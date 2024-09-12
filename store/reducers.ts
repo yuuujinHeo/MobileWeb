@@ -1,4 +1,3 @@
-// reducers/index.js
 import { combineReducers } from "redux";
 import { persistReducer } from "redux-persist";
 import storage from "redux-persist/lib/storage";
@@ -12,15 +11,15 @@ import taskSlice from "./taskSlice";
 import canvasReducer from "./canvasSlice";
 import propertyPanelReducer from "./propertyPanelSlices";
 
-export const rootReducer = combineReducers({
-    network: networkReducer,
-    setting: settingReducer,
-    status: statusReducer,
-    connection: connectionSlice,
-    canvas: canvasReducer,
-    propertyPanel: propertyPanelReducer,
-    user: userReducer,
-    task: taskSlice
+const rootReducer = combineReducers({
+  network: networkReducer,
+  setting: settingReducer,
+  status: statusReducer,
+  connection: connectionSlice,
+  canvas: canvasReducer,
+  propertyPanel: propertyPanelReducer,
+  user: userReducer,
+  task: taskSlice,
 });
 
 const persistConfig = {
@@ -31,6 +30,7 @@ const persistConfig = {
     whitelist: ["user"]
     // blacklist -> 그것만 제외합니다
   };
+};
 
-  
-export default persistReducer(persistConfig, rootReducer);
+export default persistReducer(persistConfig, rootReducer) as typeof rootReducer;
+
