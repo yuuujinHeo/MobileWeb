@@ -30,7 +30,7 @@ import { NetworkInfo } from '@/interface/network';
 import { Chip } from 'primereact/chip';
 import { Badge } from 'primereact/badge';
 import { useDispatch, UseDispatch, useSelector } from 'react-redux';
-import { setMonitorURL, setMobileURL, selectMonitor, selectMobile } from '@/store/networkSlice';
+import { setMobileURL } from '@/store/networkSlice';
 import axios from 'axios';
 import '../setting/style.scss';
 import {store,AppDispatch, RootState} from '../../../store/store';

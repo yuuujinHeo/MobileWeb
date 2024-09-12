@@ -169,7 +169,7 @@ const Setting: React.FC = () => {
     });
     const formik_debug = useFormik({
         initialValues:{
-            SIM_MODE:settingState?.debug.SIM_MODE
+            SIM_MODE:settingState.debug.SIM_MODE
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -214,9 +214,9 @@ const Setting: React.FC = () => {
     });
     const formik_control = useFormik({
         initialValues:{
-            DRIVE_EXTENDED_CONTROL_TIME:settingState?.control.DRIVE_EXTENDED_CONTROL_TIME,
-            DRIVE_GOAL_D:settingState?.control.DRIVE_GOAL_D,
-            DRIVE_GOAL_TH:settingState?.control.DRIVE_GOAL_TH
+            DRIVE_EXTENDED_CONTROL_TIME:settingState.control.DRIVE_EXTENDED_CONTROL_TIME,
+            DRIVE_GOAL_D:settingState.control.DRIVE_GOAL_D,
+            DRIVE_GOAL_TH:settingState.control.DRIVE_GOAL_TH
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -233,7 +233,7 @@ const Setting: React.FC = () => {
     });
     const formik_annotation = useFormik({
         initialValues:{
-            ANNOT_QA_STEP:settingState?.annotation.ANNOT_QA_STEP
+            ANNOT_QA_STEP:settingState.annotation.ANNOT_QA_STEP
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -248,28 +248,28 @@ const Setting: React.FC = () => {
     });
     const formik_default = useFormik({
         initialValues:{
-            ROBOT_SIZE_MAX_X:settingState?.default.ROBOT_SIZE_MAX_X,
-            ROBOT_SIZE_MAX_Y:settingState?.default.ROBOT_SIZE_MAX_Y,
-            ROBOT_SIZE_MAX_Z:settingState?.default.ROBOT_SIZE_MAX_Z,
-            ROBOT_SIZE_MIN_X:settingState?.default.ROBOT_SIZE_MIN_X,
-            ROBOT_SIZE_MIN_Y:settingState?.default.ROBOT_SIZE_MIN_Y,
-            ROBOT_SIZE_MIN_Z:settingState?.default.ROBOT_SIZE_MIN_Z,
+            ROBOT_SIZE_MAX_X:settingState.default.ROBOT_SIZE_MAX_X,
+            ROBOT_SIZE_MAX_Y:settingState.default.ROBOT_SIZE_MAX_Y,
+            ROBOT_SIZE_MAX_Z:settingState.default.ROBOT_SIZE_MAX_Z,
+            ROBOT_SIZE_MIN_X:settingState.default.ROBOT_SIZE_MIN_X,
+            ROBOT_SIZE_MIN_Y:settingState.default.ROBOT_SIZE_MIN_Y,
+            ROBOT_SIZE_MIN_Z:settingState.default.ROBOT_SIZE_MIN_Z,
             ROBOT_RADIUS: settingState.default.ROBOT_RADIUS,
-            ROBOT_WHEEL_BASE:settingState?.default.ROBOT_WHEEL_BASE,
-            ROBOT_WHEEL_RADIUS:settingState?.default.ROBOT_WHEEL_RADIUS,
-            LIDAR_MAX_RANGE:settingState?.default.LIDAR_MAX_RANGE,
-            LIDAR_TF_B_X:settingState?.default.LIDAR_TF_B_X,
-            LIDAR_TF_B_Y:settingState?.default.LIDAR_TF_B_Y,
-            LIDAR_TF_B_Z:settingState?.default.LIDAR_TF_B_Z,
-            LIDAR_TF_B_RX:settingState?.default.LIDAR_TF_B_RX,
-            LIDAR_TF_B_RY:settingState?.default.LIDAR_TF_B_RY,
-            LIDAR_TF_B_RZ:settingState?.default.LIDAR_TF_B_RZ,
-            LIDAR_TF_F_X:settingState?.default.LIDAR_TF_F_X,
-            LIDAR_TF_F_Y:settingState?.default.LIDAR_TF_F_Y,
-            LIDAR_TF_F_Z:settingState?.default.LIDAR_TF_F_Z,
-            LIDAR_TF_F_RX:settingState?.default.LIDAR_TF_F_RX,
-            LIDAR_TF_F_RY:settingState?.default.LIDAR_TF_F_RY,
-            LIDAR_TF_F_RZ:settingState?.default.LIDAR_TF_F_RZ
+            ROBOT_WHEEL_BASE:settingState.default.ROBOT_WHEEL_BASE,
+            ROBOT_WHEEL_RADIUS:settingState.default.ROBOT_WHEEL_RADIUS,
+            LIDAR_MAX_RANGE:settingState.default.LIDAR_MAX_RANGE,
+            LIDAR_TF_B_X:settingState.default.LIDAR_TF_B_X,
+            LIDAR_TF_B_Y:settingState.default.LIDAR_TF_B_Y,
+            LIDAR_TF_B_Z:settingState.default.LIDAR_TF_B_Z,
+            LIDAR_TF_B_RX:settingState.default.LIDAR_TF_B_RX,
+            LIDAR_TF_B_RY:settingState.default.LIDAR_TF_B_RY,
+            LIDAR_TF_B_RZ:settingState.default.LIDAR_TF_B_RZ,
+            LIDAR_TF_F_X:settingState.default.LIDAR_TF_F_X,
+            LIDAR_TF_F_Y:settingState.default.LIDAR_TF_F_Y,
+            LIDAR_TF_F_Z:settingState.default.LIDAR_TF_F_Z,
+            LIDAR_TF_F_RX:settingState.default.LIDAR_TF_F_RX,
+            LIDAR_TF_F_RY:settingState.default.LIDAR_TF_F_RY,
+            LIDAR_TF_F_RZ:settingState.default.LIDAR_TF_F_RZ
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -305,17 +305,17 @@ const Setting: React.FC = () => {
     });
     const formik_motor = useFormik({
         initialValues:{
-            MOTOR_ID_L:settingState?.motor.MOTOR_ID_L,
-            MOTOR_ID_R:settingState?.motor.MOTOR_ID_R,
-            MOTOR_DIR:settingState?.motor.MOTOR_DIR,
-            MOTOR_GEAR_RATIO:settingState?.motor.MOTOR_GEAR_RATIO,
-            MOTOR_LIMIT_V:settingState?.motor.MOTOR_LIMIT_V,
-            MOTOR_LIMIT_V_ACC:settingState?.motor.MOTOR_LIMIT_V_ACC,
-            MOTOR_LIMIT_W:settingState?.motor.MOTOR_LIMIT_W,
-            MOTOR_LIMIT_W_ACC:settingState?.motor.MOTOR_LIMIT_W_ACC,
-            MOTOR_GAIN_KP:settingState?.motor.MOTOR_GAIN_KP,
-            MOTOR_GAIN_KI:settingState?.motor.MOTOR_GAIN_KI,
-            MOTOR_GAIN_KD:settingState?.motor.MOTOR_GAIN_KD
+            MOTOR_ID_L:settingState.motor.MOTOR_ID_L,
+            MOTOR_ID_R:settingState.motor.MOTOR_ID_R,
+            MOTOR_DIR:settingState.motor.MOTOR_DIR,
+            MOTOR_GEAR_RATIO:settingState.motor.MOTOR_GEAR_RATIO,
+            MOTOR_LIMIT_V:settingState.motor.MOTOR_LIMIT_V,
+            MOTOR_LIMIT_V_ACC:settingState.motor.MOTOR_LIMIT_V_ACC,
+            MOTOR_LIMIT_W:settingState.motor.MOTOR_LIMIT_W,
+            MOTOR_LIMIT_W_ACC:settingState.motor.MOTOR_LIMIT_W_ACC,
+            MOTOR_GAIN_KP:settingState.motor.MOTOR_GAIN_KP,
+            MOTOR_GAIN_KI:settingState.motor.MOTOR_GAIN_KI,
+            MOTOR_GAIN_KD:settingState.motor.MOTOR_GAIN_KD
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -340,17 +340,17 @@ const Setting: React.FC = () => {
     });
     const formik_mapping = useFormik({
         initialValues:{
-            SLAM_ICP_COST_THRESHOLD:settingState?.mapping.SLAM_ICP_COST_THRESHOLD,
-            SLAM_ICP_DO_ACCUM_NUM:settingState?.mapping.SLAM_ICP_DO_ACCUM_NUM,
-            SLAM_ICP_DO_ERASE_GAP:settingState?.mapping.SLAM_ICP_DO_ERASE_GAP,
-            SLAM_ICP_ERROR_THRESHOLD:settingState?.mapping.SLAM_ICP_ERROR_THRESHOLD,
-            SLAM_ICP_MAX_FEATURE_NUM:settingState?.mapping.SLAM_ICP_MAX_FEATURE_NUM,
-            SLAM_ICP_VIEW_THRESHOLD:settingState?.mapping.SLAM_ICP_VIEW_THRESHOLD,
-            SLAM_KFRM_LC_TRY_DIST:settingState?.mapping.SLAM_KFRM_LC_TRY_DIST,
-            SLAM_KFRM_LC_TRY_OVERLAP:settingState?.mapping.SLAM_KFRM_LC_TRY_OVERLAP,
-            SLAM_KFRM_UPDATE_NUM:settingState?.mapping.SLAM_KFRM_UPDATE_NUM,
-            SLAM_VOXEL_SIZE:settingState?.mapping.SLAM_VOXEL_SIZE,
-            SLAM_WINDOW_SIZE:settingState?.mapping.SLAM_WINDOW_SIZE
+            SLAM_ICP_COST_THRESHOLD:settingState.mapping.SLAM_ICP_COST_THRESHOLD,
+            SLAM_ICP_DO_ACCUM_NUM:settingState.mapping.SLAM_ICP_DO_ACCUM_NUM,
+            SLAM_ICP_DO_ERASE_GAP:settingState.mapping.SLAM_ICP_DO_ERASE_GAP,
+            SLAM_ICP_ERROR_THRESHOLD:settingState.mapping.SLAM_ICP_ERROR_THRESHOLD,
+            SLAM_ICP_MAX_FEATURE_NUM:settingState.mapping.SLAM_ICP_MAX_FEATURE_NUM,
+            SLAM_ICP_VIEW_THRESHOLD:settingState.mapping.SLAM_ICP_VIEW_THRESHOLD,
+            SLAM_KFRM_LC_TRY_DIST:settingState.mapping.SLAM_KFRM_LC_TRY_DIST,
+            SLAM_KFRM_LC_TRY_OVERLAP:settingState.mapping.SLAM_KFRM_LC_TRY_OVERLAP,
+            SLAM_KFRM_UPDATE_NUM:settingState.mapping.SLAM_KFRM_UPDATE_NUM,
+            SLAM_VOXEL_SIZE:settingState.mapping.SLAM_VOXEL_SIZE,
+            SLAM_WINDOW_SIZE:settingState.mapping.SLAM_WINDOW_SIZE
         },
         enableReinitialize: true,
         validate: (values) => {
@@ -375,12 +375,12 @@ const Setting: React.FC = () => {
     });
     const formik_obs = useFormik({
         initialValues:{
-            OBS_AVOID_DIST:settingState?.obs.OBS_AVOID_DIST,
-            OBS_MAP_GRID_SIZE:settingState?.obs.OBS_MAP_GRID_SIZE,
-            OBS_MAP_MARGIN:settingState?.obs.OBS_MAP_MARGIN,
-            OBS_MAP_RANGE:settingState?.obs.OBS_MAP_RANGE,
-            OBS_SIZE_THRESHOLD:settingState?.obs.OBS_SIZE_THRESHOLD,
-            OBS_TARGET_DIST:settingState?.obs.OBS_TARGET_DIST,
+            OBS_AVOID_DIST:settingState.obs.OBS_AVOID_DIST,
+            OBS_MAP_GRID_SIZE:settingState.obs.OBS_MAP_GRID_SIZE,
+            OBS_MAP_MARGIN:settingState.obs.OBS_MAP_MARGIN,
+            OBS_MAP_RANGE:settingState.obs.OBS_MAP_RANGE,
+            OBS_SIZE_THRESHOLD:settingState.obs.OBS_SIZE_THRESHOLD,
+            OBS_TARGET_DIST:settingState.obs.OBS_TARGET_DIST,
         },
         enableReinitialize: true,
         validate: (values) => {
