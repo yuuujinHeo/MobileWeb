@@ -63,8 +63,15 @@ const LidarCanvas = ({
 }: LidarCanvasProps) => {
   const dispatch = useDispatch();
   // root state
-  const { action, isMarkingMode, robotHelper } = useSelector(
-    (state: RootState) => state.canvas
+  // const { action, isMarkingMode, robotHelper } = useSelector(
+  //   (state: RootState) => state.canvas
+  // );
+  const action = useSelector((state: RootState) => state.canvas.action);
+  const isMarkingMode = useSelector(
+    (state: RootState) => state.canvas.isMarkingMode
+  );
+  const robotHelper = useSelector(
+    (state: RootState) => state.canvas.robotHelper
   );
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -242,6 +249,7 @@ const LidarCanvas = ({
         case CANVAS_ACTION.DRAW_CLOUD_TOPO:
           clearMapPoints(CANVAS_CLASSES.DEFAULT);
           drawCloud(CANVAS_CLASSES.DEFAULT, cloudData);
+          clearAllNodes();
           drawTopo();
           break;
         case CANVAS_ACTION.SAVE_MAP:
@@ -267,6 +275,13 @@ const LidarCanvas = ({
       }
     }
   }, [action]);
+
+  useEffect(() => {
+    goalNum.current = 0;
+    routeNum.current = 0;
+    dispatch(updateGoalNum(goalNum.current));
+    dispatch(updateRouteNum(routeNum.current));
+  }, [cloudData, topoData]);
 
   const setPropertyUndoRedo = (category: string, value: string): void => {
     const selectedObj = selectedNodeRef.current;
@@ -1221,9 +1236,8 @@ const LidarCanvas = ({
 
   const drawTopo = async () => {
     const scene = sceneRef.current;
-    if (!topoData || !scene) return;
+    if (!topoData || !scene || !topoData.length) return;
 
-    clearAllNodes();
     // repaint all nodes
 
     const tasks = topoData.map((topo, i) => {
@@ -1701,6 +1715,7 @@ const LidarCanvas = ({
   };
 
   const saveMap = async (filename: string) => {
+    if (cloudRef.current === null) return;
     const annoRes = await saveAnnotation(filename);
     const cloudRes = await saveCloud(filename);
 
