@@ -34,6 +34,7 @@ import { Divider } from "primereact/divider";
 import { OverlayPanel } from "primereact/overlaypanel";
 import { useRouter } from 'next/navigation';
 import { Dialog } from "primereact/dialog";
+import Color from '@/public/colors';
 import { Chip } from "primereact/chip";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "../store/store";
@@ -59,7 +60,7 @@ import { setTaskRunning, setTaskID, updateRunningTaskName } from "@/store/taskSl
 import emitter from "@/lib/eventBus";
 import { setSlamnavConnection, setTaskConnection } from "@/store/connectionSlice";
 import { Avatar } from "primereact/avatar";
-import { setMobileURL, selectNetwork } from "@/store/networkSlice";
+import { setMobileURL, setMonitorURL, selectNetwork } from "@/store/networkSlice";
 import './style.scss'
 import PopupLogout from "./popuplogout";
 import { Router } from "next/router";
@@ -150,7 +151,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
 
   async function setURL() {
     const url = await getMobileAPIURL();
-    console.log("setURL TopBar : ",url);
+    console.log("setURL TopBar : ",url, Network?.monitor);
     dispatch(setMobileURL(url));
   }
 
@@ -171,10 +172,6 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     }
   }, [Network?.mobile]);
 
-  useEffect(()=>{
-    console.log(router);
-  },[router]);
-
   const default_setting = async () => {
     try {
       const response = await axios.get(Network?.mobile + "/setting");
@@ -193,7 +190,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
 
   useEffect(() =>{
     console.log("useEffect Topbar : ", User)
-    if(User?.state=="guest"){
+    if(User?.state=="guest" || User?.state=="master"){
       clearInterval(interval_timer);
     }else if(User?.token == ""){
       if(User?.state == ""){
@@ -210,8 +207,10 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
 
   const logout = async(_state:string) =>{
     console.log("logout : ",_state);
-    const response = await axios.post(Network?.monitor + "/logout", {user_id:User?.user_id, token:User?.token});
-    console.log("Response : ", response.data);
+    if(User?.state != "guest" && User?.state != "master"){
+      const response = await axios.post(Network?.monitor + "/logout", {user_id:User?.user_id, token:User?.token});
+      console.log("Response : ", response.data);
+    }
 
     dispatch(setUser({
       user_id:"temp",
@@ -240,7 +239,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     try{
       if(User?.state == "" || User?.state == "user"){
         const response = await axios.get(Network?.monitor + "/user/login/"+User?.user_id);
-        console.log("get user : ", response.data);
+        // console.log("get user : ", response.data);
         if(response.data.error){
           console.log("login nothing");
           logout("");
@@ -279,7 +278,9 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   useEffect(() => {
     if (!socketRef.current) {
       fetch("/api/socket").finally(() => {
+
         socketRef.current = io();
+
         emitter.emit("socket", "connected");
         socketRef.current.emit("init");
 
@@ -333,6 +334,15 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
         dispatch(setTaskRunning(false));
       });
 
+      // 컴포넌트 언마운트 시 소켓 연결 해제
+      return () => {
+        if (socketRef.current) {
+          console.log("Socket disconnect ", socketRef.current.id);
+          emitter.emit("socket", "disconnected");
+          socketRef.current.disconnect();
+          socketRef.current = null; // 소켓을 null로 설정하여 재연결 방지
+        }
+      };
       return () => {
         console.log("Socket disconnect ", socketRef.current.id);
         emitter.emit("socket", "disconnected");
@@ -340,7 +350,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       };
     });
     }
-  }, []);
+  }, [dispatch]);
 
   useImperativeHandle(ref, () => ({
     menubutton: menubuttonRef.current,
@@ -351,7 +361,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const SLAMContent = (
     <>
       <span
-        style={{ backgroundColor: Connection?.slamnav == true ? "#12d27c" : "#ea594e" }}
+        style={{ backgroundColor: Connection?.slamnav == true ? Color.good : Color.error }}
         
         className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
@@ -366,7 +376,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const TASKContent = (
     <>
       <span
-        style={{ backgroundColor: Connection?.task == true ? taskState?.running == true ? "#12d27c" : "#aaaaaa" : "#ea594e" }}
+        style={{ backgroundColor: Connection?.task == true ? taskState?.running == true ?  Color.good :  Color.none :  Color.error }}
         className="border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
         <i className={taskState?.running == true
@@ -382,7 +392,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
   const TASKRunContent = (
     <>
       <span
-        style={{ backgroundColor: taskState?.running == true ? "#12d27c" : "#aaaaaa" }}
+        style={{ backgroundColor: taskState?.running == true ?  Color.good :  Color.none }}
         
         className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
@@ -398,7 +408,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     <>
       <span
         style={{
-          backgroundColor: Status?.state.map != "" ? "#12d27c" : "#ea594e",
+          backgroundColor: Status?.state.map != "" ?  Color.good :  Color.error,
         }}
         className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
@@ -412,7 +422,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       <span
         style={{
           backgroundColor:
-            Status?.state.localization == "good" ? "#12d27c" : "#ea594e",
+            Status?.state.localization == "good" ?  Color.good :  Color.error,
         }}
         className= "border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
@@ -428,7 +438,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       <span
         style={{
           backgroundColor:
-            Status?.condition.auto_state == "stop" ? "#aaaaaa" : "#12d27c"
+            Status?.condition.auto_state == "stop" ?  Color.none :  Color.good
         }}
         className="border-circle w-2rem h-2rem flex align-items-center justify-content-center"
       >
@@ -516,10 +526,10 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
         })}
       >
 
-        {User?.state != "guest" &&
+        {User?.state != "guest" && User?.state != "master" &&
         <div className="flex">
           <Chip icon="pi pi-clock" className={loginTime>60?"chip_normal":"chip_hurry"} label={String(Math.floor(loginTime/60)).padStart(2,'0')+":"+String(loginTime%60).padStart(2,'0')}></Chip>
-          <Button label="초기화" severity="secondary" className="ml-1" text onClick={renewLogin}></Button>
+          <Button label="연장" severity="secondary" className="ml-1" text onClick={renewLogin}></Button>
         </div>
         }
         <button type="button" className="p-link layout-topbar-button" onClick={(e) => profile.current?.toggle(e)}>
@@ -529,17 +539,17 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
           <div className="profile-panel-container">
             <Avatar icon = "pi pi-user" shape="circle" ></Avatar>
             <h5 className="font-bold ">{User?.user_name==""?"Unknown":User?.user_name}</h5>
-              {User?.state != "guest" &&
+              {User?.state != "guest" && User?.state != "master"  &&
               <div className="flex">
                 <Chip icon="pi pi-clock" className={loginTime>60?"chip_normal":"chip_hurry"} label={String(Math.floor(loginTime/60)).padStart(2,'0')+":"+String(loginTime%60).padStart(2,'0')}></Chip>
-                <Button label="초기화" severity="secondary" className="ml-3" text onClick={renewLogin}></Button>
+                <Button label="연장" severity="secondary" className="ml-3" text onClick={renewLogin}></Button>
               </div>
               }
               <Divider />
             </div> 
             <div className="flex p-fluidw-full gap-8">
 
-              {User?.state != "guest" &&
+              {User?.state != "guest" && User?.state != "master"  &&
               <Button label="계정설정"  ></Button>
               }
               <Button label="로그아웃" onClick={(e)=>logout("")} ></Button>

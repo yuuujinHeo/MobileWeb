@@ -10,7 +10,6 @@ import { Toast } from "primereact/toast";
 import { Chip } from "primereact/chip";
 import { AppDispatch, RootState } from "../../../store/store";
 import { useDispatch, useSelector } from "react-redux";
-import { selectMonitor } from "@/store/networkSlice";
 import { Dialog } from "primereact/dialog";
 import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
 import { userContext } from "../../../interface/user";
@@ -60,9 +59,9 @@ const Update: React.FC = () => {
   const [waitingSLAMNAV, setWaitingSLAMNAV] = useState(false);
   const [runningSLAMNAV2, setRunningSLAMNAV2] = useState(false);
   const [waitingSLAMNAV2, setWaitingSLAMNAV2] = useState(false);
-  const monitorURL = useSelector((state: RootState) => selectMonitor(state));
+  const Network = useSelector((state: RootState) => state.network);
   const [type, setType] = useState("");
-  const settingState = useSelector((state: RootState) => selectSetting(state));
+  const settingState = useSelector((state: RootState) => state.setting);
 
   const [mobileURL, setMobileURL] = useState("");
 
@@ -123,7 +122,7 @@ const Update: React.FC = () => {
       },
     };
     axios
-      .post(monitorURL + "/upload/files", formData, config)
+      .post(Network?.monitor + "/upload/files", formData, config)
       .then((response) => {
         console.log("File uploaded successfully:", response.data);
         uploader.current?.clear();
@@ -143,26 +142,26 @@ const Update: React.FC = () => {
   };
 
   const readUpdate = async () => {
-    if (settingState.robot.PLATFORM_TYPE == "AMR") {
+    if (settingState?.robot.PLATFORM_TYPE == "SERVING") {
       try {
-        const response = await axios.get(monitorURL + "/versions/SLAMNAV2");
-        console.log("slamnav2(new):", newVersionUI);
-        setNewVersionSLAMNAV2(response.data);
-      } catch (error) {
-        // alert(error);
-      }
-    } else {
-      try {
-        const response = await axios.get(monitorURL + "/versions/MAIN_MOBILE");
+        const response = await axios.get(Network?.monitor + "/versions/MAIN_MOBILE");
         console.log("main_mobile(new):", newVersionUI);
         setNewVersionUI(response.data);
       } catch (error) {
         // alert(error);
       }
       try {
-        const response = await axios.get(monitorURL + "/versions/SLAMNAV");
+        const response = await axios.get(Network?.monitor + "/versions/SLAMNAV");
         console.log("slamnav(new):", newVersionUI);
         setNewVersionSLAMNAV(response.data);
+      } catch (error) {
+        // alert(error);
+      }
+    } else {
+      try {
+        const response = await axios.get(Network?.monitor + "/versions/SLAMNAV2");
+        console.log("slamnav2(new):", newVersionUI);
+        setNewVersionSLAMNAV2(response.data);
       } catch (error) {
         // alert(error);
       }
@@ -170,17 +169,7 @@ const Update: React.FC = () => {
   };
 
   const readVersion = async () => {
-    if (settingState.robot.PLATFORM_TYPE == "AMR") {
-      try {
-        const response = await axios.get(mobileURL + "/versions/SLAMNAV2");
-        console.log("slamnav2:", response.data.data);
-        if (response.data.data != undefined) {
-          setCurVersionSLAMNAV2(response.data.data);
-        }
-      } catch (error) {
-        console.error("slamnav2 = ", error);
-      }
-    } else {
+    if (settingState?.robot.PLATFORM_TYPE == "SERVING") {
       try {
         const response = await axios.get(mobileURL + "/versions/MAIN_MOBILE");
         console.log("ui:", response.data.data);
@@ -198,6 +187,16 @@ const Update: React.FC = () => {
         }
       } catch (error) {
         console.error("slamnav = ", error);
+      }
+    } else {
+      try {
+        const response = await axios.get(mobileURL + "/versions/SLAMNAV2");
+        console.log("slamnav2:", response.data.data);
+        if (response.data.data != undefined) {
+          setCurVersionSLAMNAV2(response.data.data);
+        }
+      } catch (error) {
+        console.error("slamnav2 = ", error);
       }
     }
   };
@@ -428,7 +427,7 @@ const Update: React.FC = () => {
         console.log("?????????????", programRollback);
         try {
           const response = await axios.get(
-            monitorURL + "/versions/all/" + programRollback
+            Network?.monitor + "/versions/all/" + programRollback
           );
           setRollbackVersions(response.data);
         } catch (error) {

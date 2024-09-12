@@ -11,7 +11,7 @@ export interface NetworkState {
 const networkSlice = createSlice({
   name: 'network',
   initialState:{
-    monitor: 'http://10.108.1.10:11335',
+    monitor: 'http://211.188.53.173:11335',
     mobile: ''
   },
   reducers: {
@@ -26,6 +26,6 @@ const networkSlice = createSlice({
   },
 })
 
-export const { setMonitorURL, setMobileURL } = networkSlice.actions
+export const { setMobileURL,setMonitorURL } = networkSlice.actions
 export const selectNetwork = (state:RootState) => state.network;
 export default networkSlice.reducer

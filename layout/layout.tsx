@@ -17,7 +17,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 import {userContext} from '../interface/user'
 // import { store } from '@/store/store';
 import {store} from '@/store/store'
-import { setMonitorURL, setMobileURL } from '@/store/networkSlice';
+import { setMobileURL } from '@/store/networkSlice';
     
 const Layout = ({ children }: ChildContainerProps) => {
     const {state,setState} = useContext(userContext);
@@ -44,13 +44,13 @@ const Layout = ({ children }: ChildContainerProps) => {
     });
 
     useEffect(() =>{
-        console.log("useEEEEEEEEEEEEEEEEEEEFFFFFFFFFFFFf")
-        const currentURL = window.location.href;
-        if(currentURL.startsWith('http')){
-            setMobileURL(currentURL.split(':')[0]+":"+currentURL.split(':')[1])
-        }else{
-            setMobileURL(currentURL.split(':')[0]);
-        }
+        // console.log("useEEEEEEEEEEEEEEEEEEEFFFFFFFFFFFFf")
+        // const currentURL = window.location.href;
+        // if(currentURL.startsWith('http')){
+        //     setMobileURL(currentURL.split(':')[0]+":"+currentURL.split(':')[1])
+        // }else{
+        //     setMobileURL(currentURL.split(':')[0]);
+        // }
     },[])
     
     const pathname = usePathname();
