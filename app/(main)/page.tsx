@@ -79,9 +79,9 @@ interface LogPowerData {
 
 
 const Dashboard = () => {
-    const taskState = useSelector((state: RootState) => state.task, shallowEqual);
-    const Status = useSelector((state: RootState) => state.status, shallowEqual);
-    const Network = useSelector((state:RootState) => state.network, shallowEqual);
+    const taskState = useSelector((state: RootState) => state.task);
+    const Status = useSelector((state: RootState) => state.status);
+    const Network = useSelector((state:RootState) => state.network);
     
     const [logState, setLogState] = useState<LogStateData[]>([]);
     const [logPower, setLogPower] = useState<LogPowerData[]>([]);
@@ -89,67 +89,69 @@ const Dashboard = () => {
     const stateData = useMemo(() => logState, [logState])
     const warn_temp = 50;
 
+    
     const getLog = async() =>{
-        const response = await axios.get(Network?.mobile + "/log/state/state");
+        const response = await axios.get(Network.mobile + "/log/state/state");
         setLogState(response.data);
-        const response2 = await axios.get(Network?.mobile + "/log/power");
+        const response2 = await axios.get(Network.mobile + "/log/power");
         setLogPower(response2.data);
     }
 
     useEffect(() => {
-        getLog();
-        const logTimer = setInterval(() => {
+        if(Network.mobile != ''){
             getLog();
-    
-            return () => {
-                clearInterval(logTimer);
-            }
-        },10000);
-    },[])
+            const logTimer = setInterval(() => {
+                getLog();
+                return () => {
+                    clearInterval(logTimer);
+                }
+            },10000);
+        }
+    },[Network])
 
     const autoStateIcon = () => {
-        if(Status?.condition.auto_state == 'pause'){
+        if(Status.condition.auto_state == 'pause'){
             return <Avatar icon={<IoPause/>} style={{backgroundColor:Color.warn, color:'white'}} shape='circle'></Avatar>;
-        }else if(Status?.condition.auto_state == 'move'){
+        }else if(Status.condition.auto_state == 'move'){
             return <Avatar icon={<IoPlay/>} style={{backgroundColor:Color.good, color:'white'}}  shape='circle'></Avatar>;
         }else{//stop
             return <Avatar icon={<IoStop/>} style={{backgroundColor:Color.none, color:'white'}} shape='circle'></Avatar>;
         }
     }
     const localizationIcon = () => {
-        if(Status?.state.localization == 'fail'){
+        if(Status.state.localization == 'fail'){
             return <Avatar icon={<IoLocation/>} style={{backgroundColor:Color.error, color:'white'}} shape='circle'></Avatar>;
-        }else if(Status?.state.localization == 'good'){
+        }else if(Status.state.localization == 'good'){
             return <Avatar icon={<IoLocation/>} style={{backgroundColor:Color.good, color:'white'}}  shape='circle'></Avatar>;
         }else{//none
             return <Avatar icon={<IoLocation/>} style={{backgroundColor:Color.error, color:'white'}} shape='circle'></Avatar>;
         }
     }
     const chargingIcon = () =>{
-        if(Status?.state.charge == "true"){
+        if(Status.state.charge == "true"){
             return <Avatar icon={<PiBatteryChargingFill/>} style={{backgroundColor:Color.good, color:'white'}} shape='circle'></Avatar>;
         }else{
             return <Avatar icon={<PiBatteryChargingFill/>} style={{backgroundColor:Color.none, color:'white'}} shape='circle'></Avatar>;
         }
     }
     const powerIcon = () =>{
-        if(Status?.state.power == "true"){
+        if(Status.state.power == "true"){
             return <Avatar icon={<IoPower/>} style={{backgroundColor:Color.good, color:'white'}} shape='circle'></Avatar>;
         }else{
             return <Avatar icon={<IoPower/>} style={{backgroundColor:Color.error, color:'white'}} shape='circle'></Avatar>;
         }
     }
     const emoIcon = () =>{
-        if(Status?.state.emo == "true"){
+        if(Status.state.emo == "true"){
             return <Avatar icon={<IoIosSwitch/>} style={{backgroundColor:Color.none, color:'white'}} shape='circle'></Avatar>;
         }else{
             return <Avatar icon={<IoIosSwitch/>} style={{backgroundColor:Color.error, color:'white'}} shape='circle'></Avatar>;
         }
     }
     const obsIcon = () =>{
-        if(Status?.condition.obs_state == "none"){
+        if(Status.condition.obs_state == "none"){
             return <Avatar icon={<IoWalk/>} style={{backgroundColor:Color.none, color:'white'}} shape='circle'></Avatar>;
-        }else if(Status?.condition.obs_state == "far"){
+        }else if(Status.condition.obs_state == "far"){
             return <Avatar icon={<IoWalk/>} style={{backgroundColor:Color.warn, color:'white'}} shape='circle'></Avatar>;
         }else{
             return <Avatar icon={<IoWalk/>} style={{backgroundColor:Color.error, color:'white'}} shape='circle'></Avatar>;
@@ -159,13 +161,13 @@ const Dashboard = () => {
 
     const motorIcon = (id:number) => {
         if(id == 0){
-            if(Status?.motor0.connection){
-                if(Status?.motor0.status.big || Status?.motor0.status.collision || Status?.motor0.status.current || Status?.motor0.status.input 
-                    || Status?.motor0.status.jam || Status?.motor0.status.mode || Status?.motor0.status.position){
+            if(Status.motor0.connection){
+                if(Status.motor0.status.big || Status.motor0.status.collision || Status.motor0.status.current || Status.motor0.status.input 
+                    || Status.motor0.status.jam || Status.motor0.status.mode || Status.motor0.status.position){
                         //error
                         return <GoAlert/>;
-                }else if(Status?.motor0.status.running){
-                    if(Status?.motor0.temperature > warn_temp){
+                }else if(Status.motor0.status.running){
+                    if(Status.motor0.temperature > warn_temp){
                         //hot
                         return <GoFlame/>;
                     }else{
@@ -181,13 +183,13 @@ const Dashboard = () => {
                 return <GoUnlink/>;
             }
         }else{
-            if(Status?.motor1.connection){
-                if(Status?.motor1.status.big || Status?.motor1.status.collision || Status?.motor1.status.current || Status?.motor1.status.input 
-                    || Status?.motor1.status.jam || Status?.motor1.status.mode || Status?.motor1.status.position){
+            if(Status.motor1.connection){
+                if(Status.motor1.status.big || Status.motor1.status.collision || Status.motor1.status.current || Status.motor1.status.input 
+                    || Status.motor1.status.jam || Status.motor1.status.mode || Status.motor1.status.position){
                         //error
                         return <GoAlert/>;
-                }else if(Status?.motor1.status.running){
-                    if(Status?.motor1.temperature > warn_temp){
+                }else if(Status.motor1.status.running){
+                    if(Status.motor1.temperature > warn_temp){
                         //hot
                         return <GoFlame/>;
                     }else{
@@ -206,13 +208,13 @@ const Dashboard = () => {
     }
     const motorColor = (id:number) =>{
         if(id == 0){
-            if(Status?.motor0.connection){
-                if(Status?.motor0.status.big || Status?.motor0.status.collision || Status?.motor0.status.current || Status?.motor0.status.input 
-                    || Status?.motor0.status.jam || Status?.motor0.status.mode || Status?.motor0.status.position){
+            if(Status.motor0.connection){
+                if(Status.motor0.status.big || Status.motor0.status.collision || Status.motor0.status.current || Status.motor0.status.input 
+                    || Status.motor0.status.jam || Status.motor0.status.mode || Status.motor0.status.position){
                         //error
                         return Color.error;
-                }else if(Status?.motor0.status.running){
-                    if(Status?.motor0.temperature > warn_temp){
+                }else if(Status.motor0.status.running){
+                    if(Status.motor0.temperature > warn_temp){
                         //hot
                         return Color.warn;
                     }else{
@@ -228,13 +230,13 @@ const Dashboard = () => {
                 return Color.discon;
             }
         }else{
-            if(Status?.motor1.connection){
-                if(Status?.motor1.status.big || Status?.motor1.status.collision || Status?.motor1.status.current || Status?.motor1.status.input 
-                    || Status?.motor1.status.jam || Status?.motor1.status.mode || Status?.motor1.status.position){
+            if(Status.motor1.connection){
+                if(Status.motor1.status.big || Status.motor1.status.collision || Status.motor1.status.current || Status.motor1.status.input 
+                    || Status.motor1.status.jam || Status.motor1.status.mode || Status.motor1.status.position){
                         //error
                         return Color.error;
-                }else if(Status?.motor1.status.running){
-                    if(Status?.motor1.temperature > warn_temp){
+                }else if(Status.motor1.status.running){
+                    if(Status.motor1.temperature > warn_temp){
                         //hot
                         return Color.warn;
                     }else{
@@ -252,25 +254,25 @@ const Dashboard = () => {
         }
     }
     const stateChip = () =>{
-        if(Status?.state.charge == "true"){
+        if(Status.state.charge == "true"){
             return <Chip label="Charging" style={{backgroundColor:Color.charging, color:'white'}}/>;
         }else{
-            if(Status?.state.power == "false"){
+            if(Status.state.power == "false"){
                 return <Chip label="Power Off" style={{backgroundColor:Color.brown, color:'white'}}/>;
-            }else if(Status?.condition.mapping_ratio! > 1){
+            }else if(Status.condition.mapping_ratio! > 1){
                 return <Chip label="Mapping" style={{backgroundColor:Color.warn, color:'white'}}/>;
             }else{
-                if(Status?.state.map == "" || Status?.state.localization != "good" || !Status?.motor0.status.running
-                    || !Status?.motor1.status.running)
+                if(Status.state.map == "" || Status.state.localization != "good" || !Status.motor0.status.running
+                    || !Status.motor1.status.running)
                 {
                     return <Chip label="Not Ready" style={{backgroundColor:Color.brown, color:'white'}}/>;
-                }else if(Status?.condition.obs_state != 'none'){
+                }else if(Status.condition.obs_state != 'none'){
                     return <Chip label="Obstacle" style={{backgroundColor:Color.error, color:'white'}}/>;
-                }else if(Status?.condition.auto_state == 'move'){
+                }else if(Status.condition.auto_state == 'move'){
                     return <Chip label="Moving" style={{backgroundColor:Color.good, color:'white'}}/>;
-                }else if(Status?.condition.auto_state == 'pause'){
+                }else if(Status.condition.auto_state == 'pause'){
                     return <Chip label="Puased" style={{backgroundColor:Color.error, color:'white'}}/>;
-                }else if(Status?.condition.auto_state == 'stop'){
+                }else if(Status.condition.auto_state == 'stop'){
                     return <Chip label="Ready" style={{backgroundColor:Color.none}}/>;
                 }else{
                     console.log("WHAT???????????????!!!!!!!!!!!!!!!!!!!!!!");
@@ -285,7 +287,7 @@ const Dashboard = () => {
         <div className = 'layout-top'>
             <div className='card state-box'>
                 <h4 className='state-text2'>
-                    {Status?.power.bat_out} V
+                    {Status.power.bat_out} V
                 </h4>
                 <h3 className='state-text'>
                     Battery
@@ -339,14 +341,27 @@ const Dashboard = () => {
             <div className='card state-box'>
                 <h3 className='state-text'>
                     Program
-                    <div className='state-box-2'>
-
+                </h3>
+                <div className='state-box-4'>
+                    <div className='ty'>
                         <h5 >
                             SLAMNAV2
                         </h5>
-                        <Chip></Chip>
+                        <Chip label="v0.0.1"></Chip>
                     </div>
-                </h3>
+                    <div className='ty'>
+                        <h5 >
+                            Server
+                        </h5>
+                        <Chip label="v0.2.0"></Chip>
+                    </div>
+                    <div className='ty'>
+                        <h5 >
+                            Web
+                        </h5>
+                        <Chip label="v0.2.0"></Chip>
+                    </div>
+                </div>
 
             </div>
         </div>

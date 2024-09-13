@@ -49,7 +49,7 @@
     "app/(main)/blocks/page.js",
     "store/modules/user.js",
     "store/modules/index.js"
-  ],
+, "components/ChartCanvas.jsx"  ],
   "exclude": [
     "node_modules"
   ]

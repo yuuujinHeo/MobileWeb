@@ -33,7 +33,7 @@ import { Column } from "primereact/column";
 import { DataTable } from "primereact/datatable";
 import fs from "fs";
 import { Dialog } from "primereact/dialog";
-import PopupGoal from "./popupgoal";
+import PopupGoal from "@/components/popup/popupgoal";
 // import { ListBox } from 'primereact/listbox';
 import {
   FileUpload,
@@ -302,10 +302,10 @@ const Move: React.FC = () => {
     <main>
       <Toast ref={toast}></Toast>
       <PopupGoal 
-        goalVisible={goalVisible}
-        goals={goals}
-        setGoalID={setGoalID}
-        setGoalVisible={setGoalVisible}
+        visible={goalVisible}
+        lists={goals}
+        setValue={setGoalID}
+        setVisible={setGoalVisible}
       />
       <div className="card">
         <h5 className="font-bold">Move State</h5>

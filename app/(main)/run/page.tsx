@@ -13,6 +13,7 @@ import {
 import { DataView } from "primereact/dataview";
 import { ScrollTop } from "primereact/scrolltop";
 import { Chip } from "primereact/chip";
+import PopupLoadTask from "@/components/popup/popuploadtask";
 import { v4 as uuidv4 } from "uuid";
 import { Dialog } from "primereact/dialog";
 import { useSelector, useDispatch, useStore } from "react-redux";
@@ -66,7 +67,7 @@ const Run: React.FC = () => {
   }, [store.getState().status]);
   
   useEffect(() => {
-    console.log("[] : ",Network?.mobile);
+    console.log("[] : ",Network.mobile);
   }, []);
 
   useEffect(() => {
@@ -74,14 +75,14 @@ const Run: React.FC = () => {
   },[taskState])
 
   useEffect(()  =>{
-    if(taskState?.running){
+    if(taskState.running){
       toast.current?.show({
         severity: "success",
         summary: "Task Start",
         life: 3000,
       });
     }else{
-      if(taskState?.runningTaskName != ""){
+      if(taskState.runningTaskName != ""){
         toast.current?.show({
           severity: "success",
           summary: "Task Done",
@@ -89,20 +90,20 @@ const Run: React.FC = () => {
         });
       }
     }
-  },[taskState?.running])
+  },[taskState.running])
 
   useEffect(()  =>{
-    if(taskState?.runningTaskName != ""){
-      getNodes(taskState?.runningTaskName);
+    if(taskState.runningTaskName != ""){
+      getNodes(taskState.runningTaskName);
     }
-  },[taskState?.runningTaskName])
+  },[taskState.runningTaskName])
 
   useEffect(() => {
     console.log("NETWORK RUN : ", Network)
-    if (Network?.mobile != "") {
+    if (Network.mobile != "") {
       getTaskList();
     }
-  }, [Network?.mobile]);
+  }, [Network.mobile]);
 
   useEffect(() => {
     expandAll();
@@ -110,7 +111,7 @@ const Run: React.FC = () => {
 
   async function getTaskList() {
     try {
-      const response = await axios.get(Network?.mobile + "/task");
+      const response = await axios.get(Network.mobile + "/task");
       setTasks(response.data);
     } catch (e) {
       console.error(e);
@@ -180,24 +181,20 @@ const Run: React.FC = () => {
     }
   };
 
-  const openPopup = () => {
-    setListVisible(true);
-  };
-
   const playTask = async () => {
     try {
-      if (taskState?.runningTaskName != "") {
-        if (taskState?.running) {
+      if (taskState.runningTaskName != "") {
+        if (taskState.running) {
           toast.current?.show({
             severity: "info",
             summary: "Already Playing",
             life: 3000,
           });
         } else {
-          const response = await axios.get(Network?.mobile + "/task/load/" + taskState?.runningTaskName);
+          const response = await axios.get(Network.mobile + "/task/load/" + taskState.runningTaskName);
           if (response.data.result == "success") {
             // [TEMP]
-            const response2 = await axios.get(Network?.mobile + "/task/run");
+            const response2 = await axios.get(Network.mobile + "/task/run");
             // if (response2.data === "success"){
               // toast.current?.show({
               //   severity: "success",
@@ -220,9 +217,9 @@ const Run: React.FC = () => {
 
   const stopTask = async () => {
     try {
-      if (taskState?.runningTaskName != "") {
-        if (taskState?.running) {
-          const response = await axios.get(Network?.mobile + "/task/stop");
+      if (taskState.runningTaskName != "") {
+        if (taskState.running) {
+          const response = await axios.get(Network.mobile + "/task/stop");
           // [TEMP]
           if (response.data === "success") {
             toast.current?.show({
@@ -247,24 +244,24 @@ const Run: React.FC = () => {
           <React.Fragment>
             <Button
               icon="pi pi-folder-open"
-              disabled={taskState?.running}
-              onClick={openPopup}
+              disabled={taskState.running}
+              onClick={()=>setListVisible(true)}
               className="mr-2"
             ></Button>
-            <Chip label={taskState?.runningTaskName as string}></Chip>
+            <Chip label={taskState.runningTaskName as string}></Chip>
           </React.Fragment>
         }
         center={
           <React.Fragment>
             <Button
               className="mr-5"
-              disabled={taskState?.runningTaskName==""||Connection?.task==false}
-              icon={taskState?.running ? "pi pi-pause" : "pi pi-play"}
+              disabled={taskState.runningTaskName==""||Connection.task==false}
+              icon={taskState.running ? "pi pi-pause" : "pi pi-play"}
               onClick={playTask}
             />
             <Button
               icon="pi pi-stop"
-              disabled={taskState?.runningTaskName==""||Connection?.task==false}
+              disabled={taskState.runningTaskName==""||Connection.task==false}
               onClick={stopTask}
             />
           </React.Fragment>
@@ -276,9 +273,9 @@ const Run: React.FC = () => {
 
   async function getNodes(name) {
     try {
-      console.log("getNodes : ", Network?.mobile + "/task/" + name)
-      const response = await axios.get(Network?.mobile + "/task/" + name);
-      console.log("getNodes2 : ",Network?.mobile + "/task/" + name)
+      console.log("getNodes : ", Network.mobile + "/task/" + name)
+      const response = await axios.get(Network.mobile + "/task/" + name);
+      console.log("getNodes2 : ",Network.mobile + "/task/" + name)
       console.log(response.data);
       node_num = 0;
       // setCurTask(name);
@@ -289,59 +286,12 @@ const Run: React.FC = () => {
     }
   }
 
-  const PopupLoad = () => {
-    const renderListItem = (task: string) => {
-      return (
-        <div className="col-12 p-md-3">
-          <div className="product-item card">
-            <div className="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
-              <div className="flex flex-column align-items-center sm:align-items-start gap-3">
-                <div className="grid gap-2 text-2xl font-bold text-900">
-                  {task}
-                </div>
-                <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
-                  <Button
-                    onClick={() => {
-                      // [TEMP]
-                      axios.get(Network?.mobile + "/task/load/" + task);
-                      dispatch(updateRunningTaskName(task));
-                      getNodes(task);
-                      setListVisible(false);
-                    }}
-                  >
-                    Select
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    };
-    const itemTemplate = (task: any) => {
-      if (!task) {
-        return;
-      }
-
-      return renderListItem(task);
-    };
-    return (
-      <Dialog
-        header="Task 리스트"
-        style={{ width: "80%", maxWidth: "800px", minWidth: "400px" }}
-        visible={listVisible}
-        onHide={() => setListVisible(false)}
-      >
-        <DataView
-          value={tasks}
-          // layout={'list'}
-          itemTemplate={itemTemplate}
-          // header={header}
-        />
-      </Dialog>
-    );
-  };
-
+  const loadTask = (task:string) => {
+    axios.get(Network.mobile + "/task/load/" + task);
+    dispatch(updateRunningTaskName(task));
+    getNodes(task);
+  }
+  
   const nodeTemplate = (node, options) => {
     let label;
     if (node.label == "begin" || node.label == "end") {
@@ -378,15 +328,20 @@ const Run: React.FC = () => {
   };
 
   useEffect(() => {
-    if (taskState?.taskID) {
+    if (taskState.taskID) {
       const offsetTop = parseInt(taskState.taskID) * 50;
       document.getElementById("my-tree")!.parentElement!.scrollTop = offsetTop;
     }
-  }, [taskState?.taskID]);
+  }, [taskState.taskID]);
 
   return (
     <main>
-      <PopupLoad></PopupLoad>
+    <PopupLoadTask
+      visible={listVisible}
+      lists={tasks}
+      setValue={loadTask}
+      setVisible={setListVisible}
+    ></PopupLoadTask>
       <Toast ref={toast}></Toast>
       <div className="main-box card flex flex-column align-items-center">
         <MainToolPanel></MainToolPanel>
@@ -410,7 +365,7 @@ const Run: React.FC = () => {
                 onToggle={(e) => {}}
                 selectionMode="single"
                 expandedKeys={expandedKeys}
-                selectionKeys={taskState?.taskID}
+                selectionKeys={taskState.taskID}
                 value={nodes["0"] ? nodes["0"].children : []}
               ></Tree>
               <ScrollTop

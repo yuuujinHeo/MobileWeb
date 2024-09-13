@@ -62,7 +62,7 @@ import { setSlamnavConnection, setTaskConnection } from "@/store/connectionSlice
 import { Avatar } from "primereact/avatar";
 import { setMobileURL, setMonitorURL, selectNetwork } from "@/store/networkSlice";
 import './style.scss'
-import PopupLogout from "./popuplogout";
+import PopupLogout from "../components/popup/popuplogout";
 import { Router } from "next/router";
 import { Before } from "v8";
 import { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime";

@@ -12,6 +12,9 @@ import { Toast } from "primereact/toast";
 import { Tag } from "primereact/tag";
 import { Chip } from "primereact/chip";
 import { SelectButton } from "primereact/selectbutton";
+import PopupGoal from "@/components/popup/popupgoal";
+import PopupSave from '@/components/popup/popupsave';
+import PopupLoadTask from "@/components/popup/popuploadtask";
 import {
   Tree,
   TreeDragDropEvent,
@@ -41,7 +44,6 @@ const Move: React.FC = () =>{
   const store = useStore<RootState>();
   const Status = useRef<StatusState>();
 
-
   //**************************************Ref
   const TreeRef = useRef<any>(null);
 
@@ -51,6 +53,7 @@ const Move: React.FC = () =>{
   const [selectNode, setSelectNode] = useState<TreeNode | null>();
   const [selectMove, setSelectMove] = useState<string>('target');
 
+  const [goalVisible, setGoalVisible] = useState(false);
   const [listVisible, setListVisible] = useState(false);
   const [saveVisible, setSaveVisible] = useState(false);
   const [expandedKeys, setExpandedKeys] = useState<TreeExpandedKeysType>({'0': true});
@@ -64,7 +67,6 @@ const Move: React.FC = () =>{
   const [waitTime, setWaitTime] = useState<any>(0);
   const [repeatTime, setRepeatTime] = useState<any>(0);
   const [goals, setGoals] = useState<string[]>([]);
-  const [goalVisible, setGoalVisible] = useState(false);
   const [copiedNode, setCopiedNode] = useState<TreeNode | null>(null);
   const [taskName, setTaskName] = useState('');
     
@@ -74,10 +76,10 @@ const Move: React.FC = () =>{
     },[])
     
   useEffect(()  =>{
-    if(taskState?.editTaskName != ""){
-      getNodes(taskState?.editTaskName);
+    if(taskState.editTaskName != ""){
+      getNodes(taskState.editTaskName);
     }
-  },[taskState?.editTaskName])
+  },[taskState.editTaskName])
 
   useEffect(() => {
     const handleChange = () => {
@@ -100,10 +102,10 @@ const Move: React.FC = () =>{
 
   useEffect(() => {
     console.log("NETWORK RUN : ", Network)
-    if (Network?.mobile != "") {
+    if (Network.mobile != "") {
       getTaskList();
     }
-  }, [Network?.mobile]);
+  }, [Network.mobile]);
 
     useEffect(()=>{
         console.log(selectNode);
@@ -118,7 +120,7 @@ const Move: React.FC = () =>{
 
     async function getTaskList() {
       try {
-        const response = await axios.get(Network?.mobile + "/task");
+        const response = await axios.get(Network.mobile + "/task");
         console.log("getTask", response.data);
         setTasks(response.data);
       } catch (e) {
@@ -136,54 +138,11 @@ const Move: React.FC = () =>{
         getGoals();
         setGoalVisible(true);
     }
-
-    const PopupGoal = () =>{
-      useEffect(() =>{
-        console.log('popup');
-      },[])
-      const renderListItem = (goal: string) => {
-        return (
-          <div className="col-12 column w-full gap-2">
-              <Button 
-                className='w-full' 
-                onClick={()=>{
-                  setMoveGoal(goal); 
-                  setGoalVisible(false);
-                  }
-                } 
-                label={goal}
-              >
-              </Button>
-          </div>
-        );
-      };
-      const itemTemplate = (task: any) => {
-          if (!task) {
-          return;
-          }
-
-          return renderListItem(task);
-      };
-      return(
-        <Dialog 
-          header = 'Goal 리스트'
-          style={{width: '300px'}}
-          visible={goalVisible} 
-          onHide={()=>setGoalVisible(false)}
-        >
-          <DataView 
-            value={goals}
-            itemTemplate={itemTemplate}
-          />
-        </Dialog>
-      );
-  }
-
   
     const getGoals = async () => {
       try {
         const response = await axios.get(
-          Network?.mobile + "/map/goal/" + Status.current?.state.map
+          Network.mobile + "/map/goal/" + Status.current?.state.map
         );
         console.log("getgoals:", response.data);
         setGoals(response.data);
@@ -195,7 +154,7 @@ const Move: React.FC = () =>{
 
     async function getNodes(name) {
       try {
-        const response = await axios.get(Network?.mobile + "/task/" + name);
+        const response = await axios.get(Network.mobile + "/task/" + name);
         setTaskName(name);
         setNodes(makeNodes(response.data));
       } catch (e) {
@@ -556,7 +515,7 @@ const Move: React.FC = () =>{
       const new_nodes = unmakeNodes(nodes);
 
       //post
-      await axios.post(Network?.mobile + "/task/" + name, new_nodes);
+      await axios.post(Network.mobile + "/task/" + name, new_nodes);
       toast.current?.show({
         severity: "success",
         summary: "Success",
@@ -614,10 +573,6 @@ const Move: React.FC = () =>{
     console.log("openSave");
     setSaveVisible(true);
   };
-  const openPopup = () => {
-    console.log("?");
-    setListVisible(true);
-  };
 
   const MainToolPanel = () => {
     return (
@@ -633,7 +588,7 @@ const Move: React.FC = () =>{
             <Button
               icon="pi pi-folder-open"
               className="mr-2"
-              onClick={openPopup}
+              onClick={()=>setListVisible(true)}
             ></Button>
             <Chip
               label={taskName == "temp_12546a" ? "새로 만드는 중" : taskName}
@@ -687,76 +642,20 @@ const Move: React.FC = () =>{
     );
   };
 
-  //------------------------------------------------------------------------------------------------
-  const PopupLoad = () => {
-    const renderListItem = (task: string) => {
-      return (
-        <div className="col-12 p-md-3">
-          <div className="product-item card">
-            <div className="flex flex-column sm:flex-row justify-content-between align-items-center xl:align-items-start flex-1 gap-4">
-              <div className="flex flex-column align-items-center sm:align-items-start gap-3">
-                <div className="grid gap-2 text-2xl font-bold text-900">
-                  {task}
-                </div>
-                <div className="flex sm:flex-column align-items-center sm:align-items-end gap-3 sm:gap-2">
-                  <Button
-                    onClick={() => {
-                      // [TEMP]
-                      dispatch(updateEditTaskName(task));
-                      getNodes(task);
-                      setListVisible(false);
-                    }}
-                  >
-                    Select
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      );
-    };
-    const itemTemplate = (task: any) => {
-        if (!task) {
-        return;
-        }
-
-        return renderListItem(task);
-    };
-    return(
-        <Dialog header = 'Task 리스트' 
-        style={{width: '80%', maxWidth:'800px', minWidth:'400px'}}
-        visible={listVisible} onHide={()=>setListVisible(false)}>
-            <DataView
-                value={tasks}
-                // layout={'list'}
-                itemTemplate={itemTemplate}
-                // header={header}
-            />
-        </Dialog>
-    )
+  const setEditTask = (task:string) => {
+    dispatch(updateEditTaskName(task));
+    // getNodes(task);
   }
-
-  const PopupSave = () =>{
-      const [newName, setNewName] = useState('');
-      const save = async() =>{
-          if(newName.split('.').length > 1){
-              setTaskName(newName);
-              saveTask(newName);
-          }else{
-              setTaskName(newName+".task");
-              saveTask(newName+".task");
-          }
-          setSaveVisible(false);
-      }
-      return(
-          <Dialog header='저장'
-              visible={saveVisible} onHide={()=>setSaveVisible(false)}>
-                  <InputText value={newName} onChange={(e) =>setNewName(e.target.value)}></InputText>
-                  <Button label='저장' disabled={newName==''} onClick={save}></Button>
-                  <Button label='취소' onClick={()=>setSaveVisible(false)}></Button>
-              </Dialog>        
-      );
+  //------------------------------------------------------------------------------------------------
+  
+  const save = (name:string) =>{
+    if(name.split('.').length > 1){
+      setTaskName(name);
+      saveTask(name);
+    }else{
+        setTaskName(name+".task");
+        saveTask(name+".task");
+    }
   }
 
   const ToolPanel = () =>{
@@ -964,9 +863,25 @@ const Move: React.FC = () =>{
   return(
     <main>
       <ConfirmDialog></ConfirmDialog>
-      <PopupLoad></PopupLoad>
-      <PopupSave></PopupSave>
-      <PopupGoal></PopupGoal>
+
+      <PopupLoadTask
+        visible={listVisible}
+        lists={tasks}
+        setValue={setEditTask}
+        setVisible={setListVisible}
+      ></PopupLoadTask>
+      <PopupSave
+        visible={saveVisible}
+        setValue={save}
+        setVisible={setSaveVisible}
+      ></PopupSave>
+      <PopupGoal
+        visible={goalVisible}
+        lists={goals}
+        setValue={setMoveGoal}
+        setVisible={setGoalVisible}
+        ></PopupGoal>
+
       <Toast ref={toast}></Toast>
       <div className="main-box card flex flex-column align-items-center">
           <MainToolPanel ></MainToolPanel>

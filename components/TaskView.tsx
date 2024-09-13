@@ -33,32 +33,32 @@ const TaskView = () => {
 
 
     useEffect(()  =>{
-        if(taskState?.runningTaskName != ""){
-            getNodes(taskState?.runningTaskName);
+        if(taskState.runningTaskName != ""){
+            getNodes(taskState.runningTaskName);
         }
-    },[taskState?.runningTaskName])
+    },[taskState.runningTaskName])
 
     useEffect(() => {
         expandAll();
     }, [nodes]);
 
     useEffect(()  =>{
-        if(taskState?.running){
+        if(taskState.running){
         toast.current?.show({
             severity: "success",
             summary: "Task Start",
-            life: 3000,
+            life: 2000,
         });
         }else{
-        if(taskState?.runningTaskName != ""){
+        if(taskState.runningTaskName != ""){
             toast.current?.show({
             severity: "success",
             summary: "Task Done",
-            life: 3000,
+            life: 2000,
             });
         }
         }
-    },[taskState?.running])
+    },[taskState.running])
 
     async function getNodes(name) {
         try {
