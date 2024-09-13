@@ -258,6 +258,12 @@ const LidarCanvas = ({
         case CANVAS_ACTION.TFC_SET_MODE:
           setTransformControlsMode(action.name as TransformControlsMode);
           break;
+        case CANVAS_ACTION.TOGGLE_NODE:
+          toggleNode(action.target);
+          break;
+        case CANVAS_ACTION.TOGGLE_LINK:
+          toggleLink();
+          break;
         default:
           break;
       }
@@ -275,6 +281,28 @@ const LidarCanvas = ({
       }
     }
   }, [action]);
+
+  const toggleNode = (target: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if (child.userData.type === target) {
+        child.visible = !child.visible;
+      }
+    });
+  };
+
+  const toggleLink = () => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if (child.type === "ArrowHelper") {
+        child.visible = !child.visible;
+      }
+    });
+  };
 
   useEffect(() => {
     goalNum.current = 0;
