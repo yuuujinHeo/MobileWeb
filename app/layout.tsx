@@ -8,21 +8,17 @@ import "../styles/layout/layout.scss";
 import "../styles/components/components.scss";
 import { Provider } from "react-redux";
 import { GlobalUserProvider } from "../interface/user";
-import {store, persistor} from "@/store/store";
-import { persistStore, persistReducer } from 'redux-persist';
+import { store, persistor } from "@/store/store";
 import storage from "redux-persist/lib/storage";
 import { PersistGate } from "redux-persist/integration/react";
-import { rootReducer } from "@/store/reducers";
-import { useEffect } from "react";
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 const persistConfig = {
-    key: 'root',
-    storage,
+  key: "root",
+  storage,
 };
-
 
 export default function RootLayout({ children }: RootLayoutProps) {
   return (
