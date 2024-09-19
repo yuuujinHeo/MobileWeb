@@ -269,6 +269,9 @@ const LidarCanvas = ({
           isLinkVisible.current = !isLinkVisible.current;
           toggleLink();
           break;
+        case CANVAS_ACTION.TOGGLE_NAME:
+          toggleName();
+          break;
         default:
           break;
       }
@@ -286,48 +289,6 @@ const LidarCanvas = ({
       }
     }
   }, [action]);
-
-  const toggleNode = (target: string) => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-    hideSelectionHelpers();
-    transformControlRef.current?.detach();
-
-    scene.traverse((child) => {
-      if (child.userData.type === target) {
-        child.traverse((c) => {
-          c.visible = !c.visible;
-        });
-      }
-    });
-  };
-
-  const toggleLink = () => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    scene.traverse((child) => {
-      if (child.type === "ArrowHelper") {
-        child.visible = !child.visible;
-      }
-    });
-
-    if (!isLinkVisible.current) {
-      // Reassign updatedNodeIds to an empty array
-      updatedNodeIds.current.clear();
-    } else if (isLinkVisible.current && updatedNodeIds.current.size) {
-      // Update the link if there is an update on the node.
-      updatedNodeIds.current.forEach((id: number) => {
-        const node = sceneRef.current?.getObjectById(id);
-
-        if (node) {
-          removeAllLinksRelateTo(node.uuid);
-          updateLinks(node);
-          render();
-        }
-      });
-    }
-  };
 
   useEffect(() => {
     goalNum.current = 0;
@@ -2056,6 +2017,63 @@ const LidarCanvas = ({
       life: life,
     });
     lastToastMsg = detail;
+  };
+
+  // Toggle Functions
+
+  const toggleNode = (target: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    hideSelectionHelpers();
+    transformControlRef.current?.detach();
+
+    scene.traverse((child) => {
+      if (child.userData.type === target) {
+        child.traverse((c) => {
+          c.visible = !c.visible;
+        });
+      }
+    });
+  };
+
+  const toggleName = () => {
+    if (!canvasRef.current) return;
+    const size = labelRendererRef.current?.getSize();
+    if (size && size.width && size.height) {
+      labelRendererRef.current?.setSize(0, 0);
+    } else {
+      labelRendererRef.current?.setSize(
+        canvasRef.current.clientWidth,
+        canvasRef.current.clientHeight
+      );
+    }
+  };
+
+  const toggleLink = () => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if (child.type === "ArrowHelper") {
+        child.visible = !child.visible;
+      }
+    });
+
+    if (!isLinkVisible.current) {
+      // Reassign updatedNodeIds to an empty array
+      updatedNodeIds.current.clear();
+    } else if (isLinkVisible.current && updatedNodeIds.current.size) {
+      // Update the link if there is an update on the node.
+      updatedNodeIds.current.forEach((id: number) => {
+        const node = sceneRef.current?.getObjectById(id);
+
+        if (node) {
+          removeAllLinksRelateTo(node.uuid);
+          updateLinks(node);
+          render();
+        }
+      });
+    }
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (

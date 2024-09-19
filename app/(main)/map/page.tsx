@@ -149,7 +149,9 @@ const Map: React.FC = () => {
         {
           label: "Name",
           icon: "pi pi-check check-name",
-          command: () => {},
+          command: () => {
+            handleToggleName();
+          },
         },
         {
           label: "Link",
@@ -181,6 +183,10 @@ const Map: React.FC = () => {
     dispatch(
       createAction({ command: CANVAS_ACTION.TOGGLE_NODE, target: type })
     );
+  };
+
+  const handleToggleName = () => {
+    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_NAME }));
   };
 
   const handleToggleLink = () => {
