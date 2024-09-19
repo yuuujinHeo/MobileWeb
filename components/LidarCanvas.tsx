@@ -101,6 +101,9 @@ const LidarCanvas = ({
   const routes = useRef<number[]>([0]);
   const routeNum = useRef<number>(0);
 
+  const isLinkVisible = useRef<boolean>(true);
+  const updatedNodeIds = useRef<Set<number>>(new Set());
+
   const undo = useRef<Command[]>([]);
   const redo = useRef<Command[]>([]);
   // const lastObjectId = useRef<number>(-1);
@@ -257,6 +260,17 @@ const LidarCanvas = ({
           break;
         case CANVAS_ACTION.TFC_SET_MODE:
           setTransformControlsMode(action.name as TransformControlsMode);
+          break;
+        case CANVAS_ACTION.TOGGLE_NODE:
+          toggleNode(action.target);
+          break;
+        case CANVAS_ACTION.TOGGLE_LINK:
+          // set isLinkVisible
+          isLinkVisible.current = !isLinkVisible.current;
+          toggleLink();
+          break;
+        case CANVAS_ACTION.TOGGLE_NAME:
+          toggleName();
           break;
         default:
           break;
@@ -614,7 +628,7 @@ const LidarCanvas = ({
     const transformControl = transformControlRef.current;
     if (!scene || !selectedNodesArray || !transformControl) return;
 
-    if (intersect !== null) {
+    if (intersect !== null && intersect.visible) {
       let topParent: THREE.Object3D;
       topParent = findTopParent(intersect);
 
@@ -1794,9 +1808,11 @@ const LidarCanvas = ({
         currSelectionBox.setFromObject(transformControl.object);
       }
     }
-    if (selectedNodeRef.current) {
+    if (selectedNodeRef.current && isLinkVisible.current) {
       removeAllLinksRelateTo(selectedNodeRef.current.uuid);
       updateLinks(selectedNodeRef.current);
+    } else if (selectedNodeRef.current && !isLinkVisible.current) {
+      updatedNodeIds.current.add(selectedNodeRef.current.id);
     }
 
     dispatchChange();
@@ -2001,6 +2017,63 @@ const LidarCanvas = ({
       life: life,
     });
     lastToastMsg = detail;
+  };
+
+  // Toggle Functions
+
+  const toggleNode = (target: string) => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+    hideSelectionHelpers();
+    transformControlRef.current?.detach();
+
+    scene.traverse((child) => {
+      if (child.userData.type === target) {
+        child.traverse((c) => {
+          c.visible = !c.visible;
+        });
+      }
+    });
+  };
+
+  const toggleName = () => {
+    if (!canvasRef.current) return;
+    const size = labelRendererRef.current?.getSize();
+    if (size && size.width && size.height) {
+      labelRendererRef.current?.setSize(0, 0);
+    } else {
+      labelRendererRef.current?.setSize(
+        canvasRef.current.clientWidth,
+        canvasRef.current.clientHeight
+      );
+    }
+  };
+
+  const toggleLink = () => {
+    const scene = sceneRef.current;
+    if (!scene) return;
+
+    scene.traverse((child) => {
+      if (child.type === "ArrowHelper") {
+        child.visible = !child.visible;
+      }
+    });
+
+    if (!isLinkVisible.current) {
+      // Reassign updatedNodeIds to an empty array
+      updatedNodeIds.current.clear();
+    } else if (isLinkVisible.current && updatedNodeIds.current.size) {
+      // Update the link if there is an update on the node.
+      updatedNodeIds.current.forEach((id: number) => {
+        const node = sceneRef.current?.getObjectById(id);
+
+        if (node) {
+          removeAllLinksRelateTo(node.uuid);
+          updateLinks(node);
+          render();
+        }
+      });
+    }
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (

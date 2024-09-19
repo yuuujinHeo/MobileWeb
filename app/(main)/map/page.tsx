@@ -20,7 +20,7 @@ import { Toast } from "primereact/toast";
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
 
-import { CANVAS_CLASSES, CANVAS_ACTION } from "@/constants";
+import { CANVAS_CLASSES, CANVAS_ACTION, NODE_TYPE } from "@/constants";
 
 import axios from "axios";
 
@@ -129,6 +129,40 @@ const Map: React.FC = () => {
       ],
     },
     {
+      label: "View",
+      icon: "pi",
+      items: [
+        {
+          label: "Goal",
+          icon: "pi pi-check check-goal",
+          command: () => {
+            handleToggleObject(NODE_TYPE.GOAL);
+          },
+        },
+        {
+          label: "Route",
+          icon: "pi pi-check check-route",
+          command: () => {
+            handleToggleObject(NODE_TYPE.ROUTE);
+          },
+        },
+        {
+          label: "Name",
+          icon: "pi pi-check check-name",
+          command: () => {
+            handleToggleName();
+          },
+        },
+        {
+          label: "Link",
+          icon: "pi pi-check check-link",
+          command: () => {
+            handleToggleLink();
+          },
+        },
+      ],
+    },
+    {
       label: "Mapping",
       icon: "pi pi-map",
       command: () => {
@@ -136,6 +170,32 @@ const Map: React.FC = () => {
       },
     },
   ];
+
+  const handleToggleObject = (type: string) => {
+    const toggleIconClass =
+      type === NODE_TYPE.GOAL ? "check-goal" : "check-route";
+    const toggleIcon = document.querySelector(`.${toggleIconClass}`);
+
+    if (toggleIcon !== null) {
+      toggleIcon.classList.toggle("pi-check");
+    }
+
+    dispatch(
+      createAction({ command: CANVAS_ACTION.TOGGLE_NODE, target: type })
+    );
+  };
+
+  const handleToggleName = () => {
+    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_NAME }));
+  };
+
+  const handleToggleLink = () => {
+    const toggleIcon = document.querySelector(".check-link");
+    if (toggleIcon !== null) {
+      toggleIcon.classList.toggle("pi-check");
+    }
+    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_LINK }));
+  };
 
   const saveMap = () => {
     if (fileNameRef.current === null) {
