@@ -184,6 +184,10 @@ const Map: React.FC = () => {
   };
 
   const handleToggleLink = () => {
+    const toggleIcon = document.querySelector(".check-link");
+    if (toggleIcon !== null) {
+      toggleIcon.classList.toggle("pi-check");
+    }
     dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_LINK }));
   };
 
