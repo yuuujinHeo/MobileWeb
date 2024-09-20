@@ -83,6 +83,7 @@ const LidarCanvas = ({
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const controlRef = useRef<MapControls | null>(null);
   const transformControlRef = useRef<TransformControls>();
+  const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
   const robotModel = useRef<THREE.Object3D>();
   // [TODO] remove lidarPoints ref
   const lidarPoints = useRef<number>();
@@ -540,8 +541,8 @@ const LidarCanvas = ({
     canvasRef.current.addEventListener("touchmove", handleTouchMove);
     canvasRef.current.addEventListener("touchend", handleTouchEnd);
 
-    // key input handling
-    // canvasRef.current.addEventListener("keydown", handleKeyDown);
+    // raycaster
+    raycasterRef.current.layers.set(0);
   };
 
   const toggleMarkingMode = () => {
@@ -568,7 +569,7 @@ const LidarCanvas = ({
 
   const getRaycaster = (event: MouseEvent | TouchEvent) => {
     if (!canvasRef.current || !cameraRef.current) return;
-    const raycaster = new THREE.Raycaster();
+    const raycaster = raycasterRef.current;
     const mouse = new THREE.Vector2();
 
     const pos = getCanvasRelativePosition(event);
@@ -629,7 +630,7 @@ const LidarCanvas = ({
     const transformControl = transformControlRef.current;
     if (!scene || !selectedNodesArray || !transformControl) return;
 
-    if (intersect !== null && intersect.visible) {
+    if (intersect !== null) {
       let topParent: THREE.Object3D;
       topParent = findTopParent(intersect);
 
@@ -795,7 +796,7 @@ const LidarCanvas = ({
         cameraRef.current &&
         sceneRef.current
       ) {
-        const raycaster = new THREE.Raycaster();
+        const raycaster = raycasterRef.current;
         const mouse = new THREE.Vector2();
 
         const pos = getCanvasRelativePosition(event);
@@ -1986,10 +1987,17 @@ const LidarCanvas = ({
     hideSelectionHelpers();
     transformControlRef.current?.detach();
 
-    scene.traverse((child) => {
-      if (child.userData.type === target) {
-        child.traverse((c) => {
-          c.visible = !c.visible;
+    scene.traverse((object) => {
+      if (object.userData.type === target) {
+        const topParent = findTopParent(object);
+        topParent.traverse((child) => {
+          if (child.visible) {
+            child.layers.set(1);
+            child.visible = false;
+          } else {
+            child.layers.set(0);
+            child.visible = true;
+          }
         });
       }
     });
