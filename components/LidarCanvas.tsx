@@ -362,25 +362,26 @@ const LidarCanvas = ({
         }
         // TODO If isDuplicatedName is true. Warn!
         if (!isDuplicatedName) {
+          // Remove the arrow helper with the old name.
+          removeAllLinksRelateTo(target.uuid);
           target.name = value;
           // update label
           removeLabelFromNode(target);
           addLabelToNode(target);
+          // Redraw links
+          updateLinks(target);
         }
         break;
       case "pose-x":
         target.position.x = Number(value) * SCALE_FACTOR;
-        removeAllLinksRelateTo(target.uuid);
         updateLinks(target);
         break;
       case "pose-y":
         target.position.y = Number(value) * SCALE_FACTOR;
-        removeAllLinksRelateTo(target.uuid);
         updateLinks(target);
         break;
       // case "pose-z":
       //   selectedObj.position.z = Number(value);
-      //   updateLinks(selectedObj)
       //   break;
       case "pose-rz":
         target.rotation.z = Number(value);
@@ -1407,7 +1408,6 @@ const LidarCanvas = ({
     // [Note]
     // Bug: userData of the passed object3D is lost ("links" and "links_from" become empty arrays).
     // Temporary solution: added "restoreLinks" due to unidentified cause.
-    // updateLinks(object);
     if (links.length || links_from.length)
       restoreLinks(object, links, links_from);
   };
@@ -1454,7 +1454,6 @@ const LidarCanvas = ({
   ) => {
     sceneRef.current?.add(object);
     postProcessAddRoute(object, nodePose);
-    // updateLinks(object);
     if (links.length || links_from.length)
       restoreLinks(object, links, links_from);
   };
@@ -1809,7 +1808,6 @@ const LidarCanvas = ({
       }
     }
     if (selectedNodeRef.current && isLinkVisible.current) {
-      removeAllLinksRelateTo(selectedNodeRef.current.uuid);
       updateLinks(selectedNodeRef.current);
     } else if (selectedNodeRef.current && !isLinkVisible.current) {
       updatedNodeIds.current.add(selectedNodeRef.current.id);
@@ -1825,20 +1823,6 @@ const LidarCanvas = ({
     if (from === undefined || to === undefined) return;
     createArrow(from, to);
 
-    // Update links
-    // const selectedNodesArray = selectedNodesArrayRef.current;
-    //
-    // for (let i = 0; i < selectedNodesArray.length - 1; i++) {
-    //   const from = selectedNodesArray[i];
-    //   const to = selectedNodesArray[i + 1];
-    //
-    //   let links: string[] = [];
-    //   links = [...from.userData.links];
-    //   if (!links.includes(to.uuid)) {
-    //     links.push(to.uuid);
-    //     from.userData.links = links;
-    //   }
-    // }
     let links: string[] = [];
     links = [...from.userData.links];
     if (!links.includes(to.uuid)) {
@@ -1859,33 +1843,6 @@ const LidarCanvas = ({
     to: THREE.Object3D,
     color = 0x00f7ff
   ) => {
-    // const selectedNodes = selectedNodesArrayRef.current;
-    // if (selectedNodes.length > 1) {
-    //   for (let i = 0; i < selectedNodes.length - 1; i++) {
-    //     const start = selectedNodes[i];
-    //     const end = selectedNodes[i + 1];
-    //
-    //     if (!start.userData.links.includes(end.uuid)) {
-    //       const startPos = start.position;
-    //       const endPos = end.position;
-    //
-    //       const dir = new THREE.Vector3()
-    //         .subVectors(endPos, startPos)
-    //         .normalize();
-    //       const length = startPos.distanceTo(endPos);
-    //       // default color is blue
-    //       const arrowHelper = new THREE.ArrowHelper(
-    //         dir,
-    //         startPos,
-    //         length,
-    //         color
-    //       );
-    //       arrowHelper.name = `arrow-${start.name}-${end.name}`;
-    //       sceneRef.current?.add(arrowHelper);
-    //     }
-    //   }
-    // }
-
     if (!from.userData.links.includes(to.uuid)) {
       const startPos = from.position;
       const endPos = to.position;
@@ -1971,6 +1928,8 @@ const LidarCanvas = ({
   const updateLinks = (selectedObj: THREE.Object3D) => {
     const scene = sceneRef.current;
     if (!scene || !selectedObj) return;
+
+    removeAllLinksRelateTo(selectedObj.uuid);
 
     // let tempLinks = [...selectedObj.userData.links];
     const tempLinks = selectedObj.userData.links.slice();
@@ -2068,7 +2027,6 @@ const LidarCanvas = ({
         const node = sceneRef.current?.getObjectById(id);
 
         if (node) {
-          removeAllLinksRelateTo(node.uuid);
           updateLinks(node);
           render();
         }
