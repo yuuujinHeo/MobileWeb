@@ -71,6 +71,7 @@ const Map: React.FC = () => {
 
   const fileNameRef = useRef<string | null>(null);
   const toast = useRef<Toast>(null);
+  const toggleRef = useRef<boolean>(true);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -133,29 +134,36 @@ const Map: React.FC = () => {
       icon: "pi",
       items: [
         {
+          label: "All",
+          icon: "pi pi-check view-toggle",
+          command: () => {
+            toggleAll();
+          },
+        },
+        {
           label: "Goal",
-          icon: "pi pi-check check-goal",
+          icon: "pi pi-check view-toggle check-goal",
           command: () => {
             handleToggleObject(NODE_TYPE.GOAL);
           },
         },
         {
           label: "Route",
-          icon: "pi pi-check check-route",
+          icon: "pi pi-check view-toggle check-route",
           command: () => {
             handleToggleObject(NODE_TYPE.ROUTE);
           },
         },
         {
           label: "Name",
-          icon: "pi pi-check check-name",
+          icon: "pi pi-check view-toggle check-name",
           command: () => {
             handleToggleName();
           },
         },
         {
           label: "Link",
-          icon: "pi pi-check check-link",
+          icon: "pi pi-check view-toggle check-link",
           command: () => {
             handleToggleLink();
           },
@@ -199,6 +207,22 @@ const Map: React.FC = () => {
       toggleIcon.classList.toggle("pi-check");
     }
     dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_LINK }));
+  };
+
+  const toggleAll = () => {
+    const toggleIcons = document.querySelectorAll(".view-toggle");
+    toggleRef.current = !toggleRef.current;
+
+    toggleIcons.forEach((node) => {
+      // check icon handling
+      if (toggleRef.current) {
+        node.classList.add("pi-check");
+      } else {
+        node.classList.remove("pi-check");
+      }
+    });
+
+    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_ALL }));
   };
 
   const saveMap = () => {

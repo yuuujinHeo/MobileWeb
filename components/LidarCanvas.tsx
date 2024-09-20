@@ -102,7 +102,14 @@ const LidarCanvas = ({
   const routes = useRef<number[]>([0]);
   const routeNum = useRef<number>(0);
 
-  const isLinkVisible = useRef<boolean>(true);
+  // 3d object's visible state
+  const visibleStateRef = useRef({
+    ALL: true,
+    GOAL: true,
+    ROUTE: true,
+    NAME: true,
+    LINK: true,
+  });
   const updatedNodeIds = useRef<Set<number>>(new Set());
 
   const undo = useRef<Command[]>([]);
@@ -262,15 +269,37 @@ const LidarCanvas = ({
         case CANVAS_ACTION.TFC_SET_MODE:
           setTransformControlsMode(action.name as TransformControlsMode);
           break;
+        case CANVAS_ACTION.TOGGLE_ALL:
+          visibleStateRef.current.ALL = !visibleStateRef.current.ALL;
+
+          if (visibleStateRef.current.ALL) {
+            visibleStateRef.current.GOAL = true;
+            visibleStateRef.current.ROUTE = true;
+            visibleStateRef.current.LINK = true;
+            visibleStateRef.current.NAME = true;
+          } else {
+            visibleStateRef.current.GOAL = false;
+            visibleStateRef.current.ROUTE = false;
+            visibleStateRef.current.LINK = false;
+            visibleStateRef.current.NAME = false;
+          }
+          toggleNode(NODE_TYPE.GOAL);
+          toggleNode(NODE_TYPE.ROUTE);
+          toggleName();
+          toggleLink();
+          break;
         case CANVAS_ACTION.TOGGLE_NODE:
+          // toggle
+          visibleStateRef.current[action.target] =
+            !visibleStateRef.current[action.target];
           toggleNode(action.target);
           break;
         case CANVAS_ACTION.TOGGLE_LINK:
-          // set isLinkVisible
-          isLinkVisible.current = !isLinkVisible.current;
+          visibleStateRef.current.LINK = !visibleStateRef.current.LINK;
           toggleLink();
           break;
         case CANVAS_ACTION.TOGGLE_NAME:
+          visibleStateRef.current.NAME = !visibleStateRef.current.NAME;
           toggleName();
           break;
         default:
@@ -1438,6 +1467,7 @@ const LidarCanvas = ({
       const plane = new THREE.Mesh(geo, mat);
       plane.scale.set(30, 30, 1);
       plane.visible = false;
+      plane.name = "plane";
       route.add(plane);
 
       sceneRef.current?.add(route);
@@ -1799,6 +1829,7 @@ const LidarCanvas = ({
   };
 
   const handleTransformChange = () => {
+    // Selection box handling
     const currSelectionBox = currSelectionBoxRef.current;
     const transformControl = transformControlRef.current;
     if (currSelectionBox && transformControl && transformControl.object) {
@@ -1808,9 +1839,11 @@ const LidarCanvas = ({
         currSelectionBox.setFromObject(transformControl.object);
       }
     }
-    if (selectedNodeRef.current && isLinkVisible.current) {
+
+    //
+    if (selectedNodeRef.current && visibleStateRef.current.LINK) {
       updateLinks(selectedNodeRef.current);
-    } else if (selectedNodeRef.current && !isLinkVisible.current) {
+    } else if (selectedNodeRef.current && !visibleStateRef.current.LINK) {
       updatedNodeIds.current.add(selectedNodeRef.current.id);
     }
 
@@ -1979,8 +2012,6 @@ const LidarCanvas = ({
     lastToastMsg = detail;
   };
 
-  // Toggle Functions
-
   const toggleNode = (target: string) => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -1991,12 +2022,12 @@ const LidarCanvas = ({
       if (object.userData.type === target) {
         const topParent = findTopParent(object);
         topParent.traverse((child) => {
-          if (child.visible) {
+          if (visibleStateRef.current[target]) {
+            child.layers.set(0);
+            if (child.name !== "plane") child.visible = true;
+          } else {
             child.layers.set(1);
             child.visible = false;
-          } else {
-            child.layers.set(0);
-            child.visible = true;
           }
         });
       }
@@ -2005,14 +2036,13 @@ const LidarCanvas = ({
 
   const toggleName = () => {
     if (!canvasRef.current) return;
-    const size = labelRendererRef.current?.getSize();
-    if (size && size.width && size.height) {
-      labelRendererRef.current?.setSize(0, 0);
-    } else {
+    if (visibleStateRef.current.NAME) {
       labelRendererRef.current?.setSize(
         canvasRef.current.clientWidth,
         canvasRef.current.clientHeight
       );
+    } else {
+      labelRendererRef.current?.setSize(0, 0);
     }
   };
 
@@ -2022,18 +2052,21 @@ const LidarCanvas = ({
 
     scene.traverse((child) => {
       if (child.type === "ArrowHelper") {
-        child.visible = !child.visible;
+        if (visibleStateRef.current.LINK) {
+          child.visible = true;
+        } else {
+          child.visible = false;
+        }
       }
     });
 
-    if (!isLinkVisible.current) {
+    if (!visibleStateRef.current.LINK) {
       // Reassign updatedNodeIds to an empty array
       updatedNodeIds.current.clear();
-    } else if (isLinkVisible.current && updatedNodeIds.current.size) {
-      // Update the link if there is an update on the node.
+    } else if (visibleStateRef.current.LINK && updatedNodeIds.current.size) {
+      // Update the link if there is an update on the node while the links is not visible.
       updatedNodeIds.current.forEach((id: number) => {
         const node = sceneRef.current?.getObjectById(id);
-
         if (node) {
           updateLinks(node);
           render();
