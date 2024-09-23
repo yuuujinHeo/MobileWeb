@@ -45,6 +45,7 @@ import {
 import {
   CANVAS_CLASSES,
   CANVAS_ACTION,
+  CANVAS_OBJECT,
   NODE_TYPE,
   SCALE_FACTOR,
 } from "@/constants";
@@ -109,6 +110,8 @@ const LidarCanvas = ({
     ROUTE: true,
     NAME: true,
     LINK: true,
+    ROBOT: true,
+    ORIGIN: true,
   });
   const updatedNodeIds = useRef<Set<number>>(new Set());
 
@@ -269,38 +272,18 @@ const LidarCanvas = ({
         case CANVAS_ACTION.TFC_SET_MODE:
           setTransformControlsMode(action.name as TransformControlsMode);
           break;
+        case CANVAS_ACTION.TOGGLE_OBJECT:
+          setVisibleState(action.target);
+          toggleObject(action.target);
+          break;
         case CANVAS_ACTION.TOGGLE_ALL:
-          visibleStateRef.current.ALL = !visibleStateRef.current.ALL;
-
-          if (visibleStateRef.current.ALL) {
-            visibleStateRef.current.GOAL = true;
-            visibleStateRef.current.ROUTE = true;
-            visibleStateRef.current.LINK = true;
-            visibleStateRef.current.NAME = true;
-          } else {
-            visibleStateRef.current.GOAL = false;
-            visibleStateRef.current.ROUTE = false;
-            visibleStateRef.current.LINK = false;
-            visibleStateRef.current.NAME = false;
-          }
-          toggleNode(NODE_TYPE.GOAL);
-          toggleNode(NODE_TYPE.ROUTE);
-          toggleName();
-          toggleLink();
-          break;
-        case CANVAS_ACTION.TOGGLE_NODE:
-          // toggle
-          visibleStateRef.current[action.target] =
-            !visibleStateRef.current[action.target];
-          toggleNode(action.target);
-          break;
-        case CANVAS_ACTION.TOGGLE_LINK:
-          visibleStateRef.current.LINK = !visibleStateRef.current.LINK;
-          toggleLink();
-          break;
-        case CANVAS_ACTION.TOGGLE_NAME:
-          visibleStateRef.current.NAME = !visibleStateRef.current.NAME;
-          toggleName();
+          setVisibleState(action.target);
+          toggleObject(CANVAS_OBJECT.GOAL);
+          toggleObject(CANVAS_OBJECT.ROUTE);
+          toggleObject(CANVAS_OBJECT.NAME);
+          toggleObject(CANVAS_OBJECT.LINK);
+          toggleObject(CANVAS_OBJECT.ROBOT);
+          toggleObject(CANVAS_OBJECT.ORIGIN);
           break;
         default:
           break;
@@ -1060,6 +1043,7 @@ const LidarCanvas = ({
     const originGeometry = new THREE.SphereGeometry(0.1);
     const originMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
     const originPoint = new THREE.Mesh(originGeometry, originMaterial);
+    originPoint.name = CANVAS_OBJECT.ORIGIN;
 
     const axesHelperOrin = new THREE.AxesHelper(1);
     originPoint.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
@@ -1069,7 +1053,7 @@ const LidarCanvas = ({
     const loader = new ThreeMFLoader();
 
     loader.load("amr.3MF", function (group) {
-      group.name = "amr";
+      group.name = CANVAS_OBJECT.ROBOT;
       group.scale.set(0.0315, 0.0315, 0.0315);
 
       group.traverse((obj) => {
@@ -2012,6 +1996,82 @@ const LidarCanvas = ({
     lastToastMsg = detail;
   };
 
+  const setVisibleState = (state: string) => {
+    visibleStateRef.current[state] = !visibleStateRef.current[state];
+
+    // NOTE:
+    // Changing the "All" state afect other states as well.
+    if (state === CANVAS_OBJECT.ALL) {
+      if (visibleStateRef.current.ALL) {
+        visibleStateRef.current.GOAL = true;
+        visibleStateRef.current.ROUTE = true;
+        visibleStateRef.current.LINK = true;
+        visibleStateRef.current.NAME = true;
+        visibleStateRef.current.ROBOT = true;
+        visibleStateRef.current.ORIGIN = true;
+      } else {
+        visibleStateRef.current.GOAL = false;
+        visibleStateRef.current.ROUTE = false;
+        visibleStateRef.current.LINK = false;
+        visibleStateRef.current.NAME = false;
+        visibleStateRef.current.ROBOT = false;
+        visibleStateRef.current.ORIGIN = false;
+      }
+    }
+  };
+
+  const toggleObject = (target: string) => {
+    if (!canvasRef.current || !sceneRef.current || !labelRendererRef.current)
+      return;
+    switch (target) {
+      case CANVAS_OBJECT.GOAL:
+      case CANVAS_OBJECT.ROUTE:
+        toggleNode(target);
+        break;
+      case CANVAS_OBJECT.NAME:
+        visibleStateRef.current.NAME
+          ? labelRendererRef.current.setSize(
+              canvasRef.current.clientWidth,
+              canvasRef.current.clientHeight
+            )
+          : labelRendererRef.current.setSize(0, 0);
+        break;
+      case CANVAS_OBJECT.LINK:
+        sceneRef.current.traverse((child) => {
+          if (child.type === "ArrowHelper") {
+            visibleStateRef.current.LINK
+              ? (child.visible = true)
+              : (child.visible = false);
+          }
+        });
+
+        if (!visibleStateRef.current.LINK) {
+          // Reassign updatedNodeIds to an empty array
+          updatedNodeIds.current.clear();
+        } else if (
+          visibleStateRef.current.LINK &&
+          updatedNodeIds.current.size
+        ) {
+          // Update the link if there is an update on the node
+          // while the links is not visible.
+          updatedNodeIds.current.forEach((id: number) => {
+            const node = sceneRef.current?.getObjectById(id);
+            if (node) {
+              updateLinks(node);
+              render();
+            }
+          });
+        }
+        break;
+      case CANVAS_OBJECT.ROBOT:
+      case CANVAS_OBJECT.ORIGIN:
+        toggleObjectByName(target);
+        break;
+      default:
+        break;
+    }
+  };
+
   const toggleNode = (target: string) => {
     const scene = sceneRef.current;
     if (!scene) return;
@@ -2034,45 +2094,14 @@ const LidarCanvas = ({
     });
   };
 
-  const toggleName = () => {
-    if (!canvasRef.current) return;
-    if (visibleStateRef.current.NAME) {
-      labelRendererRef.current?.setSize(
-        canvasRef.current.clientWidth,
-        canvasRef.current.clientHeight
-      );
-    } else {
-      labelRendererRef.current?.setSize(0, 0);
-    }
-  };
+  const toggleObjectByName = (name: string) => {
+    if (!canvasRef.current || !sceneRef.current) return;
+    const object = sceneRef.current.getObjectByName(name);
+    if (!object) return;
 
-  const toggleLink = () => {
-    const scene = sceneRef.current;
-    if (!scene) return;
-
-    scene.traverse((child) => {
-      if (child.type === "ArrowHelper") {
-        if (visibleStateRef.current.LINK) {
-          child.visible = true;
-        } else {
-          child.visible = false;
-        }
-      }
-    });
-
-    if (!visibleStateRef.current.LINK) {
-      // Reassign updatedNodeIds to an empty array
-      updatedNodeIds.current.clear();
-    } else if (visibleStateRef.current.LINK && updatedNodeIds.current.size) {
-      // Update the link if there is an update on the node while the links is not visible.
-      updatedNodeIds.current.forEach((id: number) => {
-        const node = sceneRef.current?.getObjectById(id);
-        if (node) {
-          updateLinks(node);
-          render();
-        }
-      });
-    }
+    visibleStateRef.current[name]
+      ? (object.visible = true)
+      : (object.visible = false);
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
