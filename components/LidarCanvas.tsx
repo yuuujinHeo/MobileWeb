@@ -303,12 +303,16 @@ const LidarCanvas = ({
     }
   }, [action]);
 
-  useEffect(() => {
-    goalNum.current = 0;
-    routeNum.current = 0;
-    dispatch(updateGoalNum(goalNum.current));
-    dispatch(updateRouteNum(routeNum.current));
-  }, [cloudData, topoData]);
+  // NOTE: I guess this useEffect hook is no longer required.
+  // because when cloudData and topoData change,
+  // goalNum and routeNum are updated by the clearAllNode function.
+  //
+  // useEffect(() => {
+  //   goalNum.current = 0;
+  //   routeNum.current = 0;
+  //   dispatch(updateGoalNum(goalNum.current));
+  //   dispatch(updateRouteNum(routeNum.current));
+  // }, [cloudData, topoData]);
 
   const setPropertyUndoRedo = (category: string, value: string): void => {
     const selectedObj = selectedNodeRef.current;

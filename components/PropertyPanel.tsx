@@ -47,9 +47,12 @@ type Severity = "success" | "info" | "warn" | "error";
 export default function PropertyPanel() {
   const dispatch = useDispatch();
 
-  // root state
-  const { sceneInfo, robotHelper, selectedObjectInfo } = useSelector(
-    (state: RootState) => state.canvas
+  const sceneInfo = useSelector((state: RootState) => state.canvas.sceneInfo);
+  const robotHelper = useSelector(
+    (state: RootState) => state.canvas.robotHelper
+  );
+  const selectedObjectInfo = useSelector(
+    (state: RootState) => state.canvas.selectedObjectInfo
   );
   // state
   const [displayInfo, setDisplayInfo] = useState({
