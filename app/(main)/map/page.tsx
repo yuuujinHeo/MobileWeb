@@ -20,7 +20,12 @@ import { Toast } from "primereact/toast";
 import UtilityPanel from "@/components/UtilityPanel";
 import PropertyPanel from "@/components/PropertyPanel";
 
-import { CANVAS_CLASSES, CANVAS_ACTION, NODE_TYPE } from "@/constants";
+import {
+  CANVAS_CLASSES,
+  CANVAS_ACTION,
+  NODE_TYPE,
+  CANVAS_OBJECT,
+} from "@/constants";
 
 import axios from "axios";
 
@@ -71,6 +76,7 @@ const Map: React.FC = () => {
 
   const fileNameRef = useRef<string | null>(null);
   const toast = useRef<Toast>(null);
+  const toggleAllStateRef = useRef<boolean>(true);
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
@@ -134,30 +140,51 @@ const Map: React.FC = () => {
       items: [
         {
           label: "Goal",
-          icon: "pi pi-check check-goal",
+          icon: "pi pi-check view-toggle check-goal",
           command: () => {
             handleToggleObject(NODE_TYPE.GOAL);
           },
         },
         {
           label: "Route",
-          icon: "pi pi-check check-route",
+          icon: "pi pi-check view-toggle check-route",
           command: () => {
             handleToggleObject(NODE_TYPE.ROUTE);
           },
         },
         {
           label: "Name",
-          icon: "pi pi-check check-name",
+          icon: "pi pi-check view-toggle check-name",
           command: () => {
-            handleToggleName();
+            handleToggleObject(CANVAS_OBJECT.NAME);
           },
         },
         {
           label: "Link",
-          icon: "pi pi-check check-link",
+          icon: "pi pi-check view-toggle check-link",
           command: () => {
-            handleToggleLink();
+            handleToggleObject(CANVAS_OBJECT.LINK);
+          },
+        },
+        {
+          label: "Robot",
+          icon: "pi pi-check view-toggle check-robot",
+          command: () => {
+            handleToggleObject(CANVAS_OBJECT.ROBOT);
+          },
+        },
+        {
+          label: "Origin",
+          icon: "pi pi-check view-toggle check-origin",
+          command: () => {
+            handleToggleObject(CANVAS_OBJECT.ORIGIN);
+          },
+        },
+        {
+          label: "All",
+          icon: "pi pi-check view-toggle",
+          command: () => {
+            toggleToggleAll();
           },
         },
       ],
@@ -172,33 +199,46 @@ const Map: React.FC = () => {
   ];
 
   const handleToggleObject = (type: string) => {
-    const toggleIconClass =
-      type === NODE_TYPE.GOAL ? "check-goal" : "check-route";
-    const toggleIcon = document.querySelector(`.${toggleIconClass}`);
+    const iconClassMap: Record<string, string> = {
+      [CANVAS_OBJECT.GOAL]: "check-goal",
+      [CANVAS_OBJECT.ROUTE]: "check-route",
+      [CANVAS_OBJECT.NAME]: "check-name",
+      [CANVAS_OBJECT.LINK]: "check-link",
+      [CANVAS_OBJECT.ROBOT]: "check-robot",
+      [CANVAS_OBJECT.ORIGIN]: "check-origin",
+    };
 
-    if (toggleIcon !== null) {
-      toggleIcon.classList.toggle("pi-check");
+    const iconClass = iconClassMap[type];
+
+    if (iconClass) {
+      const toggleIcon = document.querySelector(`.${iconClass}`);
+      toggleIcon?.classList.toggle("pi-check");
     }
 
     dispatch(
-      createAction({ command: CANVAS_ACTION.TOGGLE_NODE, target: type })
+      createAction({ command: CANVAS_ACTION.TOGGLE_OBJECT, target: type })
     );
   };
 
-  const handleToggleName = () => {
-    const toggleIcon = document.querySelector(".check-name");
-    if (toggleIcon !== null) {
-      toggleIcon.classList.toggle("pi-check");
-    }
-    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_NAME }));
-  };
+  const toggleToggleAll = () => {
+    const toggleIcons = document.querySelectorAll(".view-toggle");
+    toggleAllStateRef.current = !toggleAllStateRef.current;
 
-  const handleToggleLink = () => {
-    const toggleIcon = document.querySelector(".check-link");
-    if (toggleIcon !== null) {
-      toggleIcon.classList.toggle("pi-check");
-    }
-    dispatch(createAction({ command: CANVAS_ACTION.TOGGLE_LINK }));
+    toggleIcons.forEach((node) => {
+      // check icon handling
+      if (toggleAllStateRef.current) {
+        node.classList.add("pi-check");
+      } else {
+        node.classList.remove("pi-check");
+      }
+    });
+
+    dispatch(
+      createAction({
+        command: CANVAS_ACTION.TOGGLE_ALL,
+        target: CANVAS_OBJECT.ALL,
+      })
+    );
   };
 
   const saveMap = () => {
