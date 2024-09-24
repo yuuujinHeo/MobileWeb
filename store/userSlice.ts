@@ -8,13 +8,17 @@ interface UserState {
     token:string;
     permission:string[];    
     state:string;
+    avatar:string;
+    source:string;
 }
 const defaultUser = {
     user_id:"temp",
     user_name:"",
     token:"",
     permission:[],
-    state:""
+    state:"",
+    avatar:"icon",
+    source:"pi pi-user"
 }
 
 const userSlice = createSlice({
@@ -24,7 +28,9 @@ const userSlice = createSlice({
     user_name:"",
     token:"",
     permission:[],
-    state:""
+    state:"",
+    avatar:"icon",
+    source:"pi pi-user"
     },
   reducers: {
     setUser(state:UserState,action: PayloadAction<UserState>){
@@ -34,6 +40,22 @@ const userSlice = createSlice({
         state.token = action.payload.token;
         state.permission = action.payload.permission;
         state.state = action.payload.state;
+        state.avatar = action.payload.avatar;
+        state.source = action.payload.source;
+    },
+    setUserDefault(state:UserState,action: PayloadAction<UserState>){
+      console.log("setUserDefault : ", action.payload.user_id)
+        state.user_id = action.payload.user_id;
+        state.user_name = action.payload.user_name;
+        state.token = action.payload.token;
+        state.permission = action.payload.permission;
+        state.state = action.payload.state;
+    },
+    setUserProfile(state:UserState,action: PayloadAction<{user_name:string, avatar:string, source:string}>){
+      console.log("setUserProfile : ", action.payload.user_name)
+        state.user_name = action.payload.user_name;
+        state.avatar = action.payload.avatar;
+        state.source = action.payload.source;
     },
     setUserPermission(state:UserState,action: PayloadAction<[]>){
         state.permission = action.payload;
@@ -41,7 +63,7 @@ const userSlice = createSlice({
   },
 })
 
-export const { setUser } = userSlice.actions
+export const { setUser, setUserDefault, setUserProfile } = userSlice.actions
 export const selectUser = (state:RootState) => state.user;
 export const selectUserPermission = (state:RootState) => state.user?.permission;
 export default userSlice.reducer

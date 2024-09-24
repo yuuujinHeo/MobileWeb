@@ -63,10 +63,12 @@ import { Avatar } from "primereact/avatar";
 import { setMobileURL, setMonitorURL, selectNetwork } from "@/store/networkSlice";
 import './style.scss'
 import PopupLogout from "../components/popup/popuplogout";
+import { setGlobalPath, setLocalPath } from "@/store/pathSlice";
 import { Router } from "next/router";
 import { Before } from "v8";
 import { NavigateOptions } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { prependListener } from "process";
+import { setGlobal } from "next/dist/trace";
 // import { Dialog } from "@mui/material";
 
 const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
@@ -205,6 +207,39 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
     }
   },[User])
 
+  const getAvatar = () =>{
+    if(User.avatar == "icon"){
+      return(
+        <Avatar icon = {User.source} shape="circle" ></Avatar>
+      );
+    }else{//image
+      return(
+        <Avatar image = {Network.monitor+User.source} shape="circle" ></Avatar>
+      );
+    }
+  };
+  const getAvatarButton = () =>{
+    if(User.avatar == "icon"){
+      return(
+        <Avatar size="large" onClick={(e) => profile.current?.toggle(e)} icon = {User.source} shape="circle" ></Avatar>
+      );
+    }else{//image
+      return(
+        <Avatar size="large" onClick={(e) => profile.current?.toggle(e)} image = {Network.monitor+User.source} shape="circle" ></Avatar>
+      );
+    }
+    //   <button type="button" className="p-link layout-topbar-button" onClick={(e) => profile.current?.toggle(e)}>
+    //   <i className="pi pi-user"></i>
+    // </button>
+  };
+
+
+  const showMy = () =>{
+    console.log("page go to my");
+    setVisibleLogout(false);
+    router.push('/my');
+  }
+
   const logout = async(_state:string) =>{
     console.log("logout : ",_state);
     if(User?.state != "guest" && User?.state != "master"){
@@ -217,7 +252,9 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
       user_name:"",
       permission:[],
       token:"",
-      state:_state
+      state:_state,
+      avatar:"icon",
+      source:"pi pi-user"
     }));
   }
 
@@ -310,6 +347,13 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
           dispatch(setTaskID(data.task.id));
           dispatch(updateRunningTaskName(data.task.file));
         });
+
+        socketRef.current.on("global_path", (data) =>{
+          dispatch(setGlobalPath(data));
+        })
+        socketRef.current.on("local_path", (data) =>{
+          dispatch(setLocalPath(data));
+        })
 
         socketRef.current.on("task_id", (data) => {
           dispatch(setTaskID(data));
@@ -532,12 +576,10 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
           <Button label="연장" severity="secondary" className="ml-1" text onClick={renewLogin}></Button>
         </div>
         }
-        <button type="button" className="p-link layout-topbar-button" onClick={(e) => profile.current?.toggle(e)}>
-          <i className="pi pi-user"></i>
-        </button>
+        {getAvatarButton()}
         <OverlayPanel ref={profile} className="profile-panel">
           <div className="profile-panel-container">
-            <Avatar icon = "pi pi-user" shape="circle" ></Avatar>
+            {getAvatar()}
             <h5 className="font-bold ">{User?.user_name==""?"Unknown":User?.user_name}</h5>
               {User?.state != "guest" && User?.state != "master"  &&
               <div className="flex">
@@ -550,7 +592,7 @@ const AppTopbar = forwardRef<AppTopbarRef>((props, ref) => {
             <div className="flex p-fluidw-full gap-8">
 
               {User?.state != "guest" && User?.state != "master"  &&
-              <Button label="계정설정"  ></Button>
+              <Button label="계정설정"  onClick={showMy}></Button>
               }
               <Button label="로그아웃" onClick={(e)=>logout("")} ></Button>
             </div>

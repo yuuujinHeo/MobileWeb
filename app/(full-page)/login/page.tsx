@@ -17,7 +17,7 @@ import { Message } from 'primereact/message';
 import PopupForce from './popupforce';
 import PopupHidden from './popuphidden';
 import { Messages } from 'primereact/messages';
-import { selectUser, setUser } from '@/store/userSlice';
+import { selectUser, setUser, setUserDefault } from '@/store/userSlice';
 import { ProgressSpinner } from 'primereact/progressspinner';
 
 const LoginPage = () => {
@@ -49,12 +49,14 @@ const LoginPage = () => {
 
     const guestLogin = () =>{
         setLoading(true);
-        dispatch(setUser({
+        dispatch(setUserDefault({
             user_id:"guest",
             user_name:"Guest",
             permission:["read"],
             token:"",
-            state:"guest"
+            state:"guest",
+            avatar:"",
+            source:""
           }));        
     }
 
@@ -73,7 +75,9 @@ const LoginPage = () => {
                     user_name:response.data.user_name,
                     permission:response.data.permission,
                     token:response.data.token,
-                    state:"user"
+                    state:"user",
+                    avatar:response.data.user_avatar,
+                    source:response.data.avatar_source
                   }));
             }else{
                 setLoading(false);
@@ -96,12 +100,14 @@ const LoginPage = () => {
 
     const postLoginMaster = () =>{
         setLoading(true);
-        dispatch(setUser({
+        dispatch(setUserDefault({
             user_id:"master",
             user_name:"Master",
             permission:["admin"],
             token:"",
-            state:"master"
+            state:"master",
+            avatar:"",
+            source:""
         }));        
     }
 
@@ -148,7 +154,9 @@ const LoginPage = () => {
               user_name:response.data.user_name,
               permission:response.data.permission,
               token:response.data.token,
-              state:"user"
+              state:"user",
+              avatar:response.data.user_avatar,
+              source: response.data.avatar_source
             }));
           }
         }catch(error){

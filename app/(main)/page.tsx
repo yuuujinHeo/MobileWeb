@@ -35,7 +35,7 @@ import { Chart } from 'primereact/chart';
 // import { Bar } from 'react-chartjs-2';
 import ChartLive from '@/components/Chart';
 import disconIcon from '@/public/icon/discon.svg'
-import ChartEx from '@/components/Chartmin';
+import ChartEx, {Datainfo} from '@/components/Chartmin';
 import ChartGoogle from "react-google-charts";
 import Color from '@/public/colors';
 import {ChartCustom} from '@/components/ChartCanvas';
@@ -46,8 +46,6 @@ import { Avatar } from 'primereact/avatar';
 import { ShowChartOutlined } from '@mui/icons-material';
 import { damp } from 'three/src/math/MathUtils';
 import Network from './network/page';
-
-const batteryValues = [0,0,0,0,0,0,0,54,53.5,53.5,53.5,53,50,48,49,50,51];  
 
 interface LogStateData {
     time: Date;
@@ -82,19 +80,26 @@ const Dashboard = () => {
     const taskState = useSelector((state: RootState) => state.task);
     const Status = useSelector((state: RootState) => state.status);
     const Network = useSelector((state:RootState) => state.network);
+    const Path = useSelector((state:RootState) => state.path);
     
     const [logState, setLogState] = useState<LogStateData[]>([]);
     const [logPower, setLogPower] = useState<LogPowerData[]>([]);
-    const batteryData = useMemo(()=> logPower.map(item=>item.battery_out), [logPower])
+    const [logBattery, setLogBattery] = useState<Datainfo[]>([]);
+    const batteryData :Datainfo[] = useMemo(()=> logBattery.map(item=>({time:item.time,value:item.value})), [logBattery])
     const stateData = useMemo(() => logState, [logState])
     const warn_temp = 50;
 
-    
+    // const batteryData: Datainfo[] = [
+    //     { time: '2024-09-13T10:00:00', battery: 75 },
+    //     { time: '2024-09-13T10:05:00', battery: 70 },
+    //     { time: '2024-09-13T10:10:00', battery: 65 }
+    // ];
     const getLog = async() =>{
         const response = await axios.get(Network.mobile + "/log/state/state");
         setLogState(response.data);
-        const response2 = await axios.get(Network.mobile + "/log/power");
-        setLogPower(response2.data);
+        const response2 = await axios.get(Network.mobile + "/log/power/battery");
+        // setLogPower(response2.data);
+        setLogBattery(response2.data);
     }
 
     useEffect(() => {
@@ -108,6 +113,10 @@ const Dashboard = () => {
             },10000);
         }
     },[Network])
+
+    useEffect(()=>{
+        console.log("Path Changed : ", Path);
+    },[Path])
 
     const autoStateIcon = () => {
         if(Status.condition.auto_state == 'pause'){
@@ -293,7 +302,7 @@ const Dashboard = () => {
                     Battery
                 </h3>
                 <div className='chart-box'>
-                    <ChartEx batteryData={batteryData} />
+                    <ChartEx data={batteryData} />
                 </div>
             </div>
             <div className='card state-box'>

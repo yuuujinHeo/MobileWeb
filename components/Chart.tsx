@@ -25,7 +25,7 @@ Chart.register(
     Legend
 );
  
-const ChartTemp = ({cur}) => {
+const ChartLive = ({cur}) => {
     
     useEffect(()=>{
         console.log(cur);
@@ -81,4 +81,4 @@ const ChartTemp = ({cur}) => {
     );
 }
  
-export default ChartTemp;
+export default ChartLive;

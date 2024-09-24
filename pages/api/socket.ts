@@ -25,6 +25,14 @@ async function ioHandler(req: NextApiRequest, res: NextApiResponse) {
       socket.on("status", async (data: JSON) => {
         ioServer.emit("status", data);
       });
+      socket.on("global_path", (data: JSON) => {
+        console.log("global_path???");
+        ioServer.emit("global_path", data);
+      });
+      socket.on("local_path", (data: JSON) => {
+        console.log("local_path???");
+        ioServer.emit("local_path", data);
+      });
       socket.on("move", (data: JSON) => {
         ioServer.emit("move", data);
       });
