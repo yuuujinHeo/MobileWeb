@@ -9,6 +9,7 @@ import settingReducer from "./settingSlice";
 import statusReducer from "./statusSlice";
 import connectionSlice from "./connectionSlice";
 import taskSlice from "./taskSlice";
+import pathSlice from "./pathSlice";
 import canvasReducer from "./canvasSlice";
 import propertyPanelReducer from "./propertyPanelSlices";
 
@@ -16,6 +17,7 @@ const rootReducer = combineReducers({
   network: networkReducer,
   setting: settingReducer,
   status: statusReducer,
+  path: pathSlice,
   connection: connectionSlice,
   canvas: canvasReducer,
   propertyPanel: propertyPanelReducer,

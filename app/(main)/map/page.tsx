@@ -99,8 +99,8 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     syncCanvasWithSlamNav();
-    fileNameRef.current = map;
-  }, [map]);
+    fileNameRef.current = map; 
+   }, [map]);
 
   useEffect(() => {
     handleMarkingModeChange(isMarkingMode);

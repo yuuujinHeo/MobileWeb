@@ -1,0 +1,44 @@
+.profile-avatar {
+    width: 12rem;
+    height: 12rem;
+    font-size: 8rem;
+}
+.profile-avatar .p-avatar-icon {
+  font-size: 8rem;
+}
+
+.avatar-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.avatar-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(173, 173, 173, 0.6);
+  color: #424242;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  border-radius: 50%;
+}
+
+.avatar-wrapper:hover .avatar-overlay {
+  opacity: 1;
+}
+.icon-template:hover {
+  // border-width: 3px;
+  border:3px solid #12d26c;
+}
+
+
+.avatar-overlay span {
+  font-size: 1.2em;
+  font-weight: bold;
+}
