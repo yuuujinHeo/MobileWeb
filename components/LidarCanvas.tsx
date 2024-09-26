@@ -196,78 +196,6 @@ const LidarCanvas = ({
     });
   }, [globalPath, localPath]);
 
-  const updatePath = (type: string): void => {
-    if (!sceneRef.current) return;
-    const path = type === "global" ? globalPath : localPath;
-    if (!path.length) return;
-
-    const points = path.map((point: string[]) => {
-      return new THREE.Vector3(
-        Number(point[0]),
-        Number(point[1]),
-        Number(point[2])
-      );
-    });
-    const curve = new THREE.CatmullRomCurve3(points);
-    const pathTube = getPathTube(curve, type);
-    pathTube.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
-    pathTube.name = `${type}Path`;
-
-    if (type === "global") {
-      globalPathRef.current = pathTube;
-    } else if (type === "local") {
-      localPathRef.current = pathTube;
-    }
-
-    sceneRef.current.add(pathTube);
-  };
-
-  const clearPath = (type: string) => {
-    if (!sceneRef.current) return;
-    const scene = sceneRef.current;
-    const path =
-      type === "global" ? globalPathRef.current : localPathRef.current;
-    if (path) {
-      scene.remove(path);
-      type === "global"
-        ? (globalPathRef.current = null)
-        : (localPathRef.current = null);
-    }
-  };
-
-  const getPathTube = (
-    curve: THREE.CatmullRomCurve3,
-    type: string
-  ): THREE.Mesh => {
-    const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
-    let material: THREE.MeshBasicMaterial;
-    if (type === "global") {
-      material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    } else if (type === "local") {
-      const colors: number[] = [];
-      const color1 = new THREE.Color(0x00ff00);
-      const color2 = new THREE.Color(0xffa500);
-
-      for (let i = 0; i < geometry.attributes.position.count; i++) {
-        if (Math.floor(i / 4) % 2 === 0) {
-          colors.push(color1.r, color1.g, color1.b);
-        } else {
-          colors.push(color2.r, color2.g, color2.b);
-        }
-      }
-      geometry.setAttribute(
-        "color",
-        new THREE.Float32BufferAttribute(colors, 3)
-      );
-
-      material = new THREE.MeshBasicMaterial({ vertexColors: true });
-    } else {
-      throw new Error("Invalid path type.");
-    }
-
-    return new THREE.Mesh(geometry, material);
-  };
-
   useEffect(() => {
     if (action.command === CANVAS_ACTION.DRAW_CLOUD) {
       clearMapPoints(action.target);
@@ -2191,6 +2119,81 @@ const LidarCanvas = ({
     visibleStateRef.current[name]
       ? (object.visible = true)
       : (object.visible = false);
+  };
+
+  // ------------------------------
+  // Path drawing functions start
+  // ------------------------------
+  const updatePath = (type: string): void => {
+    if (!sceneRef.current) return;
+    const path = type === "global" ? globalPath : localPath;
+    if (!path.length) return;
+
+    const points = path.map((point: string[]) => {
+      return new THREE.Vector3(
+        Number(point[0]),
+        Number(point[1]),
+        Number(point[2])
+      );
+    });
+    const curve = new THREE.CatmullRomCurve3(points);
+    const pathTube = getPathTube(curve, type);
+    pathTube.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+    pathTube.name = `${type}Path`;
+
+    if (type === "global") {
+      globalPathRef.current = pathTube;
+    } else if (type === "local") {
+      localPathRef.current = pathTube;
+    }
+
+    sceneRef.current.add(pathTube);
+  };
+
+  const clearPath = (type: string) => {
+    if (!sceneRef.current) return;
+    const scene = sceneRef.current;
+    const path =
+      type === "global" ? globalPathRef.current : localPathRef.current;
+    if (path) {
+      scene.remove(path);
+      type === "global"
+        ? (globalPathRef.current = null)
+        : (localPathRef.current = null);
+    }
+  };
+
+  const getPathTube = (
+    curve: THREE.CatmullRomCurve3,
+    type: string
+  ): THREE.Mesh => {
+    const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
+    let material: THREE.MeshBasicMaterial;
+    if (type === "global") {
+      material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    } else if (type === "local") {
+      const colors: number[] = [];
+      const color1 = new THREE.Color(0x00ff00);
+      const color2 = new THREE.Color(0xffa500);
+
+      for (let i = 0; i < geometry.attributes.position.count; i++) {
+        if (Math.floor(i / 4) % 2 === 0) {
+          colors.push(color1.r, color1.g, color1.b);
+        } else {
+          colors.push(color2.r, color2.g, color2.b);
+        }
+      }
+      geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3)
+      );
+
+      material = new THREE.MeshBasicMaterial({ vertexColors: true });
+    } else {
+      throw new Error("Invalid path type.");
+    }
+
+    return new THREE.Mesh(geometry, material);
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
