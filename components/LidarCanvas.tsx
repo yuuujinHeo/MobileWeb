@@ -74,6 +74,8 @@ const LidarCanvas = ({
   const robotHelper = useSelector(
     (state: RootState) => state.canvas.robotHelper
   );
+  const globalPath = useSelector((state: RootState) => state.path.global);
+  const localPath = useSelector((state: RootState) => state.path.local);
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const socketRef = useRef<any>();
@@ -85,12 +87,15 @@ const LidarCanvas = ({
   const controlRef = useRef<MapControls | null>(null);
   const transformControlRef = useRef<TransformControls>();
   const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster());
+  // TODO: Remove robotModel & lidarPoints ref
   const robotModel = useRef<THREE.Object3D>();
-  // [TODO] remove lidarPoints ref
   const lidarPoints = useRef<number>();
   const mappingPointsArr = useRef<number[]>([]);
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
+  // path ref
+  const globalPathRef = useRef<THREE.Mesh | null>(null);
+  const localPathRef = useRef<THREE.Mesh | null>(null);
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
@@ -182,6 +187,86 @@ const LidarCanvas = ({
       transformControlRef.current?.dispose();
     };
   }, []);
+
+  // Draw driving path
+  useEffect(() => {
+    ["global", "local"].forEach((type) => {
+      clearPath(type);
+      updatePath(type);
+    });
+  }, [globalPath, localPath]);
+
+  const updatePath = (type: string): void => {
+    if (!sceneRef.current) return;
+    const path = type === "global" ? globalPath : localPath;
+    if (!path.length) return;
+
+    const points = path.map((point: string[]) => {
+      return new THREE.Vector3(
+        Number(point[0]),
+        Number(point[1]),
+        Number(point[2])
+      );
+    });
+    const curve = new THREE.CatmullRomCurve3(points);
+    const pathTube = getPathTube(curve, type);
+    pathTube.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+    pathTube.name = `${type}Path`;
+
+    if (type === "global") {
+      globalPathRef.current = pathTube;
+    } else if (type === "local") {
+      localPathRef.current = pathTube;
+    }
+
+    sceneRef.current.add(pathTube);
+  };
+
+  const clearPath = (type: string) => {
+    if (!sceneRef.current) return;
+    const scene = sceneRef.current;
+    const path =
+      type === "global" ? globalPathRef.current : localPathRef.current;
+    if (path) {
+      scene.remove(path);
+      type === "global"
+        ? (globalPathRef.current = null)
+        : (localPathRef.current = null);
+    }
+  };
+
+  const getPathTube = (
+    curve: THREE.CatmullRomCurve3,
+    type: string
+  ): THREE.Mesh => {
+    const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
+    let material: THREE.MeshBasicMaterial;
+    if (type === "global") {
+      material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+    } else if (type === "local") {
+      const colors: number[] = [];
+      const color1 = new THREE.Color(0x00ff00);
+      const color2 = new THREE.Color(0xffa500);
+
+      for (let i = 0; i < geometry.attributes.position.count; i++) {
+        if (Math.floor(i / 4) % 2 === 0) {
+          colors.push(color1.r, color1.g, color1.b);
+        } else {
+          colors.push(color2.r, color2.g, color2.b);
+        }
+      }
+      geometry.setAttribute(
+        "color",
+        new THREE.Float32BufferAttribute(colors, 3)
+      );
+
+      material = new THREE.MeshBasicMaterial({ vertexColors: true });
+    } else {
+      throw new Error("Invalid path type.");
+    }
+
+    return new THREE.Mesh(geometry, material);
+  };
 
   useEffect(() => {
     if (action.command === CANVAS_ACTION.DRAW_CLOUD) {
