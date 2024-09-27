@@ -96,6 +96,7 @@ const LidarCanvas = ({
   // path ref
   const globalPathRef = useRef<THREE.Mesh | null>(null);
   const localPathRef = useRef<THREE.Mesh | null>(null);
+  const pathGoalRef = useRef<THREE.Mesh | null>(null);
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
@@ -193,6 +194,7 @@ const LidarCanvas = ({
     ["global", "local"].forEach((type) => {
       clearPath(type);
       updatePath(type);
+      if (!globalPath.length) clearPathGoal();
     });
   }, [globalPath, localPath]);
 
@@ -2143,6 +2145,21 @@ const LidarCanvas = ({
 
     if (type === "global") {
       globalPathRef.current = pathTube;
+
+      if (pathGoalRef.current === null) {
+        const geometry = new THREE.OctahedronGeometry(10, 0);
+        const material = new THREE.MeshBasicMaterial({ color: 0x40ed21 });
+        const goal = new THREE.Mesh(geometry, material);
+
+        sceneRef.current.add(goal);
+        goal.position.set(
+          points[points.length - 1].x * SCALE_FACTOR,
+          points[points.length - 1].y * SCALE_FACTOR,
+          SCALE_FACTOR / 2
+        );
+        goal.scale.set(0.4, 0.4, 0.4);
+        pathGoalRef.current = goal;
+      }
     } else if (type === "local") {
       localPathRef.current = pathTube;
     }
@@ -2167,7 +2184,7 @@ const LidarCanvas = ({
     curve: THREE.CatmullRomCurve3,
     type: string
   ): THREE.Mesh => {
-    const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
+    const geometry = new THREE.TubeGeometry(curve, 64, 0.07, 8, false);
     let material: THREE.MeshBasicMaterial;
     if (type === "global") {
       material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -2194,6 +2211,12 @@ const LidarCanvas = ({
     }
 
     return new THREE.Mesh(geometry, material);
+  };
+
+  const clearPathGoal = () => {
+    if (!sceneRef.current || !pathGoalRef.current) return;
+    sceneRef.current.remove(pathGoalRef.current);
+    pathGoalRef.current = null;
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
