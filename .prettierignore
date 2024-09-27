@@ -1,0 +1,39 @@
+# Node modules
+node_modules
+
+# build output
+.next
+out
+dist
+
+# test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+**/__tests__/**
+
+# library and framworks
+package-lock.json
+yarn.lock
+
+# image files
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.svg
+*.ico
+
+# modeling file 
+**/*.3mf
+
+# styles
+# styles/**/*.scss
+# styles/**/*.css
+
+# config
+next.config.mjs
+tsconfig.json
+package.json
+README.md
