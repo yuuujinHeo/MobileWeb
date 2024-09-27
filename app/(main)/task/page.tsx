@@ -9,6 +9,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Toolbar } from 'primereact/toolbar';
 import { ScrollPanel } from 'primereact/scrollpanel';
 import { Toast } from 'primereact/toast';
+import { MegaMenu } from 'primereact/megamenu';
 import { Tag } from 'primereact/tag';
 import { Chip } from 'primereact/chip';
 import { SelectButton } from 'primereact/selectbutton';
@@ -802,83 +803,266 @@ const Move: React.FC = () => {
     );
   };
 
+  const AddPanel2 = () => {
+    const menus = [
+      {
+        label: '기본',
+        icon: 'pi pi-fw pi-forward',
+        items: [
+          [
+            {
+              label: '기본',
+              items: [
+                {
+                  label: 'wait',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('wait');
+                  },
+                },
+                {
+                  label: 'halt',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+              ],
+            },
+          ],
+          [
+            {
+              label: '그룹',
+              items: [
+                {
+                  label: 'folder',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+                {
+                  label: 'subp',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+              ],
+            },
+          ],
+          [
+            {
+              label: '스크립트',
+              items: [
+                {
+                  label: 'script',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('script');
+                  },
+                },
+              ],
+            },
+          ],
+        ],
+      },
+      {
+        label: '이동',
+        icon: 'pi pi-fw pi-forward',
+        items: [
+          [
+            {
+              label: 'MOVE',
+              items: [
+                {
+                  label: 'MoveTarget',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('move');
+                  },
+                },
+                {
+                  label: 'MoveGoal',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('move');
+                  },
+                },
+              ],
+            },
+          ],
+          [],
+        ],
+      },
+      {
+        label: '반복',
+        icon: 'pi pi-fw pi-forward',
+        items: [
+          [
+            {
+              label: '반복형 루프',
+              items: [
+                {
+                  label: 'repeat',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('repeat');
+                  },
+                },
+                {
+                  label: 'general_thread',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+              ],
+            },
+          ],
+          [
+            {
+              label: '조건',
+              items: [
+                {
+                  label: 'if',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('if');
+                  },
+                },
+                {
+                  label: 'else if',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('else if');
+                  },
+                },
+                {
+                  label: 'else',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {
+                    addNode('else');
+                  },
+                },
+              ],
+            },
+          ],
+          [
+            {
+              label: '조건탈출',
+              items: [
+                {
+                  label: 'break',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+                {
+                  label: 'continue',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+              ],
+            },
+          ],
+          [],
+        ],
+      },
+      {
+        label: '연결',
+        icon: 'pi pi-fw pi-forward',
+        items: [
+          [
+            {
+              label: 'MOVE',
+              items: [
+                {
+                  label: 'MoveTarget',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+                {
+                  label: 'MoveGoal',
+                  icon: 'pi pi-fw pi-forward',
+                  command: () => {},
+                },
+              ],
+            },
+          ],
+          [],
+        ],
+      },
+    ];
+    return <MegaMenu model={menus} orientation="vertical" breakpoint="767px" />;
+  };
+
   const AddPanel = () => {
     return (
-      <div className="card">
-        <ScrollPanel className="w-full">
-          <div className="flex flex-column gap-3 tool-add   w-full">
-            <Button
-              label="wait"
-              className="btn-add"
-              onClick={(e) => addNode('wait')}
-            />
-            <Button
-              label="repeat"
-              className="btn-add"
-              onClick={(e) => addNode('repeat')}
-            />
-            <Button
-              label="script"
-              className="btn-add"
-              onClick={(e) => addNode('script')}
-            />
-            <Button
-              label="move"
-              className="btn-add"
-              onClick={(e) => addNode('move')}
-            />
-            <Button
-              label="if"
-              className="btn-add"
-              onClick={(e) => addNode('if')}
-            />
-            <Button
-              label="else if"
-              className="btn-add"
-              disabled={
-                selectNode?.label != 'if' && selectNode?.label != 'else if'
-              }
-              onClick={(e) => addNode('else if')}
-            />
-            <Button
-              label="else"
-              className="btn-add"
-              disabled={
-                selectNode?.label != 'if' && selectNode?.label != 'else if'
-              }
-              onClick={(e) => addNode('else')}
-            />
-            <Button
-              label="break"
-              className="btn-add"
-              onClick={(e) => addNode('break')}
-            />
-            <Button
-              label="continue"
-              className="btn-add"
-              onClick={(e) => addNode('continue')}
-            />
-            <Button
-              label="socket"
-              className="btn-add"
-              onClick={(e) => addNode('socket_func')}
-            />
-            <Button
-              label="folder"
-              className="btn-add"
-              onClick={(e) => addNode('folder')}
-            />
-            <Button
-              label="subp"
-              className="btn-add"
-              onClick={(e) => addNode('subp')}
-            />
-            <Button
-              label="halt"
-              className="btn-add"
-              onClick={(e) => addNode('halt')}
-            />
-          </div>
+      <div className="card tool-add">
+        <ScrollPanel className="add-panel">
+          {/* <Button
+            label="wait"
+            className="btn-add"
+            onClick={(e) => addNode('wait')}
+          /> */}
+          {/* <Button
+            label="repeat"
+            className="btn-add"
+            onClick={(e) => addNode('repeat')}
+          /> */}
+          {/* <Button
+            label="script"
+            className="btn-add"
+            onClick={(e) => addNode('script')}
+          /> */}
+          {/* <Button
+            label="move"
+            className="btn-add"
+            onClick={(e) => addNode('move')}
+          /> */}
+          {/* <Button
+            label="if"
+            className="btn-add"
+            onClick={(e) => addNode('if')}
+          />
+          <Button
+            label="else if"
+            className="btn-add"
+            disabled={
+              selectNode?.label != 'if' && selectNode?.label != 'else if'
+            }
+            onClick={(e) => addNode('else if')}
+          />
+          <Button
+            label="else"
+            className="btn-add"
+            disabled={
+              selectNode?.label != 'if' && selectNode?.label != 'else if'
+            }
+            onClick={(e) => addNode('else')}
+          /> */}
+          {/* <Button
+            label="break"
+            className="btn-add"
+            onClick={(e) => addNode('break')}
+          />
+          <Button
+            label="continue"
+            className="btn-add"
+            onClick={(e) => addNode('continue')}
+          /> */}
+          <Button
+            label="socket"
+            className="btn-add"
+            onClick={(e) => addNode('socket_func')}
+          />
+          {/* <Button
+            label="folder"
+            className="btn-add"
+            onClick={(e) => addNode('folder')}
+          /> */}
+          {/* <Button
+            label="subp"
+            className="btn-add"
+            onClick={(e) => addNode('subp')}
+          />
+          <Button
+            label="halt"
+            className="btn-add"
+            onClick={(e) => addNode('halt')}
+          /> */}
         </ScrollPanel>
       </div>
     );
@@ -1066,7 +1250,7 @@ const Move: React.FC = () => {
         <MainToolPanel></MainToolPanel>
         <div className="child-box2">
           <div className="child-box">
-            <AddPanel></AddPanel>
+            <AddPanel2></AddPanel2>
             <ScrollPanel className="tree-box w-full">
               <Tree
                 className="custom-tree w-full"

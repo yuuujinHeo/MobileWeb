@@ -190,7 +190,7 @@ const LidarCanvas = ({
 
   // Draw driving path
   useEffect(() => {
-    ["global", "local"].forEach((type) => {
+    ['global', 'local'].forEach((type) => {
       clearPath(type);
       updatePath(type);
     });
@@ -2126,7 +2126,7 @@ const LidarCanvas = ({
   // ------------------------------
   const updatePath = (type: string): void => {
     if (!sceneRef.current) return;
-    const path = type === "global" ? globalPath : localPath;
+    const path = type === 'global' ? globalPath : localPath;
     if (!path.length) return;
 
     const points = path.map((point: string[]) => {
@@ -2141,9 +2141,9 @@ const LidarCanvas = ({
     pathTube.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
     pathTube.name = `${type}Path`;
 
-    if (type === "global") {
+    if (type === 'global') {
       globalPathRef.current = pathTube;
-    } else if (type === "local") {
+    } else if (type === 'local') {
       localPathRef.current = pathTube;
     }
 
@@ -2154,10 +2154,10 @@ const LidarCanvas = ({
     if (!sceneRef.current) return;
     const scene = sceneRef.current;
     const path =
-      type === "global" ? globalPathRef.current : localPathRef.current;
+      type === 'global' ? globalPathRef.current : localPathRef.current;
     if (path) {
       scene.remove(path);
-      type === "global"
+      type === 'global'
         ? (globalPathRef.current = null)
         : (localPathRef.current = null);
     }
@@ -2169,9 +2169,9 @@ const LidarCanvas = ({
   ): THREE.Mesh => {
     const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
     let material: THREE.MeshBasicMaterial;
-    if (type === "global") {
+    if (type === 'global') {
       material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-    } else if (type === "local") {
+    } else if (type === 'local') {
       const colors: number[] = [];
       const color1 = new THREE.Color(0x00ff00);
       const color2 = new THREE.Color(0xffa500);
@@ -2184,13 +2184,13 @@ const LidarCanvas = ({
         }
       }
       geometry.setAttribute(
-        "color",
+        'color',
         new THREE.Float32BufferAttribute(colors, 3)
       );
 
       material = new THREE.MeshBasicMaterial({ vertexColors: true });
     } else {
-      throw new Error("Invalid path type.");
+      throw new Error('Invalid path type.');
     }
 
     return new THREE.Mesh(geometry, material);

@@ -78,22 +78,37 @@
 
 .tool-box {
   position: relative;
-  width: 40%;
-  max-width: 400px;
-  min-width: 200px;
+  width: 30%;
+  height: 600px;
+  // max-width: 400px;
+  // min-width: 200px;
 }
-
 .btn-tool {
   width: 40%;
 }
 .tool-add {
-  width: 15%;
+  width: 30%;
+  background-color: red;
   height: 600px;
-  min-width: 100px;
-  max-width: 200px;
+  padding: 20px;
 }
+.add-panel {
+  width: 100%;
+  height: 100%;
+  background-color: blue;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  align-items: center;
+  justify-items: center;
+  padding: 0;
+}
+
 .btn-add {
-  width: 90%;
+  width: 100%;
+  padding: 0;
+  height: 3rem;
+  margin-bottom: 10px;
 }
 
 .tool-tool {
