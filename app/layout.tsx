@@ -1,22 +1,22 @@
-"use client";
-import { LayoutProvider } from "../layout/context/layoutcontext";
-import { PrimeReactProvider } from "primereact/api";
-import "primereact/resources/primereact.css";
-import "primeflex/primeflex.css";
-import "primeicons/primeicons.css";
-import "../styles/layout/layout.scss";
-import "../styles/components/components.scss";
-import { Provider } from "react-redux";
-import { GlobalUserProvider } from "../interface/user";
-import { store, persistor } from "@/store/store";
-import storage from "redux-persist/lib/storage";
-import { PersistGate } from "redux-persist/integration/react";
+'use client';
+import { LayoutProvider } from '../layout/context/layoutcontext';
+import { PrimeReactProvider } from 'primereact/api';
+import 'primereact/resources/primereact.css';
+import 'primeflex/primeflex.css';
+import 'primeicons/primeicons.css';
+import '../styles/layout/layout.scss';
+import '../styles/components/components.scss';
+import { Provider } from 'react-redux';
+import { GlobalUserProvider } from '../interface/user';
+import { store, persistor } from '@/store/store';
+import storage from 'redux-persist/lib/storage';
+import { PersistGate } from 'redux-persist/integration/react';
 
 interface RootLayoutProps {
   children: React.ReactNode;
 }
 const persistConfig = {
-  key: "root",
+  key: 'root',
   storage,
 };
 

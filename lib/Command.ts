@@ -1,4 +1,4 @@
-import * as THREE from "three";
+import * as THREE from 'three';
 
 class Command {
   type: string;
@@ -6,8 +6,8 @@ class Command {
   object: THREE.Object3D;
 
   constructor() {
-    this.type = "";
-    this.name = "";
+    this.type = '';
+    this.name = '';
   }
 
   undo() {}
@@ -15,7 +15,7 @@ class Command {
   redo() {}
 
   toJSON() {
-    const output = { type: "", name: "" };
+    const output = { type: '', name: '' };
     output.type = this.type;
     output.name = this.name;
     return output;

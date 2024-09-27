@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "es5",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -25,18 +21,10 @@
     ],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ],
-      "@/lib/*": [
-        "lib/*"
-      ],
-      "@/store/*": [
-        "store/*"
-      ],
-      "@/interface/*": [
-        "interface/*"
-      ]
+      "@/*": ["./*"],
+      "@/lib/*": ["lib/*"],
+      "@/store/*": ["store/*"],
+      "@/interface/*": ["interface/*"]
     },
     "strict": false,
     "strictNullChecks": true
@@ -48,9 +36,8 @@
     ".next/types/**/*.ts",
     "app/(main)/blocks/page.js",
     "store/modules/user.js",
-    "store/modules/index.js"
-, "components/ChartCanvas.jsx"  ],
-  "exclude": [
-    "node_modules"
-  ]
+    "store/modules/index.js",
+    "components/ChartCanvas.jsx"
+  ],
+  "exclude": ["node_modules"]
 }

@@ -1,36 +1,36 @@
-"use client";
-import React, { useEffect, useState, useRef } from "react";
-import dynamic from "next/dynamic";
+'use client';
+import React, { useEffect, useState, useRef } from 'react';
+import dynamic from 'next/dynamic';
 // redux
-import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store/store";
-import { createAction, toggleMarkingMode } from "@/store/canvasSlice";
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store/store';
+import { createAction, toggleMarkingMode } from '@/store/canvasSlice';
 
 // prime
-import { Sidebar } from "primereact/sidebar";
-import { Button } from "primereact/button";
-import { Column } from "primereact/column";
-import { DataTable } from "primereact/datatable";
-import { Dialog } from "primereact/dialog";
-import { Tooltip } from "primereact/tooltip";
-import { Menubar } from "primereact/menubar";
-import { InputSwitch, InputSwitchChangeEvent } from "primereact/inputswitch";
-import { Toast } from "primereact/toast";
+import { Sidebar } from 'primereact/sidebar';
+import { Button } from 'primereact/button';
+import { Column } from 'primereact/column';
+import { DataTable } from 'primereact/datatable';
+import { Dialog } from 'primereact/dialog';
+import { Tooltip } from 'primereact/tooltip';
+import { Menubar } from 'primereact/menubar';
+import { InputSwitch, InputSwitchChangeEvent } from 'primereact/inputswitch';
+import { Toast } from 'primereact/toast';
 
-import UtilityPanel from "@/components/UtilityPanel";
-import PropertyPanel from "@/components/PropertyPanel";
+import UtilityPanel from '@/components/UtilityPanel';
+import PropertyPanel from '@/components/PropertyPanel';
 
 import {
   CANVAS_CLASSES,
   CANVAS_ACTION,
   NODE_TYPE,
   CANVAS_OBJECT,
-} from "@/constants";
+} from '@/constants';
 
-import axios from "axios";
+import axios from 'axios';
 
 // components
-import LidarCanvas from "@/components/LidarCanvas";
+import LidarCanvas from '@/components/LidarCanvas';
 
 interface ListData {
   name: string;
@@ -52,7 +52,7 @@ interface UserData {
   type: string;
 }
 
-const Joystick = dynamic(() => import("@/components/Joystick"), { ssr: false });
+const Joystick = dynamic(() => import('@/components/Joystick'), { ssr: false });
 
 const Map: React.FC = () => {
   const dispatch = useDispatch();
@@ -87,13 +87,13 @@ const Map: React.FC = () => {
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = "";
+      event.returnValue = '';
     };
-    window.addEventListener("beforeunload", handleBeforeUnload);
+    window.addEventListener('beforeunload', handleBeforeUnload);
     getMapList();
 
     return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
 
@@ -105,8 +105,8 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     syncCanvasWithSlamNav();
-    fileNameRef.current = map; 
-   }, [map]);
+    fileNameRef.current = map;
+  }, [map]);
 
   useEffect(() => {
     handleMarkingModeChange(isMarkingMode);
@@ -114,20 +114,20 @@ const Map: React.FC = () => {
 
   const menuItems = [
     {
-      label: "File",
-      icon: "pi pi-folder",
+      label: 'File',
+      icon: 'pi pi-folder',
       items: [
         {
-          label: "Open",
-          icon: "pi pi-download",
+          label: 'Open',
+          icon: 'pi pi-download',
           command: () => {
             setIsDialogVisible(true);
             getMapList();
           },
         },
         {
-          label: "Save",
-          icon: "pi pi-save",
+          label: 'Save',
+          icon: 'pi pi-save',
           command: () => {
             saveMap();
           },
@@ -135,54 +135,54 @@ const Map: React.FC = () => {
       ],
     },
     {
-      label: "View",
-      icon: "pi",
+      label: 'View',
+      icon: 'pi',
       items: [
         {
-          label: "Goal",
-          icon: "pi pi-check view-toggle check-goal",
+          label: 'Goal',
+          icon: 'pi pi-check view-toggle check-goal',
           command: () => {
             handleToggleObject(NODE_TYPE.GOAL);
           },
         },
         {
-          label: "Route",
-          icon: "pi pi-check view-toggle check-route",
+          label: 'Route',
+          icon: 'pi pi-check view-toggle check-route',
           command: () => {
             handleToggleObject(NODE_TYPE.ROUTE);
           },
         },
         {
-          label: "Name",
-          icon: "pi pi-check view-toggle check-name",
+          label: 'Name',
+          icon: 'pi pi-check view-toggle check-name',
           command: () => {
             handleToggleObject(CANVAS_OBJECT.NAME);
           },
         },
         {
-          label: "Link",
-          icon: "pi pi-check view-toggle check-link",
+          label: 'Link',
+          icon: 'pi pi-check view-toggle check-link',
           command: () => {
             handleToggleObject(CANVAS_OBJECT.LINK);
           },
         },
         {
-          label: "Robot",
-          icon: "pi pi-check view-toggle check-robot",
+          label: 'Robot',
+          icon: 'pi pi-check view-toggle check-robot',
           command: () => {
             handleToggleObject(CANVAS_OBJECT.ROBOT);
           },
         },
         {
-          label: "Origin",
-          icon: "pi pi-check view-toggle check-origin",
+          label: 'Origin',
+          icon: 'pi pi-check view-toggle check-origin',
           command: () => {
             handleToggleObject(CANVAS_OBJECT.ORIGIN);
           },
         },
         {
-          label: "All",
-          icon: "pi pi-check view-toggle",
+          label: 'All',
+          icon: 'pi pi-check view-toggle',
           command: () => {
             toggleToggleAll();
           },
@@ -190,8 +190,8 @@ const Map: React.FC = () => {
       ],
     },
     {
-      label: "Mapping",
-      icon: "pi pi-map",
+      label: 'Mapping',
+      icon: 'pi pi-map',
       command: () => {
         setIsSidebarVisible(true);
       },
@@ -200,19 +200,19 @@ const Map: React.FC = () => {
 
   const handleToggleObject = (type: string) => {
     const iconClassMap: Record<string, string> = {
-      [CANVAS_OBJECT.GOAL]: "check-goal",
-      [CANVAS_OBJECT.ROUTE]: "check-route",
-      [CANVAS_OBJECT.NAME]: "check-name",
-      [CANVAS_OBJECT.LINK]: "check-link",
-      [CANVAS_OBJECT.ROBOT]: "check-robot",
-      [CANVAS_OBJECT.ORIGIN]: "check-origin",
+      [CANVAS_OBJECT.GOAL]: 'check-goal',
+      [CANVAS_OBJECT.ROUTE]: 'check-route',
+      [CANVAS_OBJECT.NAME]: 'check-name',
+      [CANVAS_OBJECT.LINK]: 'check-link',
+      [CANVAS_OBJECT.ROBOT]: 'check-robot',
+      [CANVAS_OBJECT.ORIGIN]: 'check-origin',
     };
 
     const iconClass = iconClassMap[type];
 
     if (iconClass) {
       const toggleIcon = document.querySelector(`.${iconClass}`);
-      toggleIcon?.classList.toggle("pi-check");
+      toggleIcon?.classList.toggle('pi-check');
     }
 
     dispatch(
@@ -221,15 +221,15 @@ const Map: React.FC = () => {
   };
 
   const toggleToggleAll = () => {
-    const toggleIcons = document.querySelectorAll(".view-toggle");
+    const toggleIcons = document.querySelectorAll('.view-toggle');
     toggleAllStateRef.current = !toggleAllStateRef.current;
 
     toggleIcons.forEach((node) => {
       // check icon handling
       if (toggleAllStateRef.current) {
-        node.classList.add("pi-check");
+        node.classList.add('pi-check');
       } else {
-        node.classList.remove("pi-check");
+        node.classList.remove('pi-check');
       }
     });
 
@@ -244,9 +244,9 @@ const Map: React.FC = () => {
   const saveMap = () => {
     if (fileNameRef.current === null) {
       toast.current?.show({
-        severity: "error",
-        summary: "Error",
-        detail: "Save failed. No files selected.",
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Save failed. No files selected.',
       });
     } else {
       dispatch(
@@ -278,7 +278,7 @@ const Map: React.FC = () => {
 
   const getMapList = async () => {
     try {
-      const res = await axios.get(url + "/map/list");
+      const res = await axios.get(url + '/map/list');
       setMapList(res.data);
     } catch (e) {
       console.error(e);
@@ -310,7 +310,7 @@ const Map: React.FC = () => {
       setTopoData(res.data);
     } catch (e) {
       setTopoData(null);
-      console.error("Failed to get topo data...", e);
+      console.error('Failed to get topo data...', e);
     }
   };
 
@@ -342,7 +342,7 @@ const Map: React.FC = () => {
   const sendSelectedMapToSLAM = async () => {
     if (!selectedMap) return;
     try {
-      await axios.post(url + "/map/current", {
+      await axios.post(url + '/map/current', {
         name: selectedMap.name,
       });
     } catch (e) {
@@ -351,22 +351,22 @@ const Map: React.FC = () => {
   };
 
   const handleTransformModeChange = (selectedBtn: string) => {
-    const buttons = document.querySelectorAll("#transform-toolbar button");
+    const buttons = document.querySelectorAll('#transform-toolbar button');
     buttons.forEach((button) => {
-      button.classList.remove("selected");
+      button.classList.remove('selected');
     });
 
     const button = document.querySelector(
       `.transform-toolbar__${selectedBtn}_button`
     );
-    button?.classList.add("selected");
+    button?.classList.add('selected');
     dispatch(
       createAction({ command: CANVAS_ACTION.TFC_SET_MODE, name: selectedBtn })
     );
   };
 
   const syncCanvasWithSlamNav = async () => {
-    if (map !== "" && cloudData === null && topoData === null) {
+    if (map !== '' && cloudData === null && topoData === null) {
       await getMapData(map);
       await getTopoData(map);
       dispatch(createAction({ command: CANVAS_ACTION.DRAW_CLOUD_TOPO }));
@@ -376,14 +376,14 @@ const Map: React.FC = () => {
   return (
     <div id="map">
       <Toast ref={toast} />
-      <div style={{ position: "absolute" }}>
+      <div style={{ position: 'absolute' }}>
         <Menubar model={menuItems} end={end} />
       </div>
       <div id="transform-toolbar">
         <button
           className="transform-toolbar__translate_button selected"
           onClick={() => {
-            handleTransformModeChange("translate");
+            handleTransformModeChange('translate');
           }}
         >
           <img title="Translate" src="translate.svg" />
@@ -391,7 +391,7 @@ const Map: React.FC = () => {
         <button
           className="transform-toolbar__rotate_button"
           onClick={() => {
-            handleTransformModeChange("rotate");
+            handleTransformModeChange('rotate');
           }}
         >
           <img title="Rotate" src="rotate.svg" />
@@ -399,7 +399,7 @@ const Map: React.FC = () => {
         <button
           className="transform-toolbar__scale_button"
           onClick={() => {
-            handleTransformModeChange("scale");
+            handleTransformModeChange('scale');
           }}
         >
           <img title="Scale" src="scale.svg" />
@@ -426,7 +426,7 @@ const Map: React.FC = () => {
             stripedRows
             paginator
             rows={6}
-            selectionMode={"single"}
+            selectionMode={'single'}
             selection={selectedMap}
             onSelectionChange={(e) => handleSelectMap(e)}
           >

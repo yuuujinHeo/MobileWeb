@@ -1,6 +1,6 @@
-import { Command } from "../Command";
-import { COMMAND_TYPE } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { COMMAND_TYPE } from '@/constants';
+import * as THREE from 'three';
 
 class RemoveLinkCommand extends Command {
   undoFunc: (from: THREE.Object3D, to: THREE.Object3D) => void;

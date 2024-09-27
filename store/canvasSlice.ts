@@ -1,4 +1,4 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface CommandData {
   command: string;
@@ -16,12 +16,12 @@ interface RobotHelper {
 
 const initialState = {
   selectedObjectInfo: {
-    id: "",
-    name: "",
+    id: '',
+    name: '',
     links: [],
-    pose: "",
-    type: "",
-    info: "",
+    pose: '',
+    type: '',
+    info: '',
   },
   sceneInfo: {
     goalNum: 0,
@@ -29,25 +29,25 @@ const initialState = {
     linkNum: 0,
   },
   action: {
-    command: "",
-    category: "",
-    target: "",
-    name: "",
-    value: "",
+    command: '',
+    category: '',
+    target: '',
+    name: '',
+    value: '',
     timestamp: 0,
   },
   robotHelper: {
-    x: "",
-    y: "",
-    z: "",
-    rz: "",
+    x: '',
+    y: '',
+    z: '',
+    rz: '',
   },
   isMarkingMode: false,
-  transformControlMode: "translate",
+  transformControlMode: 'translate',
 };
 
 const canvasSlice = createSlice({
-  name: "Canvas",
+  name: 'Canvas',
   initialState: initialState,
   reducers: {
     createAction(state, action: PayloadAction<CommandData>) {

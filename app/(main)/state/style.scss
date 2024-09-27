@@ -1,13 +1,12 @@
-
-.p-selectbutton.discon  .p-button.p-highlight {
-    background: #e2574c;
-    border-color: #e2574c;
-    color: #ffffff;
+.p-selectbutton.discon .p-button.p-highlight {
+  background: #e2574c;
+  border-color: #e2574c;
+  color: #ffffff;
 }
-.p-selectbutton.con  .p-button.p-highlight {
-    background: #12d27c;
-    border-color: #12d27c;
-    color: #ffffff;
+.p-selectbutton.con .p-button.p-highlight {
+  background: #12d27c;
+  border-color: #12d27c;
+  color: #ffffff;
 }
 
 .p-selectbutton.discon .p-button.p-highlight:hover {
@@ -27,10 +26,10 @@
   color: #4b5563;
 }
 
-.p-selectbutton .p-focus{
+.p-selectbutton .p-focus {
   box-shadow: none;
 }
-.p-selectbutton .p-button{
+.p-selectbutton .p-button {
   min-width: 8rem;
   max-width: 10rem;
 }

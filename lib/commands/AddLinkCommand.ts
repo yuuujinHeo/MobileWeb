@@ -1,6 +1,6 @@
-import { Command } from "../Command";
-import { COMMAND_TYPE } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { COMMAND_TYPE } from '@/constants';
+import * as THREE from 'three';
 
 class AddLinkCommand extends Command {
   undoFunc: (fromUUID: string, toNodeName: string) => void;

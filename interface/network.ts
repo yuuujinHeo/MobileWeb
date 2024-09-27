@@ -1,4 +1,4 @@
-import * as yup from "yup";
+import * as yup from 'yup';
 
 export interface NetworkInfo {
   type: string;
@@ -28,4 +28,3 @@ export const _network = yup.object().shape({
   quality: yup.number(),
   security: yup.string(),
 });
-

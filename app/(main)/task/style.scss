@@ -1,11 +1,11 @@
 .custom-label-frame {
-    color: #4caf50; /* Green color */
-    font-weight: bold;
-    font-size: 20px;
-    padding: 18px;
-    margin-left: 12px;
-    background-color: transparent;
-    border-radius: 4px;
+  color: #4caf50; /* Green color */
+  font-weight: bold;
+  font-size: 20px;
+  padding: 18px;
+  margin-left: 12px;
+  background-color: transparent;
+  border-radius: 4px;
 }
 .custom-label {
   color: #4e4e4e; /* Green color */
@@ -24,8 +24,8 @@
   border-radius: 4px;
 }
 
-.main-box{
-  position:relative;
+.main-box {
+  position: relative;
   height: calc(100vh - 9rem);
   display: flex;
 }
@@ -34,49 +34,41 @@
   width: 200px;
 }
 
-.tool-main{
+.tool-main {
   // position: absolute;
   left: 20px;
   right: 20px;
-  width: calc(100% - 40px)
+  width: calc(100% - 40px);
 }
-.tool-run{
+.tool-run {
   // position: absolute;
   left: 20px;
   right: 20px;
   top: 750px;
-  width: calc(100% - 40px)
+  width: calc(100% - 40px);
 }
 
-.tool-add{
-  position: relative;
-  width: 15%;
-  height: 600px;
-  min-width: 100px;
-  max-width: 200px;
+.input-detail {
+  width: 80%;
 }
-
-.input-detail{
-  width: 80%
-}
-.tree-box{
+.tree-box {
   position: relative;
   // width: 55%
   height: 600px;
 }
 
-.custom-tree{
+.custom-tree {
   position: relative;
   width: 500px;
   min-height: 600px;
 }
-.child-box2{
+.child-box2 {
   // position: absolute;
   width: 100%;
   top: 100px;
 }
 
-.child-box{
+.child-box {
   position: relative;
   width: 100%;
   display: flex;
@@ -84,41 +76,47 @@
   padding: 30px 20px;
 }
 
-.tool-box{
+.tool-box {
   position: relative;
   width: 40%;
   max-width: 400px;
   min-width: 200px;
 }
 
-.btn-tool{
-  width: 40%
+.btn-tool {
+  width: 40%;
 }
-.btn-add{
-  width: 80%
+.tool-add {
+  width: 15%;
+  height: 600px;
+  min-width: 100px;
+  max-width: 200px;
+}
+.btn-add {
+  width: 90%;
 }
 
-.tool-tool{
+.tool-tool {
   position: relative;
   width: 100%;
   // height: 150px;
 }
 
-.tool-detail{
+.tool-detail {
   position: relative;
   width: 100%;
 }
 .custom-data {
-    color: #4caf50; /* Green color */
-    font-size: 16px;
-    padding: 5px;
-    background-color: transparent;
-    border-radius: 4px;
+  color: #4caf50; /* Green color */
+  font-size: 16px;
+  padding: 5px;
+  background-color: transparent;
+  border-radius: 4px;
 }
 
-.node-box{
-    background-color: transparent;
-    padding: 5px;
+.node-box {
+  background-color: transparent;
+  padding: 5px;
 }
 
 .p-tree .p-tree-container .p-treenode .p-treenode-content .p-tree-toggler {
@@ -135,18 +133,27 @@
   // margin-right: -0.5rem;
   color: #2f3d50;
 }
-.p-tree .p-tree-container .p-treenode .p-treenode-content.p-treenode-selectable:not(.p-highlight):hover {
+.p-tree
+  .p-tree-container
+  .p-treenode
+  .p-treenode-content.p-treenode-selectable:not(.p-highlight):hover {
   background: #cdcdcd;
   color: #2f3d50;
   border: 0 none;
 }
 
-.p-tree .p-tree-container .p-treenode .p-treenode-content.p-treenode-selectable:not(.p-highlight) {
+.p-tree
+  .p-tree-container
+  .p-treenode
+  .p-treenode-content.p-treenode-selectable:not(.p-highlight) {
   background: #dfdfdf;
   border: 0 none;
 }
 
-.p-tree .p-tree-container .p-treenode .p-treenode-content.p-treenode-selectable {
+.p-tree
+  .p-tree-container
+  .p-treenode
+  .p-treenode-content.p-treenode-selectable {
   background: #dfdfdf;
   border: solid #39aaff;
   color: #4b5563;

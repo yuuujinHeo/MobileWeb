@@ -1,24 +1,24 @@
-import { createSlice } from "@reduxjs/toolkit";
-import type { PayloadAction } from "@reduxjs/toolkit";
-import { RootState } from "./store";
+import { createSlice } from '@reduxjs/toolkit';
+import type { PayloadAction } from '@reduxjs/toolkit';
+import { RootState } from './store';
 
 export interface TaskState {
-  running: boolean,
-  taskID: string,
-  message: string,
-  editTaskName: string,
-  runningTaskName: string
+  running: boolean;
+  taskID: string;
+  message: string;
+  editTaskName: string;
+  runningTaskName: string;
 }
 
 const taskSlice = createSlice({
-  name: "task",
+  name: 'task',
   initialState: {
     running: false,
-    taskID: "",
-    message: "",
+    taskID: '',
+    message: '',
     // [TEMP]
-    editTaskName: "",
-    runningTaskName: "",
+    editTaskName: '',
+    runningTaskName: '',
   },
   reducers: {
     setTaskRunning(state, action: PayloadAction<boolean>) {

@@ -1,15 +1,15 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface PayloadData {
   selectedPanel: string;
 }
 
 const initialState = {
-  selectedPanel: "localization",
+  selectedPanel: 'localization',
 };
 
 const propertyPanelSlice = createSlice({
-  name: "PropertyPanel",
+  name: 'PropertyPanel',
   initialState: initialState,
   reducers: {
     selectPanel(state, action: PayloadAction<PayloadData>) {

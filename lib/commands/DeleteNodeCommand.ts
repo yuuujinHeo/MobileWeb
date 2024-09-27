@@ -1,7 +1,7 @@
-import { Command } from "../Command";
-import { NodePose } from "@/interface/canvas.js";
-import { COMMAND_TYPE } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { NodePose } from '@/interface/canvas.js';
+import { COMMAND_TYPE } from '@/constants';
+import * as THREE from 'three';
 
 class DeleteNodeCommand extends Command {
   undoFunc: (

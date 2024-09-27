@@ -18,27 +18,27 @@
 // .content{
 //     padding: 20px;
 // }
-.fixed-toolbar{
-    position:fixed;
-    display: flex;
-    /* width: 100%; */
-    z-index: 1000;
-    right: 0;
-    max-width: 1540px;
-    margin-right: 100px;
-    // padding-right: 0;
+.fixed-toolbar {
+  position: fixed;
+  display: flex;
+  /* width: 100%; */
+  z-index: 1000;
+  right: 0;
+  max-width: 1540px;
+  margin-right: 100px;
+  // padding-right: 0;
 }
-.column{
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-}
-
-.p-inputtext{
-    display: flex;
-    width: 150px;
+.column {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.p-inputtext-long{
-    width: 300px;
+.p-inputtext {
+  display: flex;
+  width: 150px;
+}
+
+.p-inputtext-long {
+  width: 300px;
 }

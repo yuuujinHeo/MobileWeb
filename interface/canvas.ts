@@ -31,4 +31,4 @@ export interface RobotState {
   obs_state: string;
 }
 
-export type Severity = "success" | "info" | "warn" | "error";
+export type Severity = 'success' | 'info' | 'warn' | 'error';

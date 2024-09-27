@@ -1,32 +1,32 @@
-"use client";
-import React, { useEffect, useContext, useRef, useState } from "react";
-import { Button } from "primereact/button";
-import axios from "axios";
-import { Dropdown, DropdownProps } from "primereact/dropdown";
-import { InputText } from "primereact/inputtext";
-import { Panel } from "primereact/panel";
-import { Toolbar } from "primereact/toolbar";
-import { Toast } from "primereact/toast";
-import { Chip } from "primereact/chip";
-import { AppDispatch, RootState } from "../../../store/store";
-import { useDispatch, useSelector } from "react-redux";
-import { Dialog } from "primereact/dialog";
-import { FileUpload, FileUploadHandlerEvent } from "primereact/fileupload";
-import { userContext } from "../../../interface/user";
+'use client';
+import React, { useEffect, useContext, useRef, useState } from 'react';
+import { Button } from 'primereact/button';
+import axios from 'axios';
+import { Dropdown, DropdownProps } from 'primereact/dropdown';
+import { InputText } from 'primereact/inputtext';
+import { Panel } from 'primereact/panel';
+import { Toolbar } from 'primereact/toolbar';
+import { Toast } from 'primereact/toast';
+import { Chip } from 'primereact/chip';
+import { AppDispatch, RootState } from '../../../store/store';
+import { useDispatch, useSelector } from 'react-redux';
+import { Dialog } from 'primereact/dialog';
+import { FileUpload, FileUploadHandlerEvent } from 'primereact/fileupload';
+import { userContext } from '../../../interface/user';
 import {
   version,
   defaultVersion,
   newversion,
   defaultNewVersion,
-} from "../../../interface/update";
-import { selectSetting } from "@/store/settingSlice";
-import { getMobileAPIURL } from "../api/url";
-import { selectStatus } from "@/store/statusSlice";
+} from '../../../interface/update';
+import { selectSetting } from '@/store/settingSlice';
+import { getMobileAPIURL } from '../api/url';
+import { selectStatus } from '@/store/statusSlice';
 
 const Update: React.FC = () => {
   const [displayUpload, setDisplayUpload] = useState(false);
   const [displayRollback, setDisplayRollback] = useState(false);
-  const [programRollback, setProgramRollback] = useState("");
+  const [programRollback, setProgramRollback] = useState('');
   const basicDialogFooter = (
     <Button
       type="button"
@@ -60,23 +60,23 @@ const Update: React.FC = () => {
   const [runningSLAMNAV2, setRunningSLAMNAV2] = useState(false);
   const [waitingSLAMNAV2, setWaitingSLAMNAV2] = useState(false);
   const Network = useSelector((state: RootState) => state.network);
-  const [type, setType] = useState("");
+  const [type, setType] = useState('');
   const settingState = useSelector((state: RootState) => state.setting);
 
-  const [mobileURL, setMobileURL] = useState("");
+  const [mobileURL, setMobileURL] = useState('');
 
   useEffect(() => {
     setURL();
   }, []);
 
   useEffect(() => {
-    if (mobileURL != "") {
+    if (mobileURL != '') {
       getType();
     }
   }, [mobileURL]);
 
   useEffect(() => {
-    if (type != "") {
+    if (type != '') {
       readVersion();
       readUpdate();
     }
@@ -84,8 +84,8 @@ const Update: React.FC = () => {
 
   async function getType() {
     try {
-      const response = await axios.get(mobileURL + "/setting");
-      console.log("set Type : ", response.data.robot.PLATFORM_TYPE);
+      const response = await axios.get(mobileURL + '/setting');
+      console.log('set Type : ', response.data.robot.PLATFORM_TYPE);
       setType(response.data.robot.PLATFORM_TYPE);
     } catch (err) {
       console.error(err);
@@ -96,11 +96,11 @@ const Update: React.FC = () => {
     setMobileURL(await getMobileAPIURL());
   }
   const onFileUpload = () => {
-    console.log("onupload");
+    console.log('onupload');
     toast.current?.show({
-      severity: "info",
-      summary: "Success",
-      detail: "File Uploaded",
+      severity: 'info',
+      summary: 'Success',
+      detail: 'File Uploaded',
       life: 3000,
     });
   };
@@ -112,55 +112,61 @@ const Update: React.FC = () => {
 
   const onUpload = (event: FileUploadHandlerEvent) => {
     const formData = new FormData();
-    formData.append("file", event.files[0]);
-    formData.append("token", state.token);
+    formData.append('file', event.files[0]);
+    formData.append('token', state.token);
 
     const config = {
       headers: {
-        "content-type": "multipart/form-data; charset=utf-8",
+        'content-type': 'multipart/form-data; charset=utf-8',
         authorization: state.token,
       },
     };
     axios
-      .post(Network?.monitor + "/upload/files", formData, config)
+      .post(Network?.monitor + '/upload/files', formData, config)
       .then((response) => {
-        console.log("File uploaded successfully:", response.data);
+        console.log('File uploaded successfully:', response.data);
         uploader.current?.clear();
         uploader.current?.setUploadedFiles(event.files);
       })
       .catch((error) => {
         toast.current?.show({
-          severity: "error",
-          summary: "Failed",
-          detail: "File Upload Failed",
+          severity: 'error',
+          summary: 'Failed',
+          detail: 'File Upload Failed',
           life: 3000,
         });
 
         uploader.current?.clear();
-        console.error("Error uploading file:", error);
+        console.error('Error uploading file:', error);
       });
   };
 
   const readUpdate = async () => {
-    if (settingState?.robot.PLATFORM_TYPE == "SERVING") {
+    if (settingState?.robot.PLATFORM_TYPE == 'SERVING') {
       try {
-        const response = await axios.get(Network?.monitor + "/versions/MAIN_MOBILE");
-        console.log("main_mobile(new):", newVersionUI);
+        const response = await axios.get(
+          Network?.monitor + '/versions/MAIN_MOBILE'
+        );
+        console.log('main_mobile(new):', newVersionUI);
         setNewVersionUI(response.data);
       } catch (error) {
         // alert(error);
       }
       try {
-        const response = await axios.get(Network?.monitor + "/versions/SLAMNAV");
-        console.log("slamnav(new):", newVersionUI);
+        const response = await axios.get(
+          Network?.monitor + '/versions/SLAMNAV'
+        );
+        console.log('slamnav(new):', newVersionUI);
         setNewVersionSLAMNAV(response.data);
       } catch (error) {
         // alert(error);
       }
     } else {
       try {
-        const response = await axios.get(Network?.monitor + "/versions/SLAMNAV2");
-        console.log("slamnav2(new):", newVersionUI);
+        const response = await axios.get(
+          Network?.monitor + '/versions/SLAMNAV2'
+        );
+        console.log('slamnav2(new):', newVersionUI);
         setNewVersionSLAMNAV2(response.data);
       } catch (error) {
         // alert(error);
@@ -169,44 +175,44 @@ const Update: React.FC = () => {
   };
 
   const readVersion = async () => {
-    if (settingState?.robot.PLATFORM_TYPE == "SERVING") {
+    if (settingState?.robot.PLATFORM_TYPE == 'SERVING') {
       try {
-        const response = await axios.get(mobileURL + "/versions/MAIN_MOBILE");
-        console.log("ui:", response.data.data);
+        const response = await axios.get(mobileURL + '/versions/MAIN_MOBILE');
+        console.log('ui:', response.data.data);
         if (response.data.data != undefined) {
           setCurVersionUI(response.data.data);
         }
       } catch (error) {
-        console.error("ui = ", error);
+        console.error('ui = ', error);
       }
       try {
-        const response = await axios.get(mobileURL + "/versions/SLAMNAV");
-        console.log("slamnav:", response.data.data);
+        const response = await axios.get(mobileURL + '/versions/SLAMNAV');
+        console.log('slamnav:', response.data.data);
         if (response.data.data != undefined) {
           setCurVersionSLAMNAV(response.data.data);
         }
       } catch (error) {
-        console.error("slamnav = ", error);
+        console.error('slamnav = ', error);
       }
     } else {
       try {
-        const response = await axios.get(mobileURL + "/versions/SLAMNAV2");
-        console.log("slamnav2:", response.data.data);
+        const response = await axios.get(mobileURL + '/versions/SLAMNAV2');
+        console.log('slamnav2:', response.data.data);
         if (response.data.data != undefined) {
           setCurVersionSLAMNAV2(response.data.data);
         }
       } catch (error) {
-        console.error("slamnav2 = ", error);
+        console.error('slamnav2 = ', error);
       }
     }
   };
 
   function update(_program: string, _version: string) {
-    if (_program === "MAIN_MOBILE") {
+    if (_program === 'MAIN_MOBILE') {
       updateUI(_version);
-    } else if (_program === "SLAMNAV2") {
+    } else if (_program === 'SLAMNAV2') {
       updateSLAMNAV2(_version);
-    } else if (_program === "SLAMNAV") {
+    } else if (_program === 'SLAMNAV') {
       updateUI(_version);
     } else {
     }
@@ -217,37 +223,37 @@ const Update: React.FC = () => {
       console.log(curVersionSLAMNAV2);
       if (_version == undefined) {
         toast_main.current?.show({
-          severity: "error",
-          summary: "Update",
-          detail: "Version is undefined",
+          severity: 'error',
+          summary: 'Update',
+          detail: 'Version is undefined',
           life: 3000,
         });
         setWaitingSLAMNAV2(false);
       } else if (_version == curVersionSLAMNAV2.version) {
         toast_main.current?.show({
-          severity: "warn",
-          summary: "Update",
-          detail: "Already updated",
+          severity: 'warn',
+          summary: 'Update',
+          detail: 'Already updated',
           life: 3000,
         });
         setWaitingSLAMNAV2(false);
       } else {
         const body = {
-          program: "SLAMNAV2",
+          program: 'SLAMNAV2',
           new_version: _version,
           cur_version: curVersionSLAMNAV2.version,
-          path: "/code/build-SLAMNAV2-Desktop-Release/SLAMNAV2",
+          path: '/code/build-SLAMNAV2-Desktop-Release/SLAMNAV2',
           auth: state,
         };
-        const _url = mobileURL + "/update/";
+        const _url = mobileURL + '/update/';
         const response = await axios.post(_url, body);
 
         console.log(response);
 
         toast_main.current?.show({
-          severity: "success",
-          summary: "Update",
-          detail: "Update successfully finished\r\n" + response.data.log.date,
+          severity: 'success',
+          summary: 'Update',
+          detail: 'Update successfully finished\r\n' + response.data.log.date,
           life: 3000,
         });
 
@@ -262,9 +268,9 @@ const Update: React.FC = () => {
     } catch (error) {
       console.log(error);
       toast_main.current?.show({
-        severity: "error",
-        summary: "Update",
-        detail: "Update Failed",
+        severity: 'error',
+        summary: 'Update',
+        detail: 'Update Failed',
         life: 3000,
       });
       setWaitingSLAMNAV2(false);
@@ -276,37 +282,37 @@ const Update: React.FC = () => {
       console.log(curVersionSLAMNAV);
       if (_version == undefined) {
         toast_main.current?.show({
-          severity: "error",
-          summary: "Update",
-          detail: "Version is undefined",
+          severity: 'error',
+          summary: 'Update',
+          detail: 'Version is undefined',
           life: 3000,
         });
         setWaitingSLAMNAV(false);
       } else if (_version == curVersionSLAMNAV.version) {
         toast_main.current?.show({
-          severity: "warn",
-          summary: "Update",
-          detail: "Already updated",
+          severity: 'warn',
+          summary: 'Update',
+          detail: 'Already updated',
           life: 3000,
         });
         setWaitingSLAMNAV(false);
       } else {
         const body = {
-          program: "SLAMNAV",
+          program: 'SLAMNAV',
           new_version: _version,
           cur_version: curVersionSLAMNAV.version,
-          path: "/RB_MOBILE/release/SLAMNAV",
+          path: '/RB_MOBILE/release/SLAMNAV',
           auth: state,
         };
-        const _url = mobileURL + "/update/";
+        const _url = mobileURL + '/update/';
         const response = await axios.post(_url, body);
 
         console.log(response);
 
         toast_main.current?.show({
-          severity: "success",
-          summary: "Update",
-          detail: "Update successfully finished\r\n" + response.data.log.date,
+          severity: 'success',
+          summary: 'Update',
+          detail: 'Update successfully finished\r\n' + response.data.log.date,
           life: 3000,
         });
 
@@ -321,9 +327,9 @@ const Update: React.FC = () => {
     } catch (error) {
       console.log(error);
       toast_main.current?.show({
-        severity: "error",
-        summary: "Update",
-        detail: "Update Failed",
+        severity: 'error',
+        summary: 'Update',
+        detail: 'Update Failed',
         life: 3000,
       });
       setWaitingSLAMNAV(false);
@@ -336,38 +342,38 @@ const Update: React.FC = () => {
       console.log(curVersionUI);
       if (_version == undefined) {
         toast_main.current?.show({
-          severity: "error",
-          summary: "Update",
-          detail: "Version is undefined",
+          severity: 'error',
+          summary: 'Update',
+          detail: 'Version is undefined',
           life: 3000,
         });
         setWatingUI(false);
       } else if (_version == curVersionUI.version) {
         toast_main.current?.show({
-          severity: "warn",
-          summary: "Update",
-          detail: "Already updated",
+          severity: 'warn',
+          summary: 'Update',
+          detail: 'Already updated',
           life: 3000,
         });
         setWatingUI(false);
       } else {
         const body = {
-          program: "MAIN_MOBILE",
+          program: 'MAIN_MOBILE',
           new_version: _version,
           cur_version: curVersionUI.version,
-          path: "/RB_MOBILE/release/MAIN_MOBILE",
+          path: '/RB_MOBILE/release/MAIN_MOBILE',
           auth: state,
         };
-        console.log("??????????");
-        const _url = mobileURL + "/update/";
+        console.log('??????????');
+        const _url = mobileURL + '/update/';
         const response = await axios.post(_url, body);
 
         console.log(response);
 
         toast_main.current?.show({
-          severity: "success",
-          summary: "Update",
-          detail: "Update successfully finished\r\n" + response.data.log.date,
+          severity: 'success',
+          summary: 'Update',
+          detail: 'Update successfully finished\r\n' + response.data.log.date,
           life: 3000,
         });
 
@@ -382,9 +388,9 @@ const Update: React.FC = () => {
     } catch (error) {
       console.log(error);
       toast_main.current?.show({
-        severity: "error",
-        summary: "Update",
-        detail: "Update Failed",
+        severity: 'error',
+        summary: 'Update',
+        detail: 'Update Failed',
         life: 3000,
       });
       setWatingUI(false);
@@ -396,7 +402,7 @@ const Update: React.FC = () => {
       <Dialog
         header="Dialog"
         visible={displayUpload}
-        style={{ width: "60vw" }}
+        style={{ width: '60vw' }}
         modal
         footer={basicDialogFooter}
         onHide={() => setDisplayUpload(false)}
@@ -423,15 +429,15 @@ const Update: React.FC = () => {
     ]);
 
     const readVersions = async () => {
-      if (programRollback != "") {
-        console.log("?????????????", programRollback);
+      if (programRollback != '') {
+        console.log('?????????????', programRollback);
         try {
           const response = await axios.get(
-            Network?.monitor + "/versions/all/" + programRollback
+            Network?.monitor + '/versions/all/' + programRollback
           );
           setRollbackVersions(response.data);
         } catch (error) {
-          console.error("readVersion : ", error);
+          console.error('readVersion : ', error);
         }
       }
     };
@@ -474,10 +480,10 @@ const Update: React.FC = () => {
       <Dialog
         header="롤백"
         visible={displayRollback}
-        style={{ width: "60vw" }}
+        style={{ width: '60vw' }}
         modal
         onHide={() => {
-          setProgramRollback("");
+          setProgramRollback('');
           setDisplayRollback(false);
         }}
       >
@@ -509,93 +515,93 @@ const Update: React.FC = () => {
 
   async function startProgram(filename: string) {
     try {
-      console.log("startProgram", mobileURL);
-      const response = await axios.get(mobileURL + "/start/" + filename);
+      console.log('startProgram', mobileURL);
+      const response = await axios.get(mobileURL + '/start/' + filename);
       console.log(response.data.message.result);
-      if (response.data.result == "success") {
+      if (response.data.result == 'success') {
         toast_main.current?.show({
-          severity: "success",
+          severity: 'success',
           summary: filename,
-          detail: "Program successfully started",
+          detail: 'Program successfully started',
           life: 3000,
         });
-        if (filename == "MAIN_MOBILE") {
+        if (filename == 'MAIN_MOBILE') {
           setRunningUI(response.data);
-        } else if (filename == "SLAMNAV") {
+        } else if (filename == 'SLAMNAV') {
           setRunningSLAMNAV(response.data);
-        } else if (filename == "SLAMNAV2") {
+        } else if (filename == 'SLAMNAV2') {
           setRunningSLAMNAV2(response.data);
         }
-      } else if (response.data.result == "fail") {
+      } else if (response.data.result == 'fail') {
         toast_main.current?.show({
-          severity: "error",
+          severity: 'error',
           summary: filename,
-          detail: "Start Failed",
+          detail: 'Start Failed',
           life: 3000,
         });
       } else {
         toast_main.current?.show({
-          severity: "warn",
+          severity: 'warn',
           summary: filename,
-          detail: "Already started",
+          detail: 'Already started',
           life: 3000,
         });
       }
     } catch (error) {
       toast_main.current?.show({
-        severity: "error",
+        severity: 'error',
         summary: filename,
-        detail: "Start Failed",
+        detail: 'Start Failed',
         life: 3000,
       });
     }
   }
   async function restartProgram(filename: string) {
     try {
-      const response = await axios.get(mobileURL + "/restart/" + filename);
+      const response = await axios.get(mobileURL + '/restart/' + filename);
       toast_main.current?.show({
-        severity: "success",
+        severity: 'success',
         summary: filename,
-        detail: "Program successfully re-started",
+        detail: 'Program successfully re-started',
         life: 3000,
       });
-      if (filename == "MAIN_MOBILE") {
+      if (filename == 'MAIN_MOBILE') {
         setRunningUI(response.data);
-      } else if (filename == "SLAMNAV") {
+      } else if (filename == 'SLAMNAV') {
         setRunningSLAMNAV(response.data);
-      } else if (filename == "SLAMNAV2") {
+      } else if (filename == 'SLAMNAV2') {
         setRunningSLAMNAV2(response.data);
       }
     } catch (error) {
       toast_main.current?.show({
-        severity: "error",
+        severity: 'error',
         summary: filename,
-        detail: "Restart Failed",
+        detail: 'Restart Failed',
         life: 3000,
       });
     }
   }
   async function stopProgram(filename: string) {
     try {
-      const response = await axios.get(mobileURL + "/stop/" + filename);
+      const response = await axios.get(mobileURL + '/stop/' + filename);
       toast_main.current?.show({
-        severity: "success",
+        severity: 'success',
         summary: filename,
-        detail: "Program successfully stopped",
+        detail: 'Program successfully stopped',
         life: 3000,
       });
-      if (filename == "MAIN_MOBILE") {
+      if (filename == 'MAIN_MOBILE') {
         setRunningUI(response.data);
-      } else if (filename == "SLAMNAV") {
+      } else if (filename == 'SLAMNAV') {
         setRunningSLAMNAV(response.data);
-      } else if (filename == "SLAMNAV2") {
+      } else if (filename == 'SLAMNAV2') {
         setRunningSLAMNAV2(response.data);
       }
     } catch (error) {
       toast_main.current?.show({
-        severity: "error",
+        severity: 'error',
         summary: filename,
-        detail: "Stop Failed",
+        detail: 'Stop Failed',
         life: 3000,
       });
     }
@@ -612,7 +618,7 @@ const Update: React.FC = () => {
             label="새로고침"
             icon="pi pi-refresh"
             onClick={refresh}
-            style={{ marginRight: ".5em" }}
+            style={{ marginRight: '.5em' }}
             severity="secondary"
           />
         }
@@ -621,13 +627,13 @@ const Update: React.FC = () => {
             label="업로드"
             onClick={() => setDisplayUpload(true)}
             icon="pi pi-upload"
-            style={{ width: "10rem" }}
+            style={{ width: '10rem' }}
           ></Button>
         }
       ></Toolbar>
-      {(type == "AMR" || type == "SRV") && (
+      {(type == 'AMR' || type == 'SRV') && (
         <Panel
-          style={{ marginTop: "2em" }}
+          style={{ marginTop: '2em' }}
           header="프로그램 버전"
           id="TabRobotBasic"
         >
@@ -639,7 +645,7 @@ const Update: React.FC = () => {
                 <InputText
                   value={curVersionSLAMNAV2.version}
                   type="text"
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
@@ -650,7 +656,7 @@ const Update: React.FC = () => {
                 <InputText
                   type="text"
                   value={newVersionSLAMNAV2.version}
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
@@ -663,20 +669,20 @@ const Update: React.FC = () => {
                 <InputText
                   value={curVersionSLAMNAV2.date}
                   type="text"
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
             </div>
             <Button
-              onClick={() => update("SLAMNAV2", newVersionSLAMNAV2.version)}
+              onClick={() => update('SLAMNAV2', newVersionSLAMNAV2.version)}
             >
               Update
             </Button>
             <Button
               style={{ marginLeft: 10 }}
               onClick={() => {
-                setProgramRollback("SLAMNAV2");
+                setProgramRollback('SLAMNAV2');
                 setDisplayRollback(true);
               }}
             >
@@ -686,7 +692,7 @@ const Update: React.FC = () => {
               style={{ marginLeft: 10 }}
               disabled={waitingSLAMNAV2}
               onClick={() => {
-                startProgram("SLAMNAV2");
+                startProgram('SLAMNAV2');
               }}
             >
               Start
@@ -694,23 +700,23 @@ const Update: React.FC = () => {
             <Button
               style={{ marginLeft: 10 }}
               disabled={waitingSLAMNAV2}
-              onClick={() => stopProgram("SLAMNAV2")}
+              onClick={() => stopProgram('SLAMNAV2')}
             >
               Stop
             </Button>
             <Button
               style={{ marginLeft: 10 }}
               disabled={waitingSLAMNAV2}
-              onClick={() => restartProgram("SLAMNAV2")}
+              onClick={() => restartProgram('SLAMNAV2')}
             >
               ReStart
             </Button>
           </div>
         </Panel>
       )}
-      {type == "SERVING" && (
+      {type == 'SERVING' && (
         <Panel
-          style={{ marginTop: "2em" }}
+          style={{ marginTop: '2em' }}
           header="프로그램 버전"
           id="TabRobotBasic"
         >
@@ -722,7 +728,7 @@ const Update: React.FC = () => {
                 <InputText
                   value={curVersionUI.version}
                   type="text"
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
@@ -733,7 +739,7 @@ const Update: React.FC = () => {
                 <InputText
                   type="text"
                   value={newVersionUI.version}
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
@@ -746,7 +752,7 @@ const Update: React.FC = () => {
                 <InputText
                   value={curVersionUI.date}
                   type="text"
-                  style={{ width: "20vw" }}
+                  style={{ width: '20vw' }}
                   readOnly
                 />
               </div>
@@ -754,7 +760,7 @@ const Update: React.FC = () => {
             <Button
               disabled={waitingUI}
               onClick={() => {
-                update("MAIN_MOBILE", newVersionUI.version);
+                update('MAIN_MOBILE', newVersionUI.version);
               }}
             >
               Update
@@ -763,7 +769,7 @@ const Update: React.FC = () => {
               style={{ marginLeft: 10 }}
               disabled={waitingUI}
               onClick={() => {
-                setProgramRollback("MAIN_MOBILE");
+                setProgramRollback('MAIN_MOBILE');
                 setDisplayRollback(true);
               }}
             >
@@ -773,7 +779,7 @@ const Update: React.FC = () => {
               style={{ marginLeft: 10 }}
               disabled={waitingUI}
               onClick={() => {
-                startProgram("MAIN_MOBILE");
+                startProgram('MAIN_MOBILE');
               }}
             >
               Start
@@ -781,14 +787,14 @@ const Update: React.FC = () => {
             <Button
               style={{ marginLeft: 10 }}
               disabled={waitingUI}
-              onClick={() => stopProgram("MAIN_MOBILE")}
+              onClick={() => stopProgram('MAIN_MOBILE')}
             >
               Stop
             </Button>
             <Button
               style={{ marginLeft: 10 }}
               disabled={waitingUI}
-              onClick={() => restartProgram("MAIN_MOBILE")}
+              onClick={() => restartProgram('MAIN_MOBILE')}
             >
               ReStart
             </Button>
@@ -800,4 +806,3 @@ const Update: React.FC = () => {
 };
 
 export default Update;
-

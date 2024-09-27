@@ -1,6 +1,6 @@
-import { Command } from "../Command";
-import { COMMAND_TYPE, NODE_TYPE } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { COMMAND_TYPE, NODE_TYPE } from '@/constants';
+import * as THREE from 'three';
 
 class ChangeNodeTypeCommand extends Command {
   func: (value: string) => void;

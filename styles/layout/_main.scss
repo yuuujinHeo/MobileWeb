@@ -16,7 +16,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   &.eraser-cursor {
-    cursor: url("../../public/reddot_cursor.cur"), auto;
+    cursor: url('../../public/reddot_cursor.cur'), auto;
   }
 }
 
@@ -28,4 +28,3 @@ a {
 .layout-wrapper {
   min-height: 100vh;
 }
-

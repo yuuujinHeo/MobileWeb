@@ -1,6 +1,6 @@
-import { Command } from "../Command";
-import { COMMAND_TYPE } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { COMMAND_TYPE } from '@/constants';
+import * as THREE from 'three';
 
 class ChangeNameCommand extends Command {
   func: (target: THREE.Object3D, category: string, value: string) => void;

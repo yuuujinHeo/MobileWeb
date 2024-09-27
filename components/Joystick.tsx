@@ -1,24 +1,24 @@
-"use client";
-import { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import nipplejs, { JoystickManager } from "nipplejs";
+'use client';
+import { useEffect, useState, useRef } from 'react';
+import axios from 'axios';
+import nipplejs, { JoystickManager } from 'nipplejs';
 
 // prime
-import { Knob } from "primereact/knob";
-import { ToggleButton, ToggleButtonChangeEvent } from "primereact/togglebutton";
+import { Knob } from 'primereact/knob';
+import { ToggleButton, ToggleButtonChangeEvent } from 'primereact/togglebutton';
 
 const INTERVAL_TIME = 100;
 
 // TEMP
 const getJoystickSize = () => {
   if (!window) return { joySize: 100 };
-  if (window.matchMedia("(max-width: 576px").matches) {
+  if (window.matchMedia('(max-width: 576px').matches) {
     // Mobile
     return { joySize: 80 };
-  } else if (window.matchMedia("(max-width: 768px").matches) {
+  } else if (window.matchMedia('(max-width: 768px').matches) {
     // Tablet
     return { joySize: 100 };
-  } else if (window.matchMedia("(max-width: 992px").matches) {
+  } else if (window.matchMedia('(max-width: 992px').matches) {
     // Notebook
     return { joySize: 120 };
   } else {
@@ -49,24 +49,24 @@ const Joystick = () => {
 
   useEffect(() => {
     const createJoystick = () => {
-      const leftJoy = document.getElementById("left-joystick");
-      const rightJoy = document.getElementById("right-joystick");
+      const leftJoy = document.getElementById('left-joystick');
+      const rightJoy = document.getElementById('right-joystick');
       const { joySize } = getJoystickSize();
 
       const leftJoyManager = nipplejs.create({
         zone: leftJoy as HTMLElement,
-        color: "blue",
+        color: 'blue',
         size: joySize,
-        mode: "static",
+        mode: 'static',
         dynamicPage: true,
         lockY: true,
       });
 
       const rightJoyManager = nipplejs.create({
         zone: rightJoy as HTMLElement,
-        color: "red",
+        color: 'red',
         size: joySize,
-        mode: "static",
+        mode: 'static',
         dynamicPage: true,
         lockX: true,
       });
@@ -117,13 +117,13 @@ const Joystick = () => {
 
       const currentTime = new Date()
         .toISOString()
-        .replace("T", " ")
-        .replace("Z", "");
+        .replace('T', ' ')
+        .replace('Z', '');
 
       // Check joy is on
       if (joyPowerRef.current) {
-        await axios.post(url + "/control/move", {
-          command: "jog",
+        await axios.post(url + '/control/move', {
+          command: 'jog',
           vx: vx.toString(),
           vy: vy.toString(),
           wz: wz.toString(),
@@ -131,7 +131,7 @@ const Joystick = () => {
         });
       }
     } catch (error) {
-      console.error("Error sending jog request:", error);
+      console.error('Error sending jog request:', error);
     }
   };
 
@@ -183,33 +183,33 @@ const Joystick = () => {
     };
 
     if (leftJoyManagerRef.current && rightJoyManagerRef.current) {
-      leftJoyManagerRef.current.on("start", (evt, data) => {
+      leftJoyManagerRef.current.on('start', (evt, data) => {
         leftStartPosition = {
           x: data.position.x,
           y: data.position.y,
         };
         startLeftInterval();
       });
-      leftJoyManagerRef.current.on("move", (evt, data) => {
+      leftJoyManagerRef.current.on('move', (evt, data) => {
         const { vx } = calculateVelocity(data);
         leftValueRef.current.vx = vx;
       });
-      leftJoyManagerRef.current.on("end", (evt) => {
+      leftJoyManagerRef.current.on('end', (evt) => {
         clearLeftInterval();
       });
 
-      rightJoyManagerRef.current.on("start", (evt, data) => {
+      rightJoyManagerRef.current.on('start', (evt, data) => {
         rightStartPosition = {
           x: data.position.x,
           y: data.position.y,
         };
         startRightInterval();
       });
-      rightJoyManagerRef.current.on("move", (evt, data) => {
+      rightJoyManagerRef.current.on('move', (evt, data) => {
         const { wz } = calculateVelocity(data);
         rightValueRef.current.wz = -wz;
       });
-      rightJoyManagerRef.current.on("end", (evt) => {
+      rightJoyManagerRef.current.on('end', (evt) => {
         clearRightInterval();
       });
     }

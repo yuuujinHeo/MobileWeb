@@ -4,11 +4,10 @@
 // import axios from 'axios';
 // import {store,AppDispatch, RootState} from '../store/store';
 // import { useDispatch, UseDispatch, useSelector } from 'react-redux';
-    
+
 // const dispatch = useDispatch<AppDispatch>();
 // const settingState = useSelector((state:RootState) => selectSetting(state));
 // var mobileURL ='';
-
 
 // async function setURL(){
 //     if(mobileURL == ''){

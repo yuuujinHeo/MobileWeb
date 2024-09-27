@@ -1,6 +1,6 @@
-import { Command } from "../Command";
-import { COMMAND_TYPE, SCALE_FACTOR } from "@/constants";
-import * as THREE from "three";
+import { Command } from '../Command';
+import { COMMAND_TYPE, SCALE_FACTOR } from '@/constants';
+import * as THREE from 'three';
 
 class TransformNodeCommand extends Command {
   func: (target: THREE.Object3D, category: string, value: string) => void;
@@ -19,11 +19,11 @@ class TransformNodeCommand extends Command {
     this.func = func;
     this.target = target;
     this.category = category;
-    if (category === "pose-x") {
+    if (category === 'pose-x') {
       this.originValue = (target.position.x / SCALE_FACTOR).toString();
-    } else if (category === "pose-y") {
+    } else if (category === 'pose-y') {
       this.originValue = (target.position.y / SCALE_FACTOR).toString();
-    } else if (category === "pose-rz") {
+    } else if (category === 'pose-rz') {
       this.originValue = target.rotation.z.toString();
     }
     this.newValue = newValue;

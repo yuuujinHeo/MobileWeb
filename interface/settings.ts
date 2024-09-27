@@ -1,4 +1,4 @@
-import * as yup from "yup";
+import * as yup from 'yup';
 
 export interface RobotSetting {
   PLATFORM_NAME: string;
@@ -229,9 +229,8 @@ export interface SettingState {
   obs: ObsSetting;
 }
 
-export const ROBOT_TYPE = ["SRV", "AMR", ""];
+export const ROBOT_TYPE = ['SRV', 'AMR', ''];
 export const ROBOT_TYPE2 = [
-  { name: "서빙로봇", code: "SRV" },
-  { name: "AMR", code: "AMR" },
+  { name: '서빙로봇', code: 'SRV' },
+  { name: 'AMR', code: 'AMR' },
 ];
-

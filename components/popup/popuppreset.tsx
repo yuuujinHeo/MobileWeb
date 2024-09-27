@@ -78,12 +78,12 @@
 //             console.log(response.data);
 //             setCur(response.data);
 //             formik_preset.handleReset(response.data);
-            
+
 //         }catch(error){
 //             console.error(error);
 //         }
 //     }
-    
+
 //     async function deletePreset(){
 //         try{
 //             console.log("delete")
@@ -196,8 +196,8 @@
 //                 <ContextMenu ref={cm} model={menus} onHide={() => setSelectPreset(null)} />
 //                 <BlockUI blocked={cur==undefined} template={<i className="pi pi-lock" style={{ fontSize: '3rem' }}></i>}>
 //                 <div className="card">
-//                     <div className="column"> 
-//                     <div className="grid gap-5"> 
+//                     <div className="column">
+//                     <div className="grid gap-5">
 //                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>LIMIT_V</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.LIMIT_V!==formik_preset.initialValues.LIMIT_V?"inline":"none", color:"red"}}>    (수정됨)</span></p>
@@ -210,7 +210,7 @@
 //                                 maxFractionDigits={3}
 //                             ></InputNumber>
 //                         </div>
-//                         <div> 
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>LIMIT_W</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.LIMIT_W!==formik_preset.initialValues.LIMIT_W?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -223,8 +223,8 @@
 //                             ></InputNumber>
 //                         </div>
 //                     </div>
-//                     <div className="grid gap-5"> 
-//                         <div> 
+//                     <div className="grid gap-5">
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>LIMIT_V_ACC</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.LIMIT_V_ACC!==formik_preset.initialValues.LIMIT_V_ACC?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -236,7 +236,7 @@
 //                                 maxFractionDigits={3}
 //                             ></InputNumber>
 //                         </div>
-//                         <div> 
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>LIMIT_W_ACC</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.LIMIT_W_ACC!==formik_preset.initialValues.LIMIT_W_ACC?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -249,8 +249,8 @@
 //                             ></InputNumber>
 //                         </div>
 //                     </div>
-//                     <div className="grid gap-5"> 
-//                         <div> 
+//                     <div className="grid gap-5">
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>LIMIT_PIVOT_W</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.LIMIT_PIVOT_W!==formik_preset.initialValues.LIMIT_PIVOT_W?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -262,7 +262,7 @@
 //                                 maxFractionDigits={3}
 //                             ></InputNumber>
 //                         </div>
-//                         <div> 
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>PP_MIN_LD</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.PP_MIN_LD!==formik_preset.initialValues.PP_MIN_LD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -275,8 +275,8 @@
 //                             ></InputNumber>
 //                         </div>
 //                     </div>
-//                     <div className="grid gap-5"> 
-//                         <div> 
+//                     <div className="grid gap-5">
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>PP_MAX_LD</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.PP_MAX_LD!==formik_preset.initialValues.PP_MAX_LD?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -288,7 +288,7 @@
 //                                 maxFractionDigits={3}
 //                             ></InputNumber>
 //                         </div>
-//                         <div> 
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>PP_ST_V</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.PP_ST_V!==formik_preset.initialValues.PP_ST_V?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
@@ -301,8 +301,8 @@
 //                             ></InputNumber>
 //                         </div>
 //                     </div>
-//                     <div className="grid gap-5"> 
-//                         <div> 
+//                     <div className="grid gap-5">
+//                         <div>
 //                             <p ><span style={{fontSize:18,fontWeight: 700}}>PP_ED_V</span>
 //                             <span style={{display:cur!==undefined&&formik_preset.values.PP_ED_V!==formik_preset.initialValues.PP_ED_V?"inline":"none", color:"red"}}>    (수정됨)</span></p>
 //                             <InputNumber
