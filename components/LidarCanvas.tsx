@@ -586,6 +586,7 @@ const LidarCanvas = ({
 
   const rotatePathGoal = () => {
     if (!pathGoalRef.current) return;
+    pathGoalRef.current.rotateX(0.01);
     pathGoalRef.current.rotateY(0.01);
     pathGoalRef.current.rotateZ(0.01);
   };
@@ -2212,7 +2213,7 @@ const LidarCanvas = ({
   const addPathGoal = async (goalPoint: THREE.Vector3) => {
     if (!sceneRef.current || pathGoalRef.current) return;
     const geometry = new THREE.OctahedronGeometry(10, 0);
-    const material = new THREE.MeshBasicMaterial({ color: 0x4287f5 });
+    const material = new THREE.MeshBasicMaterial({ color: 0xf54242 });
     const goal = new THREE.Mesh(geometry, material);
 
     sceneRef.current.add(goal);
@@ -2221,7 +2222,7 @@ const LidarCanvas = ({
       goalPoint.y * SCALE_FACTOR,
       SCALE_FACTOR / 2
     );
-    goal.scale.set(0.4, 0.4, 0.4);
+    goal.scale.set(0.7, 0.7, 0.7);
     pathGoalRef.current = goal;
   };
 
