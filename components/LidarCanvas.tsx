@@ -96,6 +96,7 @@ const LidarCanvas = ({
   // path ref
   const globalPathRef = useRef<THREE.Mesh | null>(null);
   const localPathRef = useRef<THREE.Mesh | null>(null);
+  const pathGoalRef = useRef<THREE.Mesh | null>(null);
 
   const nodesRef = useRef<Map<string, THREE.Object3D>>(new Map());
   const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
@@ -193,6 +194,7 @@ const LidarCanvas = ({
     ["global", "local"].forEach((type) => {
       clearPath(type);
       updatePath(type);
+      if (!globalPath.length) clearPathGoal();
     });
   }, [globalPath, localPath]);
 
@@ -493,12 +495,6 @@ const LidarCanvas = ({
     labelRenderer.domElement.style.pointerEvents = "none";
     canvasRef.current.parentElement?.appendChild(labelRenderer.domElement);
 
-    const animate = () => {
-      if (sceneRef.current && cameraRef.current) {
-        rendererRef.current?.render(sceneRef.current, cameraRef.current);
-        labelRenderer.render(sceneRef.current, cameraRef.current);
-      }
-    };
     rendererRef.current.setAnimationLoop(animate);
 
     // control
@@ -572,6 +568,27 @@ const LidarCanvas = ({
 
     // raycaster
     raycasterRef.current.layers.set(0);
+  };
+
+  const animate = () => {
+    if (sceneRef.current && cameraRef.current) {
+      rendererRef.current?.render(sceneRef.current, cameraRef.current);
+      labelRendererRef.current?.render(sceneRef.current, cameraRef.current);
+    }
+
+    rotatePathGoal();
+  };
+
+  const render = () => {
+    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
+    rendererRef.current.render(sceneRef.current, cameraRef.current);
+  };
+
+  const rotatePathGoal = () => {
+    if (!pathGoalRef.current) return;
+    pathGoalRef.current.rotateX(0.01);
+    pathGoalRef.current.rotateY(0.01);
+    pathGoalRef.current.rotateZ(0.01);
   };
 
   const toggleMarkingMode = () => {
@@ -1366,11 +1383,6 @@ const LidarCanvas = ({
     controlRef.current.update();
   };
 
-  const render = () => {
-    if (!rendererRef.current || !sceneRef.current || !cameraRef.current) return;
-    rendererRef.current.render(sceneRef.current, cameraRef.current);
-  };
-
   const addNode = async (category: string, nodePose: NodePose) => {
     let node: null | THREE.Object3D;
     let redoFunction: (object: THREE.Object3D, nodePose: NodePose) => void;
@@ -2143,6 +2155,8 @@ const LidarCanvas = ({
 
     if (type === "global") {
       globalPathRef.current = pathTube;
+      const goalPoint = points[points.length - 1];
+      addPathGoal(goalPoint);
     } else if (type === "local") {
       localPathRef.current = pathTube;
     }
@@ -2167,7 +2181,7 @@ const LidarCanvas = ({
     curve: THREE.CatmullRomCurve3,
     type: string
   ): THREE.Mesh => {
-    const geometry = new THREE.TubeGeometry(curve, 64, 0.1, 8, false);
+    const geometry = new THREE.TubeGeometry(curve, 64, 0.07, 8, false);
     let material: THREE.MeshBasicMaterial;
     if (type === "global") {
       material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
@@ -2194,6 +2208,28 @@ const LidarCanvas = ({
     }
 
     return new THREE.Mesh(geometry, material);
+  };
+
+  const addPathGoal = async (goalPoint: THREE.Vector3) => {
+    if (!sceneRef.current || pathGoalRef.current) return;
+    const geometry = new THREE.OctahedronGeometry(10, 0);
+    const material = new THREE.MeshBasicMaterial({ color: 0xf54242 });
+    const goal = new THREE.Mesh(geometry, material);
+
+    sceneRef.current.add(goal);
+    goal.position.set(
+      goalPoint.x * SCALE_FACTOR,
+      goalPoint.y * SCALE_FACTOR,
+      SCALE_FACTOR / 2
+    );
+    goal.scale.set(0.7, 0.7, 0.7);
+    pathGoalRef.current = goal;
+  };
+
+  const clearPathGoal = () => {
+    if (!sceneRef.current || !pathGoalRef.current) return;
+    sceneRef.current.remove(pathGoalRef.current);
+    pathGoalRef.current = null;
   };
 
   return className === CANVAS_CLASSES.DEFAULT ? (
