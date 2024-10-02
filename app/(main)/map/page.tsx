@@ -25,7 +25,6 @@ import {
   CANVAS_ACTION,
   NODE_TYPE,
   CANVAS_OBJECT,
-  // SCALE_FACTOR,
 } from "@/constants";
 
 import axios from "axios";
@@ -62,9 +61,6 @@ const Map: React.FC = () => {
   const { transformControlMode, isMarkingMode } = useSelector(
     (state: RootState) => state.canvas
   );
-  // const robotHelper = useSelector(
-  //   (state: RootState) => state.canvas.robotHelper
-  // );
   const { map } = useSelector(
     (state: RootState) => state.status.state,
     (prev, next) => prev.map === next.map
@@ -350,17 +346,10 @@ const Map: React.FC = () => {
       .toISOString()
       .replace("T", " ")
       .replace("Z", "");
-    // const r2d = (Number(robotHelper.rz) * (180 / Math.PI)).toString();
-    // const scaledX = Number(robotHelper.x) / SCALE_FACTOR;
-    // const scaledY = Number(robotHelper.y) / SCALE_FACTOR;
-    // const scaledZ = Number(robotHelper.z) / SCALE_FACTOR;
     try {
       const payload = {
         time: currentTime,
         command: "stop",
-        // x: scaledX.toString(),
-        // y: scaledY.toString(),
-        // z: scaledZ.toString(),
         x: "0",
         y: "0",
         z: "0",
