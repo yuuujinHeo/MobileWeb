@@ -464,7 +464,7 @@ const LidarCanvas = ({
     const camera = new THREE.PerspectiveCamera(
       30,
       canvasRef.current.clientWidth / canvasRef.current.clientHeight,
-      0.01,
+      1,
       9999
     );
     cameraRef.current = camera;
@@ -503,7 +503,7 @@ const LidarCanvas = ({
 
     control.screenSpacePanning = true;
 
-    control.minDistance = 0.1;
+    control.minDistance = 1;
     control.maxDistance = 9999;
 
     // transform control
@@ -1093,7 +1093,6 @@ const LidarCanvas = ({
       group.traverse((obj) => {
         if (obj instanceof THREE.Mesh) {
           obj.material.color.set(new THREE.Color(0x0087fc));
-
           const edges = new THREE.EdgesGeometry(obj.geometry);
           const lineMaterial = new THREE.LineBasicMaterial({
             color: 0xffffff,
@@ -1103,8 +1102,11 @@ const LidarCanvas = ({
           obj.add(line);
         }
       });
-
       robotModel.current = group;
+      // Everything in the scene except the
+      // robot model has zero rendering order.
+      // This ensures that the robot model is always front-facing.
+      robotModel.current.renderOrder = 1;
 
       // An axes. The X axis is red. The Y axis is green. The Z axis is blue.
       const axesHelper = new THREE.AxesHelper(1);
@@ -2150,6 +2152,7 @@ const LidarCanvas = ({
     });
     const curve = new THREE.CatmullRomCurve3(points);
     const pathTube = getPathTube(curve, type);
+
     pathTube.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
     pathTube.name = `${type}Path`;
 
@@ -2184,7 +2187,9 @@ const LidarCanvas = ({
     const geometry = new THREE.TubeGeometry(curve, 64, 0.07, 8, false);
     let material: THREE.MeshBasicMaterial;
     if (type === "global") {
-      material = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+      material = new THREE.MeshBasicMaterial({
+        color: 0xff0000,
+      });
     } else if (type === "local") {
       const colors: number[] = [];
       const color1 = new THREE.Color(0x00ff00);
@@ -2202,7 +2207,13 @@ const LidarCanvas = ({
         new THREE.Float32BufferAttribute(colors, 3)
       );
 
-      material = new THREE.MeshBasicMaterial({ vertexColors: true });
+      material = new THREE.MeshBasicMaterial({
+        vertexColors: true,
+        // The "polygon offset" affects the rendering order.
+        polygonOffset: true,
+        polygonOffsetFactor: -1,
+        polygonOffsetUnits: -1,
+      });
     } else {
       throw new Error("Invalid path type.");
     }
