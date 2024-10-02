@@ -105,8 +105,8 @@ const Map: React.FC = () => {
 
   useEffect(() => {
     syncCanvasWithSlamNav();
-    fileNameRef.current = map; 
-   }, [map]);
+    fileNameRef.current = map;
+  }, [map]);
 
   useEffect(() => {
     handleMarkingModeChange(isMarkingMode);
@@ -327,6 +327,8 @@ const Map: React.FC = () => {
     // Hide dialogue
     setIsDialogVisible(false);
 
+    // Before loading a new map, should send "stop localization" message to SLAMNAV.
+    await sendLOCStopMsgToSlam();
     // Send the selected map data to SLAM.
     sendSelectedMapToSLAM();
   };
@@ -337,6 +339,27 @@ const Map: React.FC = () => {
     // reset
     setSelectedMap(null);
     setCloudData(null);
+  };
+
+  const sendLOCStopMsgToSlam = async () => {
+    const currentTime = new Date()
+      .toISOString()
+      .replace("T", " ")
+      .replace("Z", "");
+    try {
+      const payload = {
+        time: currentTime,
+        command: "stop",
+        x: "0",
+        y: "0",
+        z: "0",
+        rz: "0",
+      };
+
+      await axios.post(url + "/localization", payload);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const sendSelectedMapToSLAM = async () => {
