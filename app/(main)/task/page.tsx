@@ -264,6 +264,36 @@ const Move: React.FC = () => {
     return null;
   }
 
+  const getIcon = (label) => {
+    if (label == "script" || label == "assign") {
+      return "pi pi-fw pi-code";
+    } else if (label == "map") {
+      return "pi pi-fw pi-map";
+    } else if (label == "folder") {
+      return "pi pi-fw pi-folder";
+    } else if (label == "general_thread") {
+      return "pi pi-fw pi-replay";
+    } else if (label == "repeat") {
+      return "pi pi-fw pi-replay";
+    } else if (label == "move") {
+      return "pi pi-fw pi-forward";
+    } else if (label == "wait") {
+      return "pi pi-fw pi-hourglass";
+    } else if (label!.includes("socket_func")) {
+      return "pi pi-fw pi-sitemap";
+    } else if (label == "subp") {
+      return "pi pi-fw pi-file";
+    } else if (label == "halt") {
+      return "pi pi-fw pi-ban";
+    } else if (label == "continue") {
+      return "pi pi-fw pi-forward";
+    } else if (label == "break") {
+      return "pi pi-fw pi-sign-out";
+    } else if (label == "if" || label == "else if" || label == "else") {
+      return "pi pi-fw pi-share-alt";
+    }
+  };
+
   const makeNodes = (
     nodes: TreeNode[],
     parentKey: string = "0"
@@ -358,17 +388,21 @@ const Move: React.FC = () => {
       setExpandedKeys(_expandedKeys);
     }
 
-    setSelectNodeInfo(node);
-    setSelectNodeKey(e.value as string);
+    selectNodeHandle(node);
+  };
 
+  const selectNodeHandle = (node: TreeNode) => {
+    setSelectNodeInfo(node);
+    setSelectNodeKey(node.key as string);
     if (node.label == "repeat") {
       if (isInteger(node.data.split(" times")[0])) {
         setModeRepeat("number");
       } else {
         setModeRepeat("string");
       }
-    } else if (node.label.includes("socket_func")) {
-      setSocketID(node.label.split("_")[2]);
+    } else if (node.label!.includes("socket_func")) {
+      let id = node.label!.split("_")[2];
+      setSocketID(parseInt(id));
       if (node.data.includes("socket_open")) {
         setSocketMode("open");
         if (node.data.includes(" = ")) {
@@ -391,7 +425,9 @@ const Move: React.FC = () => {
         setSocketMode("read");
         setSocketSendStr("");
         setSocketOpenVar("");
-        setSocketReadVar(node.data.split(" = ")[0]);
+        setSocketReadVar(
+          node.data.includes(" = ") ? node.data.split(" = ")[0] : ""
+        );
         setSocketOpenIP("");
         setSocketOpenPort("");
       }
@@ -497,7 +533,9 @@ const Move: React.FC = () => {
           socket_str += '"' + socketOpenIP + '"' + ",";
           socket_str += socketOpenPort + ")";
         } else if (socketMode == "read") {
-          socket_str = socketReadVar + " = ";
+          if (socketReadVar != "") {
+            socket_str = socketReadVar + " = ";
+          }
           socket_str += "socket_read_string()";
         } else if (socketMode == "send") {
           socket_str += "socket_send_string(";
@@ -564,12 +602,15 @@ const Move: React.FC = () => {
       let parent;
       let key;
 
-      if (selectNode == null) {
+      if (selectNode == null || copiedNode.label == "general_thread") {
         parent = findTreeNodeByKey(temp, "0");
       } else {
         parent = findTreeParentNodeByKey(temp["0"], selectNode.key);
       }
-      if (selectNode?.label == "empty") {
+
+      if (copiedNode.label == "general_thread") {
+        parent.children.push(copiedNode);
+      } else if (selectNode?.label == "empty") {
         parent.children.pop();
         parent.children.push(copiedNode);
       } else {
@@ -807,7 +848,7 @@ const Move: React.FC = () => {
     const menus = [
       {
         label: "기본",
-        icon: "pi pi-fw pi-forward",
+        icon: getIcon("subp"),
         items: [
           [
             {
@@ -815,15 +856,17 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "wait",
-                  icon: "pi pi-fw pi-forward",
+                  icon: getIcon("wait"),
                   command: () => {
                     addNode("wait");
                   },
                 },
                 {
                   label: "halt",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("halt"),
+                  command: () => {
+                    addNode("halt");
+                  },
                 },
               ],
             },
@@ -834,13 +877,17 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "folder",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("folder"),
+                  command: () => {
+                    addNode("folder");
+                  },
                 },
                 {
                   label: "subp",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("subp"),
+                  command: () => {
+                    addNode("subp");
+                  },
                 },
               ],
             },
@@ -851,7 +898,7 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "script",
-                  icon: "pi pi-fw pi-forward",
+                  icon: getIcon("script"),
                   command: () => {
                     addNode("script");
                   },
@@ -863,24 +910,24 @@ const Move: React.FC = () => {
       },
       {
         label: "이동",
-        icon: "pi pi-fw pi-forward",
+        icon: getIcon("move"),
         items: [
           [
             {
-              label: "MOVE",
+              label: "이동",
               items: [
                 {
-                  label: "MoveTarget",
-                  icon: "pi pi-fw pi-forward",
+                  label: "moveTarget",
+                  icon: getIcon("move"),
                   command: () => {
-                    addNode("move");
+                    addNode("moveTarget");
                   },
                 },
                 {
-                  label: "MoveGoal",
-                  icon: "pi pi-fw pi-forward",
+                  label: "moveGoal",
+                  icon: getIcon("move"),
                   command: () => {
-                    addNode("move");
+                    addNode("moveGoal");
                   },
                 },
               ],
@@ -891,7 +938,7 @@ const Move: React.FC = () => {
       },
       {
         label: "반복",
-        icon: "pi pi-fw pi-forward",
+        icon: getIcon("repeat"),
         items: [
           [
             {
@@ -899,15 +946,17 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "repeat",
-                  icon: "pi pi-fw pi-forward",
+                  icon: getIcon("repeat"),
                   command: () => {
                     addNode("repeat");
                   },
                 },
                 {
                   label: "general_thread",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("general_thread"),
+                  command: () => {
+                    addNode("general_thread");
+                  },
                 },
               ],
             },
@@ -918,22 +967,25 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "if",
-                  icon: "pi pi-fw pi-forward",
+                  icon: getIcon("if"),
                   command: () => {
                     addNode("if");
                   },
                 },
                 {
                   label: "else if",
-                  icon: "pi pi-fw pi-forward",
-                  disabled: true,
+                  icon: getIcon("else if"),
+                  disabled:
+                    selectNode?.label != "if" && selectNode?.label != "else if",
                   command: () => {
                     addNode("else if");
                   },
                 },
                 {
                   label: "else",
-                  icon: "pi pi-fw pi-forward",
+                  icon: getIcon("else"),
+                  disabled:
+                    selectNode?.label != "if" && selectNode?.label != "else if",
                   command: () => {
                     addNode("else");
                   },
@@ -947,13 +999,17 @@ const Move: React.FC = () => {
               items: [
                 {
                   label: "break",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("break"),
+                  command: () => {
+                    addNode("break");
+                  },
                 },
                 {
                   label: "continue",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  icon: getIcon("continue"),
+                  command: () => {
+                    addNode("continue");
+                  },
                 },
               ],
             },
@@ -963,21 +1019,39 @@ const Move: React.FC = () => {
       },
       {
         label: "연결",
-        icon: "pi pi-fw pi-forward",
+        icon: getIcon("socket_func"),
         items: [
           [
             {
-              label: "MOVE",
+              label: "소켓",
               items: [
                 {
-                  label: "MoveTarget",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  label: "serverOpen",
+                  icon: getIcon("socket_func"),
+                  command: () => {
+                    addNode("serverOpen");
+                  },
                 },
                 {
-                  label: "MoveGoal",
-                  icon: "pi pi-fw pi-forward",
-                  command: () => {},
+                  label: "socketOpen",
+                  icon: getIcon("socket_func"),
+                  command: () => {
+                    addNode("socketOpen");
+                  },
+                },
+                {
+                  label: "socketRead",
+                  icon: getIcon("socket_func"),
+                  command: () => {
+                    addNode("socketRead");
+                  },
+                },
+                {
+                  label: "socketSend",
+                  icon: getIcon("socket_func"),
+                  command: () => {
+                    addNode("socketSend");
+                  },
                 },
               ],
             },
@@ -986,86 +1060,13 @@ const Move: React.FC = () => {
         ],
       },
     ];
-    return <MegaMenu model={menus} orientation="vertical" breakpoint="767px" />;
-  };
-
-  const AddPanel = () => {
     return (
-      <div className="card tool-add">
-        <ScrollPanel className="add-panel">
-          {/* <Button
-            label="wait"
-            className="btn-add"
-            onClick={(e) => addNode('wait')}
-          /> */}
-          {/* <Button
-            label="repeat"
-            className="btn-add"
-            onClick={(e) => addNode('repeat')}
-          /> */}
-          {/* <Button
-            label="script"
-            className="btn-add"
-            onClick={(e) => addNode('script')}
-          /> */}
-          {/* <Button
-            label="move"
-            className="btn-add"
-            onClick={(e) => addNode('move')}
-          /> */}
-          {/* <Button
-            label="if"
-            className="btn-add"
-            onClick={(e) => addNode('if')}
-          />
-          <Button
-            label="else if"
-            className="btn-add"
-            disabled={
-              selectNode?.label != 'if' && selectNode?.label != 'else if'
-            }
-            onClick={(e) => addNode('else if')}
-          />
-          <Button
-            label="else"
-            className="btn-add"
-            disabled={
-              selectNode?.label != 'if' && selectNode?.label != 'else if'
-            }
-            onClick={(e) => addNode('else')}
-          /> */}
-          {/* <Button
-            label="break"
-            className="btn-add"
-            onClick={(e) => addNode('break')}
-          />
-          <Button
-            label="continue"
-            className="btn-add"
-            onClick={(e) => addNode('continue')}
-          /> */}
-          <Button
-            label="socket"
-            className="btn-add"
-            onClick={(e) => addNode("socket_func")}
-          />
-          {/* <Button
-            label="folder"
-            className="btn-add"
-            onClick={(e) => addNode('folder')}
-          /> */}
-          {/* <Button
-            label="subp"
-            className="btn-add"
-            onClick={(e) => addNode('subp')}
-          />
-          <Button
-            label="halt"
-            className="btn-add"
-            onClick={(e) => addNode('halt')}
-          /> */}
-        </ScrollPanel>
-      </div>
+      <MegaMenu
+        className="tool-add"
+        model={menus}
+        orientation="vertical"
+        breakpoint="767px"
+      />
     );
   };
 
@@ -1149,8 +1150,38 @@ const Move: React.FC = () => {
       return { key: uuidv4(), label: label, data: "true", children: [] };
     } else if (label == "else if") {
       return { key: uuidv4(), label: label, data: "true", children: [] };
-    } else if (label == "move") {
-      return { key: uuidv4(), label: label, data: "0,0,0", children: [] };
+    } else if (label == "moveTarget") {
+      return { key: uuidv4(), label: "move", data: "0,0,0,0", children: [] };
+    } else if (label == "moveGoal") {
+      return { key: uuidv4(), label: "move", data: ",0", children: [] };
+    } else if (label == "serverOpen") {
+      return {
+        key: uuidv4(),
+        label: "socket_func_0",
+        data: 'socket_open("0.0.0.0",8000)',
+        children: [],
+      };
+    } else if (label == "socketOpen") {
+      return {
+        key: uuidv4(),
+        label: "socket_func_0",
+        data: 'socket_open("127.0.0.0",8000)',
+        children: [],
+      };
+    } else if (label == "socketRead") {
+      return {
+        key: uuidv4(),
+        label: "socket_func_0",
+        data: "socket_read_string()",
+        children: [],
+      };
+    } else if (label == "socketSend") {
+      return {
+        key: uuidv4(),
+        label: "socket_func_0",
+        data: 'socket_send_string("")',
+        children: [],
+      };
     } else {
       return { key: uuidv4(), label: label, data: "", children: [] };
     }
@@ -1179,11 +1210,15 @@ const Move: React.FC = () => {
   };
 
   const addNode = (label) => {
+    if (nodes.length == 0) {
+      return;
+    }
+
     let temp = cloneValue(nodes);
     let parent;
     let key;
 
-    if (selectNode == null) {
+    if (selectNode == null || label == "general_thread") {
       parent = findTreeNodeByKey(temp, "0");
     } else {
       parent = findTreeParentNodeByKey(temp["0"], selectNode.key);
@@ -1191,16 +1226,27 @@ const Move: React.FC = () => {
 
     const newNode = makeNewNode(label);
 
-    if (selectNode?.label == "empty") {
+    if (label == "general_thread") {
+      console.log("general_thread??");
+      parent.children.push(newNode);
+    } else if (selectNode?.label == "empty") {
       parent.children.pop();
       parent.children.push(newNode);
     } else if (parent.label == "root") {
-      if (selectNode == null || selectNode.label == "end") {
-        parent.children.pop();
-        const endNode = makeNewNode("end");
-        const tempNode = newNode;
-        parent.children.push(tempNode);
-        parent.children.push(endNode);
+      if (
+        selectNode == null ||
+        selectNode.label == "end" ||
+        selectNode.label == "general_thread"
+      ) {
+        let pop_lists: TreeNode[] = [];
+        while (
+          parent.children[parent.children.length - 1].label == "end" ||
+          parent.children[parent.children.length - 1].label == "general_thread"
+        ) {
+          pop_lists.push(parent.children.pop() as TreeNode);
+        }
+        parent.children.push(newNode);
+        pop_lists.reverse().map((item) => parent.children.push(item));
       } else {
         insertNode(parent, selectNode.key as string, newNode);
       }
@@ -1215,8 +1261,10 @@ const Move: React.FC = () => {
     setSelectNodeInfo(newNode);
 
     setNodes(makeNodes(temp));
-    setSelectNodeKey(newNode.key as string);
-    setSelectNode(newNode);
+
+    selectNodeHandle(newNode);
+    // setSelectNodeKey(newNode.key as string);
+    // setSelectNode(newNode);
   };
 
   return (

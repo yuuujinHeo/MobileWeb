@@ -1,9 +1,9 @@
 :root {
-  font-family: 'Inter var', sans-serif;
-  font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  font-family: "Inter var", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   font-variation-settings: normal;
-  --font-family: 'Inter var', sans-serif;
-  --font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  --font-family: "Inter var", sans-serif;
+  --font-feature-settings: "cv02", "cv03", "cv04", "cv11";
   --surface-a: #ffffff;
   --surface-b: #f9fafb;
   --surface-c: #f3f4f6;
@@ -54,20 +54,20 @@
 }
 
 @font-face {
-  font-family: 'Inter var';
+  font-family: "Inter var";
   font-weight: 100 900;
   font-display: swap;
   font-style: normal;
-  font-named-instance: 'Regular';
-  src: url('./fonts/Inter-roman.var.woff2?v=3.19') format('woff2');
+  font-named-instance: "Regular";
+  src: url("./fonts/Inter-roman.var.woff2?v=3.19") format("woff2");
 }
 @font-face {
-  font-family: 'Inter var';
+  font-family: "Inter var";
   font-weight: 100 900;
   font-display: swap;
   font-style: italic;
-  font-named-instance: 'Italic';
-  src: url('./fonts/Inter-italic.var.woff2?v=3.19') format('woff2');
+  font-named-instance: "Italic";
+  src: url("./fonts/Inter-italic.var.woff2?v=3.19") format("woff2");
 }
 :root {
   --blue-50: #f5f9ff;
@@ -6078,7 +6078,7 @@
     color: #4b5563;
   }
   .p-steps .p-steps-item:before {
-    content: ' ';
+    content: " ";
     border-top: 1px solid #e5e7eb;
     width: 100%;
     top: 50%;
