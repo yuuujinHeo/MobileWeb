@@ -1485,6 +1485,10 @@ const LidarCanvas = ({
       plane.name = "plane";
       route.add(plane);
 
+      const axesHelper = new THREE.AxesHelper(1);
+      axesHelper.scale.set(30, 0, 0);
+      route.add(axesHelper);
+
       sceneRef.current?.add(route);
 
       postProcessAddRoute(route, nodePose);
