@@ -499,6 +499,7 @@ const LidarCanvas = ({
 
     // control
     const control = new MapControls(camera, renderer.domElement);
+    control.addEventListener("change", updateLabelScale);
     controlRef.current = control;
 
     control.screenSpacePanning = true;
@@ -984,6 +985,9 @@ const LidarCanvas = ({
           redoCommand();
         }
         break;
+      // NOTE: This key input has been specified for testing purposes.
+      // case "KeyP":
+      // break;
       default:
         break;
     }
@@ -1593,12 +1597,30 @@ const LidarCanvas = ({
     nodeDiv.style.backgroundColor = "transparent";
 
     nodeDiv.style.position = "absolute";
+    nodeDiv.style.fontSize = "30px";
     nodeDiv.style.zIndex = "-999";
 
     const nodeLabel = new CSS2DObject(nodeDiv);
     nodeLabel.name = "label";
-    nodeLabel.center.set(-0.2, 1.5);
+    nodeLabel.center.set(-0.2, 0.5);
     node.add(nodeLabel);
+  };
+
+  const updateLabelScale = () => {
+    if (!sceneRef.current || !cameraRef.current) return;
+    const labels = sceneRef.current.getObjectsByProperty(
+      "name",
+      "label"
+    ) as CSS2DObject[];
+    for (let i = 0; i < labels.length; i++) {
+      const nodeLabel = labels[i];
+      const distance = cameraRef.current.position.distanceTo(
+        nodeLabel.position
+      );
+
+      nodeLabel.element.style.fontSize = `${(100 / distance) * 150}px`;
+      nodeLabel.center.set(-100 / distance, 250 / distance);
+    }
   };
 
   const removeLabelFromNode = (node: THREE.Object3D) => {
