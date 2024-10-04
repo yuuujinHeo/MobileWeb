@@ -1592,6 +1592,9 @@ const LidarCanvas = ({
     nodeDiv.style.color = "white";
     nodeDiv.style.backgroundColor = "transparent";
 
+    nodeDiv.style.position = "absolute";
+    nodeDiv.style.zIndex = "-999";
+
     const nodeLabel = new CSS2DObject(nodeDiv);
     nodeLabel.name = "label";
     nodeLabel.center.set(-0.2, 1.5);

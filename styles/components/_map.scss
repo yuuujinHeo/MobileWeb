@@ -7,6 +7,8 @@
 
 .p-menubar,
 .p-menu {
+  position: relative;
+  z-index: 999;
   border-radius: 0px;
   border-bottom-right-radius: 2px;
 }
@@ -23,6 +25,7 @@
 
 #transform-toolbar {
   position: absolute;
+  z-index: 999;
   top: 72px;
   left: 24px;
   display: flex;
@@ -52,6 +55,7 @@
 }
 #property-container {
   position: relative;
+  z-index: 999;
 
   h5 {
     padding-left: 0.5rem;
