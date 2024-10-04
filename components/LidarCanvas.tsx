@@ -1898,16 +1898,19 @@ const LidarCanvas = ({
 
       const dir = new THREE.Vector3().subVectors(endPos, startPos).normalize();
       const length = startPos.distanceTo(endPos);
+
+      let arrowOffset: number = 14.17;
+      if (to.userData.type === NODE_TYPE.ROUTE) arrowOffset = 5.5;
       // default color is blue
       // 14.17 is one-half the length of the model diagonal.
       const arrowHelper = new THREE.ArrowHelper(
         dir,
         startPos,
-        length - 14.17,
+        length - arrowOffset,
         color
       );
       arrowHelper.name = `arrow-${from.name}-${to.name}`;
-      arrowHelper.setLength(length - 14.17, 10, 4.4);
+      arrowHelper.setLength(length - arrowOffset, 10, 4.4);
       sceneRef.current?.add(arrowHelper);
     }
   };
