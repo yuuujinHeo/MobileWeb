@@ -90,6 +90,8 @@ const LidarCanvas = ({
   // TODO: Remove robotModel & lidarPoints ref
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
+  const pointCloudRef = useRef<THREE.Points>();
+  const helperRef = useRef<THREE.Group>();
   const mappingPointsArr = useRef<number[]>([]);
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
@@ -607,7 +609,7 @@ const LidarCanvas = ({
       transformControlRef.current.detach();
       controlRef.current.enableRotate = true;
       // Delete Helper
-      const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+      const robotHelper = helperRef.current;
       if (robotHelper) {
         sceneRef.current?.remove(robotHelper);
       }
@@ -765,7 +767,7 @@ const LidarCanvas = ({
 
     if (intersects.length > 0) {
       // remove prev craeteHelper
-      const prevHelper = sceneRef.current.getObjectByName("robotHelper");
+      const prevHelper = helperRef.current;
       if (prevHelper) {
         sceneRef.current.remove(prevHelper);
       }
@@ -777,6 +779,7 @@ const LidarCanvas = ({
         group.scale.set(0.0315, 0.0315, 0.0315);
         group.position.set(intersect.point.x, intersect.point.y, 0);
         group.name = "robotHelper";
+        helperRef.current = group;
 
         group.traverse((obj) => {
           if (obj instanceof THREE.Mesh) {
@@ -834,7 +837,7 @@ const LidarCanvas = ({
       if (selectedNodeRef.current) {
         targetObj = selectedNodeRef.current;
       } else {
-        const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+        const robotHelper = helperRef.current;
         if (robotHelper) targetObj = robotHelper;
       }
       if (
@@ -880,9 +883,7 @@ const LidarCanvas = ({
     const index = point.index;
 
     if (index !== undefined) {
-      const points = sceneRef.current?.getObjectByName(
-        "PointCloud"
-      ) as THREE.Points;
+      const points = pointCloudRef.current as THREE.Points;
 
       const positions = points.geometry.attributes.position.array;
       const indexToRemove = index * 3;
@@ -917,15 +918,12 @@ const LidarCanvas = ({
             raycastTargetsRef.current
           );
           if (isMouseDragged) break;
-          if (intersect !== null) {
-            selectObject(intersect.object);
-          } else {
-            selectObject(null);
-          }
+          intersect !== null
+            ? selectObject(intersect.object)
+            : selectObject(null);
         } else {
           // Eraser cursor
-          const pointCloud: THREE.Object3D | undefined =
-            sceneRef.current?.getObjectByName("PointCloud");
+          const pointCloud: THREE.Points | undefined = pointCloudRef.current;
           if (!pointCloud) return null;
           const intersect = getIntersectByRaycasting(
             event,
@@ -935,13 +933,15 @@ const LidarCanvas = ({
           erasePoint(intersect);
         }
         break;
+      case 2:
+        console.log("mouse right button clicked");
+        break;
       default:
         break;
     }
 
     if (!transformControlRef.current || event.button !== 2) return;
-    const robotHelper: THREE.Object3D | undefined =
-      sceneRef.current?.getObjectByName("robotHelper");
+    const robotHelper = helperRef.current;
     if (robotHelper) {
       dispatch(
         updateRobotHelper({
@@ -1295,7 +1295,7 @@ const LidarCanvas = ({
       });
 
       const points = new THREE.Points(geo, material);
-      points.name = "PointCloud";
+      pointCloudRef.current = points;
       points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 
       mappingPointsArr.current.push(points.id);
