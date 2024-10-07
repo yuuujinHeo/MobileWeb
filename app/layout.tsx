@@ -6,7 +6,10 @@ import 'primeflex/primeflex.css';
 import 'primeicons/primeicons.css';
 import '../styles/layout/layout.scss';
 import '../styles/demo/Demos.scss';
+import { Provider } from "react-redux";
 import {GlobalUserProvider} from '../interface/user'
+import { store, persistor } from "@/store/store";
+import { PersistGate } from "redux-persist/integration/react";
 
 interface RootLayoutProps {
     children: React.ReactNode;
@@ -19,11 +22,15 @@ export default function RootLayout({ children }: RootLayoutProps) {
                 <link id="theme-css" href={`/themes/lara-light-indigo/theme.css`} rel="stylesheet"></link>
             </head>
             <body>
-                <PrimeReactProvider>
-                    <GlobalUserProvider>
-                        <LayoutProvider>{children}</LayoutProvider>
-                    </GlobalUserProvider>
-                </PrimeReactProvider>
+                <Provider store={store}>
+                <PersistGate loading={null} persistor={persistor}>
+                    <PrimeReactProvider>
+                        <GlobalUserProvider>
+                            <LayoutProvider>{children}</LayoutProvider>
+                        </GlobalUserProvider>
+                    </PrimeReactProvider>
+                </PersistGate>
+                </Provider>
             </body>
         </html>
     );

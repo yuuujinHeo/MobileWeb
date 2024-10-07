@@ -1,0 +1,5 @@
+{
+  "/(full-page)/login/page": "app/(full-page)/login/page.js",
+  "/(main)/users/page": "app/(main)/users/page.js",
+  "/(main)/page": "app/(main)/page.js"
+}

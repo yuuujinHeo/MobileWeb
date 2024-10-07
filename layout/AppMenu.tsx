@@ -16,16 +16,17 @@ const AppMenu = () => {
             items: [{ label: 'Dashboard', icon: 'pi pi-fw pi-home', to: '/' }]
         },
         {
-            label: 'Viewer',
+            label: 'View',
             items: [
-                { label: 'State', icon: 'pi pi-fw pi-eye', to: '/blocks', badge: 'NEW' }
+                { label: 'List', icon: 'pi pi-fw pi-eye', to: '/list', badge: 'NEW' },
+                { label: 'User', icon: 'pi pi-fw pi-user', to: '/users', badge: 'NEW' }
             ]
         },
         {
             label: 'Setting',
             items: [
-                { label: 'Config', icon: 'pi pi-fw pi-sliders-h', to: '/setting' },
-                { label: 'Update', icon: 'pi pi-fw pi-file-import', to: '/update' }
+                { label: 'Program', icon: 'pi pi-fw pi-file-import', to: '/program' },
+                { label: 'Maps', icon: 'pi pi-fw pi-sliders-h', to: '/map' }
             ]
         }
     ];

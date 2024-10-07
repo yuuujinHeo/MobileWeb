@@ -6,12 +6,12 @@ interface AppLayoutProps {
 }
 
 export const metadata: Metadata = {
-    title: 'MobileWeb',
+    title: 'MonitorWeb',
     description: 'The ultimate collection of design-agnostic, flexible and accessible React UI Components.',
     robots: { index: false, follow: false },
     openGraph: {
         type: 'website',
-        title: 'MobileWeb',
+        title: 'MonitorWeb',
         url: 'https://sakai.primereact.org/',
         // description: 'The ultimate collection of design-agnostic, flexible and accessible React UI Components.',
         // images: ['https://www.primefaces.org/static/social/sakai-react.png'],
