@@ -19,6 +19,7 @@ import { InputNumber } from "primereact/inputnumber";
 import { Dropdown } from "primereact/dropdown";
 import { Divider } from "primereact/divider";
 import { Slider } from "primereact/slider";
+import { ToggleButton } from "primereact/togglebutton";
 
 import { CANVAS_ACTION, NODE_TYPE, SCALE_FACTOR } from "@/constants";
 
@@ -70,6 +71,9 @@ export default function PropertyPanel() {
 
   const [targetPreset, setTargetPreset] = useState<number>(3);
   const [goalPreset, setGoalPreset] = useState<number>(3);
+  const [eraserSize, setEraserSize] = useState<number>(1);
+
+  const [isEraseChecked, setIsEraseChecked] = useState<boolean>(false);
 
   const toast = useRef<Toast>(null);
   const filenameRef = useRef<string>("");
@@ -296,6 +300,50 @@ export default function PropertyPanel() {
       console.error(e);
     }
   }
+
+  const updateCursor = (size: number) => {
+    const cursorSize = size * 10;
+    const svgCursor = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${cursorSize}" height="${cursorSize}" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="50" fill="red"/>
+    </svg>
+  `;
+
+    const encodedSvg = `data:image/svg+xml;base64,${btoa(svgCursor)}`;
+    document.body.style.cursor = `url(${encodedSvg}) ${cursorSize / 2} ${
+      cursorSize / 2
+    }, auto`;
+  };
+
+  const handleToggleErasingMode = (isErasingMode: boolean) => {
+    if (isErasingMode) {
+      updateCursor(eraserSize);
+    } else {
+      // return to default cursor
+      document.body.style.cursor = "auto";
+    }
+
+    setIsEraseChecked(isErasingMode);
+    dispatch(
+      createAction({
+        command: CANVAS_ACTION.TOGGLE_ERASER_MODE,
+        value: isErasingMode.toString(),
+      })
+    );
+  };
+
+  const handleEraserSlideChange = (value: number) => {
+    setEraserSize(value);
+    if (isEraseChecked) {
+      updateCursor(value);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: value.toString(),
+        })
+      );
+    }
+  };
 
   const showToast = (
     severity: Severity,
@@ -707,18 +755,26 @@ export default function PropertyPanel() {
                 />
               </div>
             </AccordionTab>
-            <AccordionTab header="Tools">
-              <Button
-                label="Eraser"
-                size="small"
-                severity="secondary"
-                text
-                raised
-                onClick={() => {
-                  // TODO
-                  document.body.classList.toggle("eraser-cursor");
-                }}
-              />
+            <AccordionTab header="Eraser">
+              <div id="eraser_container">
+                <ToggleButton
+                  checked={isEraseChecked}
+                  onLabel="ON"
+                  offLabel="OFF"
+                  onChange={(e) => handleToggleErasingMode(e.value)}
+                />
+                <div id="eraser-slide_container">
+                  <p>Size</p>
+                  <Slider
+                    value={eraserSize}
+                    min={1}
+                    max={5}
+                    step={1}
+                    onChange={(e) => handleEraserSlideChange(e.value as number)}
+                    className="eraser-slide"
+                  ></Slider>
+                </div>
+              </div>
             </AccordionTab>
           </Accordion>
         </TabPanel>
