@@ -97,7 +97,7 @@ const LidarCanvas = ({
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
 
-  const eraserRaidusRef = useRef<number>(1);
+  const eraserRadiusRef = useRef<number>(1);
   // path ref
   const globalPathRef = useRef<THREE.Mesh | null>(null);
   const localPathRef = useRef<THREE.Mesh | null>(null);
@@ -312,7 +312,7 @@ const LidarCanvas = ({
             : (isErasingModeRef.current = false);
           break;
         case CANVAS_ACTION.CHANGE_ERASER_RADIUS:
-          eraserRaidusRef.current = Number(action.value);
+          eraserRadiusRef.current = Number(action.value);
           break;
         default:
           break;
@@ -889,37 +889,25 @@ const LidarCanvas = ({
     isTouchDragging = true;
   };
 
+  const getScreenDiagonal = (divider: number = 1) => {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
+
+    const screenDiagonal = Math.sqrt(screenWidth ** 2 + screenHeight ** 2);
+
+    return screenDiagonal / divider;
+  };
+
   const erasePoints = (intersection: THREE.Intersection | null) => {
     if (!intersection) return;
-    const eraserRadius = eraserRaidusRef.current;
+    const eraserRadius = eraserRadiusRef.current;
     const eraseCenter = intersection.point;
-
-    // NOTE: Old logic for erasing a point.
-    //
-    // const index = intersection.index;
-    //
-    // if (index !== undefined) {
-    //   const points = pointCloudRef.current as THREE.Points;
-    //
-    //   const positions = points.geometry.attributes.position.array;
-    //   const indexToRemove = index * 3;
-    //
-    //   const newPositions = new Float32Array(positions.length - 3);
-    //   newPositions.set(positions.slice(0, indexToRemove), 0);
-    //   newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
-    //
-    //   points.geometry.setAttribute(
-    //     "position",
-    //     new THREE.Float32BufferAttribute(newPositions, 3)
-    //   );
-    //   points.geometry.attributes.position.needsUpdate = true;
-    //
-    //   // cloud data for http request
-    //   if (cloudArrayRef.current !== null) {
-    //     cloudArrayRef.current.splice(index, 1);
-    //   }
-    // }
     const points = pointCloudRef.current as THREE.Points;
+
+    const distanceToCamera = intersection.distance;
+    const calibrationFactor = getScreenDiagonal(10);
+    const adjustedRadius =
+      (eraserRadius * distanceToCamera) / calibrationFactor;
 
     const positions = points.geometry.attributes.position.array;
     const numPoints = positions.length / 3;
@@ -936,7 +924,7 @@ const LidarCanvas = ({
           (z - eraseCenter.z) ** 2
       );
 
-      if (distance > eraserRadius) {
+      if (distance > adjustedRadius) {
         newPositions.push(x / SCALE_FACTOR, y / SCALE_FACTOR, z / SCALE_FACTOR);
       }
     }

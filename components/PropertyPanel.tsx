@@ -302,7 +302,7 @@ export default function PropertyPanel() {
   }
 
   const updateCursor = (size: number) => {
-    const cursorSize = size * 10;
+    const cursorSize = size * 15;
     const svgCursor = `
     <svg xmlns="http://www.w3.org/2000/svg" width="${cursorSize}" height="${cursorSize}" viewBox="0 0 100 100">
       <circle cx="50" cy="50" r="50" fill="red"/>
@@ -342,6 +342,32 @@ export default function PropertyPanel() {
           value: value.toString(),
         })
       );
+    }
+  };
+
+  const handleIncreaseEraser = () => {
+    if (eraserSize < 5 && isEraseChecked) {
+      updateCursor(eraserSize + 1);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: (eraserSize + 1).toString(),
+        })
+      );
+      setEraserSize(eraserSize + 1);
+    }
+  };
+
+  const handleDecraseEraser = () => {
+    if (eraserSize > 1 && isEraseChecked) {
+      updateCursor(eraserSize - 1);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: (eraserSize - 1).toString(),
+        })
+      );
+      setEraserSize(eraserSize - 1);
     }
   };
 
@@ -764,7 +790,7 @@ export default function PropertyPanel() {
                   onChange={(e) => handleToggleErasingMode(e.value)}
                 />
                 <div id="eraser-slide_container">
-                  <p>Size</p>
+                  <h5>Size</h5>
                   <Slider
                     value={eraserSize}
                     min={1}
@@ -773,6 +799,8 @@ export default function PropertyPanel() {
                     onChange={(e) => handleEraserSlideChange(e.value as number)}
                     className="eraser-slide"
                   ></Slider>
+                  <Button icon="pi pi-plus" onClick={handleIncreaseEraser} />
+                  <Button icon="pi pi-minus" onClick={handleDecraseEraser} />
                 </div>
               </div>
             </AccordionTab>

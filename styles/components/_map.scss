@@ -54,6 +54,7 @@
   }
 }
 
+// NOTE: PROPERTY
 #property-container {
   position: relative;
   z-index: 999;
@@ -110,12 +111,14 @@
   // Eraser
   #eraser_container {
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     #eraser-slide_container {
-      padding-left: 1rem;
-      width: 100%;
-      p {
-        height: 13px;
+      .eraser-slide {
+        margin-bottom: 1rem;
+        margin-left: 1rem;
+      }
+      .p-button {
+        margin-right: 0.5rem;
       }
     }
   }
