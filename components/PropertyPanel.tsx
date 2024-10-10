@@ -1,28 +1,29 @@
-'use clinet';
+"use clinet";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
-import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store/store';
-import { createAction } from '@/store/canvasSlice';
+import { useDispatch, useSelector } from "react-redux";
+import { RootState } from "@/store/store";
+import { createAction } from "@/store/canvasSlice";
 
-import { TabView } from 'primereact/tabview';
-import { TabPanel } from 'primereact/tabview';
-import { Panel } from 'primereact/panel';
-import { Toast } from 'primereact/toast';
-import { Accordion } from 'primereact/accordion';
-import { AccordionTab } from 'primereact/accordion';
-import { Button } from 'primereact/button';
-import { ConfirmDialog, confirmDialog } from 'primereact/confirmdialog';
-import { InputText } from 'primereact/inputtext';
-import { InputNumber } from 'primereact/inputnumber';
-import { Dropdown } from 'primereact/dropdown';
-import { Divider } from 'primereact/divider';
-import { Slider } from 'primereact/slider';
+import { TabView } from "primereact/tabview";
+import { TabPanel } from "primereact/tabview";
+import { Panel } from "primereact/panel";
+import { Toast } from "primereact/toast";
+import { Accordion } from "primereact/accordion";
+import { AccordionTab } from "primereact/accordion";
+import { Button } from "primereact/button";
+import { ConfirmDialog, confirmDialog } from "primereact/confirmdialog";
+import { InputText } from "primereact/inputtext";
+import { InputNumber } from "primereact/inputnumber";
+import { Dropdown } from "primereact/dropdown";
+import { Divider } from "primereact/divider";
+import { Slider } from "primereact/slider";
+import { ToggleButton } from "primereact/togglebutton";
 
-import { CANVAS_ACTION, NODE_TYPE, SCALE_FACTOR } from '@/constants';
+import { CANVAS_ACTION, NODE_TYPE, SCALE_FACTOR } from "@/constants";
 
-import axios from 'axios';
+import axios from "axios";
 
 interface LocReqPayload {
   time: string;
@@ -42,7 +43,7 @@ interface DisplayInfo {
   info: string;
 }
 
-type Severity = 'success' | 'info' | 'warn' | 'error';
+type Severity = "success" | "info" | "warn" | "error";
 
 export default function PropertyPanel() {
   const dispatch = useDispatch();
@@ -56,30 +57,33 @@ export default function PropertyPanel() {
   );
   // state
   const [displayInfo, setDisplayInfo] = useState({
-    name: '',
-    x: '0',
-    y: '0',
-    z: '0',
-    rz: '0',
+    name: "",
+    x: "0",
+    y: "0",
+    z: "0",
+    rz: "0",
   });
 
   const [targetX, setTargetX] = useState<number>(0);
   const [targetY, setTargetY] = useState<number>(0);
   const [targetRZ, setTargetRZ] = useState<number>(0);
-  const [goalID, setGoalID] = useState('');
+  const [goalID, setGoalID] = useState("");
 
   const [targetPreset, setTargetPreset] = useState<number>(3);
   const [goalPreset, setGoalPreset] = useState<number>(3);
+  const [eraserSize, setEraserSize] = useState<number>(1);
+
+  const [isEraseChecked, setIsEraseChecked] = useState<boolean>(false);
 
   const toast = useRef<Toast>(null);
-  const filenameRef = useRef<string>('');
+  const filenameRef = useRef<string>("");
 
   const url = process.env.NEXT_PUBLIC_WEB_API_URL;
 
-  const [selectedType, setSelectedType] = useState<string>('');
+  const [selectedType, setSelectedType] = useState<string>("");
   const nodeTypes = [
-    { name: NODE_TYPE.GOAL, code: 'G' },
-    { name: NODE_TYPE.ROUTE, code: 'R' },
+    { name: NODE_TYPE.GOAL, code: "G" },
+    { name: NODE_TYPE.ROUTE, code: "R" },
   ];
 
   useEffect(() => {
@@ -90,19 +94,19 @@ export default function PropertyPanel() {
         x: x,
         y: y,
         z: z,
-        rz: selectedObjectInfo.pose.split(',')[5],
+        rz: selectedObjectInfo.pose.split(",")[5],
       });
     }
   }, [selectedObjectInfo]);
 
   const getParsedPose = (pose: string) => {
-    const x = (Number(pose.split(',')[0]) / SCALE_FACTOR)
+    const x = (Number(pose.split(",")[0]) / SCALE_FACTOR)
       .toString()
       .slice(0, 6);
-    const y = (Number(pose.split(',')[1]) / SCALE_FACTOR)
+    const y = (Number(pose.split(",")[1]) / SCALE_FACTOR)
       .toString()
       .slice(0, 6);
-    const z = (Number(pose.split(',')[2]) / SCALE_FACTOR)
+    const z = (Number(pose.split(",")[2]) / SCALE_FACTOR)
       .toString()
       .slice(0, 6);
     const parsedPose = {
@@ -129,7 +133,7 @@ export default function PropertyPanel() {
         rz: r2d,
       };
 
-      await axios.post(url + '/localization', payload);
+      await axios.post(url + "/localization", payload);
     } catch (e) {
       console.error(e);
     }
@@ -138,8 +142,8 @@ export default function PropertyPanel() {
   const getCurrentTime = () => {
     const currentTime = new Date()
       .toISOString()
-      .replace('T', ' ')
-      .replace('Z', '');
+      .replace("T", " ")
+      .replace("Z", "");
 
     return currentTime;
   };
@@ -158,14 +162,14 @@ export default function PropertyPanel() {
 
     let isInputValidate: boolean = false;
     isInputValidate =
-      target === 'name'
+      target === "name"
         ? getIsStrInputValidate(input)
         : getIsNumInputValidate(input);
     if (isInputValidate) {
       dispatch(
         createAction({
           command: CANVAS_ACTION.UPDATE_PROPERTY,
-          category: target === 'name' ? target : `pose-${target}`,
+          category: target === "name" ? target : `pose-${target}`,
           value: input,
         })
       );
@@ -173,9 +177,9 @@ export default function PropertyPanel() {
   };
   const getIsStrInputValidate = (input: string) => {
     if (
-      input === '' ||
-      input.endsWith('.') ||
-      input.endsWith(' ' || input.includes(' '))
+      input === "" ||
+      input.endsWith(".") ||
+      input.endsWith(" " || input.includes(" "))
     )
       return false;
     return true;
@@ -184,7 +188,7 @@ export default function PropertyPanel() {
   const getIsNumInputValidate = (input: string) => {
     // Do not dispatch when the input value is "" or ends with "."
     // This allows InputText to display a value such as "" or "1."
-    if (input === '' || input.endsWith('.')) return false;
+    if (input === "" || input.endsWith(".")) return false;
     return !isNaN(Number(input));
   };
 
@@ -195,37 +199,37 @@ export default function PropertyPanel() {
         command: command,
         time: currentTime,
       };
-      if (command === 'goal') {
-        requestBody['id'] = goalID;
-        requestBody['preset'] = goalPreset;
-        requestBody['method'] = 'pp';
-      } else if (command === 'target') {
-        requestBody['x'] = targetX;
-        requestBody['y'] = targetY;
-        requestBody['z'] = 0;
-        requestBody['rz'] = targetRZ;
-        requestBody['preset'] = targetPreset;
-        requestBody['method'] = 'pp';
+      if (command === "goal") {
+        requestBody["id"] = goalID;
+        requestBody["preset"] = goalPreset;
+        requestBody["method"] = "pp";
+      } else if (command === "target") {
+        requestBody["x"] = targetX;
+        requestBody["y"] = targetY;
+        requestBody["z"] = 0;
+        requestBody["rz"] = targetRZ;
+        requestBody["preset"] = targetPreset;
+        requestBody["method"] = "pp";
       }
       const requestJson = JSON.stringify(requestBody);
 
-      const response = await axios.post(url + '/control/move', requestJson, {
+      const response = await axios.post(url + "/control/move", requestJson, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      if (response.data.result == 'accept') {
-        showToast('success', 'Move start');
-        const response = await axios.get(url + '/control/move');
+      if (response.data.result == "accept") {
+        showToast("success", "Move start");
+        const response = await axios.get(url + "/control/move");
 
-        if (response.data.result == 'success') {
-          showToast('success', 'Move done');
+        if (response.data.result == "success") {
+          showToast("success", "Move done");
         } else {
-          showToast('error', response.data.message);
+          showToast("error", response.data.message);
         }
       } else {
-        showToast('error', response.data.message);
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -241,17 +245,17 @@ export default function PropertyPanel() {
   async function movePause() {
     try {
       const currentTime = getCurrentTime();
-      const json = JSON.stringify({ command: 'pause', time: currentTime });
-      const response = await axios.post(url + '/control/move', json, {
+      const json = JSON.stringify({ command: "pause", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      if (response.data.result == 'accept') {
-        showToast('success', 'Move paused');
+      if (response.data.result == "accept") {
+        showToast("success", "Move paused");
       } else {
-        showToast('error', response.data.message);
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -261,17 +265,17 @@ export default function PropertyPanel() {
   async function moveResume() {
     try {
       const currentTime = getCurrentTime();
-      const json = JSON.stringify({ command: 'resume', time: currentTime });
-      const response = await axios.post(url + '/control/move', json, {
+      const json = JSON.stringify({ command: "resume", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
 
-      if (response.data.result == 'accept') {
-        showToast('success', 'Move resumed');
+      if (response.data.result == "accept") {
+        showToast("success", "Move resumed");
       } else {
-        showToast('error', response.data.message);
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
@@ -281,21 +285,91 @@ export default function PropertyPanel() {
   async function moveStop() {
     try {
       const currentTime = getCurrentTime();
-      const json = JSON.stringify({ command: 'stop', time: currentTime });
-      const response = await axios.post(url + '/control/move', json, {
+      const json = JSON.stringify({ command: "stop", time: currentTime });
+      const response = await axios.post(url + "/control/move", json, {
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
       });
-      if (response.data.result == 'accept') {
-        showToast('success', 'Move stopped');
+      if (response.data.result == "accept") {
+        showToast("success", "Move stopped");
       } else {
-        showToast('error', response.data.message);
+        showToast("error", response.data.message);
       }
     } catch (e) {
       console.error(e);
     }
   }
+
+  const updateCursor = (size: number) => {
+    const cursorSize = size * 15;
+    const svgCursor = `
+    <svg xmlns="http://www.w3.org/2000/svg" width="${cursorSize}" height="${cursorSize}" viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="50" fill="red"/>
+    </svg>
+  `;
+
+    const encodedSvg = `data:image/svg+xml;base64,${btoa(svgCursor)}`;
+    document.body.style.cursor = `url(${encodedSvg}) ${cursorSize / 2} ${
+      cursorSize / 2
+    }, auto`;
+  };
+
+  const handleToggleErasingMode = (isErasingMode: boolean) => {
+    if (isErasingMode) {
+      updateCursor(eraserSize);
+    } else {
+      // return to default cursor
+      document.body.style.cursor = "auto";
+    }
+
+    setIsEraseChecked(isErasingMode);
+    dispatch(
+      createAction({
+        command: CANVAS_ACTION.TOGGLE_ERASER_MODE,
+        value: isErasingMode.toString(),
+      })
+    );
+  };
+
+  const handleEraserSlideChange = (value: number) => {
+    setEraserSize(value);
+    if (isEraseChecked) {
+      updateCursor(value);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: value.toString(),
+        })
+      );
+    }
+  };
+
+  const handleIncreaseEraser = () => {
+    if (eraserSize < 5 && isEraseChecked) {
+      updateCursor(eraserSize + 1);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: (eraserSize + 1).toString(),
+        })
+      );
+      setEraserSize(eraserSize + 1);
+    }
+  };
+
+  const handleDecraseEraser = () => {
+    if (eraserSize > 1 && isEraseChecked) {
+      updateCursor(eraserSize - 1);
+      dispatch(
+        createAction({
+          command: CANVAS_ACTION.CHANGE_ERASER_RADIUS,
+          value: (eraserSize - 1).toString(),
+        })
+      );
+      setEraserSize(eraserSize - 1);
+    }
+  };
 
   const showToast = (
     severity: Severity,
@@ -341,7 +415,7 @@ export default function PropertyPanel() {
                       value={displayInfo.name}
                       className="p-inputtext-sm"
                       onChange={(e) => {
-                        handleInputChange(e.target.value, 'name');
+                        handleInputChange(e.target.value, "name");
                       }}
                     />
                   </div>
@@ -354,7 +428,7 @@ export default function PropertyPanel() {
                         dispatch(
                           createAction({
                             command: CANVAS_ACTION.UPDATE_PROPERTY,
-                            category: 'type',
+                            category: "type",
                             value: e.value.name,
                           })
                         );
@@ -365,23 +439,23 @@ export default function PropertyPanel() {
                     />
                   </div>
                   <div className="accordion-item">
-                    Links{' '}
+                    Links{" "}
                     {selectedObjectInfo.links.map((link, index) => (
                       <div
                         key={index}
                         style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          background: '#f9fafb',
-                          border: '1px solid #e5e7eb',
-                          borderRadius: '6px',
-                          padding: '0.5rem',
+                          display: "flex",
+                          alignItems: "center",
+                          background: "#f9fafb",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "6px",
+                          padding: "0.5rem",
                         }}
                       >
-                        <p style={{ textAlign: 'center', margin: 0 }}>{link}</p>
+                        <p style={{ textAlign: "center", margin: 0 }}>{link}</p>
                         <i
                           className="pi pi-times"
-                          style={{ cursor: 'pointer', marginLeft: '5px' }}
+                          style={{ cursor: "pointer", marginLeft: "5px" }}
                           onClick={() => {
                             dispatch(
                               createAction({
@@ -396,7 +470,7 @@ export default function PropertyPanel() {
                     ))}
                   </div>
                   <div className="accordion-item">
-                    Info{' '}
+                    Info{" "}
                     <InputText
                       value={selectedObjectInfo.info}
                       className="p-inputtext-sm"
@@ -404,7 +478,7 @@ export default function PropertyPanel() {
                         dispatch(
                           createAction({
                             command: CANVAS_ACTION.UPDATE_PROPERTY,
-                            category: 'info',
+                            category: "info",
                             value: e.target.value,
                           })
                         );
@@ -414,51 +488,51 @@ export default function PropertyPanel() {
                 </AccordionTab>
                 <Divider />
                 <AccordionTab header="Transformation">
-                  <p style={{ fontWeight: 'bold' }}>Position</p>
+                  <p style={{ fontWeight: "bold" }}>Position</p>
                   <div className="accordion-item">
                     X
                     <InputText
                       value={displayInfo.x}
                       className="p-inputtext-sm"
-                      keyfilter={'num'}
+                      keyfilter={"num"}
                       onChange={(e) => {
-                        handleInputChange(e.target.value, 'x');
+                        handleInputChange(e.target.value, "x");
                       }}
                     />
                   </div>
 
                   <div className="accordion-item">
-                    Y{' '}
+                    Y{" "}
                     <InputText
                       value={displayInfo.y}
                       className="p-inputtext-sm"
-                      keyfilter={'num'}
+                      keyfilter={"num"}
                       onChange={(e) => {
-                        handleInputChange(e.target.value, 'y');
+                        handleInputChange(e.target.value, "y");
                       }}
                     />
                   </div>
                   <div className="accordion-item">
-                    Z{' '}
+                    Z{" "}
                     <InputText
                       value={displayInfo.z}
                       className="p-inputtext-sm"
-                      keyfilter={'num'}
+                      keyfilter={"num"}
                       disabled
                       onChange={(e) => {
-                        handleInputChange(e.target.value, 'z');
+                        handleInputChange(e.target.value, "z");
                       }}
                     />
                   </div>
-                  <p style={{ fontWeight: 'bold' }}>Rotation</p>
+                  <p style={{ fontWeight: "bold" }}>Rotation</p>
                   <div className="accordion-item">
-                    RZ{' '}
+                    RZ{" "}
                     <InputText
                       value={displayInfo.rz}
                       className="p-inputtext-sm"
-                      keyfilter={'num'}
+                      keyfilter={"num"}
                       onChange={(e) => {
-                        handleInputChange(e.target.value, 'rz');
+                        handleInputChange(e.target.value, "rz");
                       }}
                     />
                   </div>
@@ -486,7 +560,7 @@ export default function PropertyPanel() {
                   text
                   raised
                   onClick={(e) => {
-                    sendLOCRequest('init');
+                    sendLOCRequest("init");
                     e.stopPropagation();
                   }}
                 />
@@ -508,7 +582,7 @@ export default function PropertyPanel() {
                   text
                   raised
                   onClick={(e) => {
-                    sendLOCRequest('start');
+                    sendLOCRequest("start");
                     e.stopPropagation();
                   }}
                 />
@@ -519,7 +593,7 @@ export default function PropertyPanel() {
                   text
                   raised
                   onClick={(e) => {
-                    sendLOCRequest('stop');
+                    sendLOCRequest("stop");
                     e.stopPropagation();
                   }}
                 />
@@ -586,7 +660,7 @@ export default function PropertyPanel() {
                 icon="pi pi-play"
                 className="w-full move-button__goal"
                 onClick={() => {
-                  requestMove('target');
+                  requestMove("target");
                 }}
               />
               <Divider />
@@ -618,7 +692,7 @@ export default function PropertyPanel() {
                 icon="pi pi-play"
                 className="w-full move-button__goal"
                 onClick={() => {
-                  requestMove('goal');
+                  requestMove("goal");
                 }}
               />
               <Divider />
@@ -707,18 +781,28 @@ export default function PropertyPanel() {
                 />
               </div>
             </AccordionTab>
-            <AccordionTab header="Tools">
-              <Button
-                label="Eraser"
-                size="small"
-                severity="secondary"
-                text
-                raised
-                onClick={() => {
-                  // TODO
-                  document.body.classList.toggle('eraser-cursor');
-                }}
-              />
+            <AccordionTab header="Eraser">
+              <div id="eraser_container">
+                <ToggleButton
+                  checked={isEraseChecked}
+                  onLabel="ON"
+                  offLabel="OFF"
+                  onChange={(e) => handleToggleErasingMode(e.value)}
+                />
+                <div id="eraser-slide_container">
+                  <h5>Size</h5>
+                  <Slider
+                    value={eraserSize}
+                    min={1}
+                    max={5}
+                    step={1}
+                    onChange={(e) => handleEraserSlideChange(e.value as number)}
+                    className="eraser-slide"
+                  ></Slider>
+                  <Button icon="pi pi-plus" onClick={handleIncreaseEraser} />
+                  <Button icon="pi pi-minus" onClick={handleDecraseEraser} />
+                </div>
+              </div>
             </AccordionTab>
           </Accordion>
         </TabPanel>

@@ -90,9 +90,14 @@ const LidarCanvas = ({
   // TODO: Remove robotModel & lidarPoints ref
   const robotModel = useRef<THREE.Object3D>();
   const lidarPoints = useRef<number>();
+  const pointCloudRef = useRef<THREE.Points>();
+  const globalPlaneRef = useRef<THREE.Mesh>();
+  const helperRef = useRef<THREE.Group>();
   const mappingPointsArr = useRef<number[]>([]);
   const currSelectionBoxRef = useRef<THREE.BoxHelper>();
   const prevSelectionBoxRef = useRef<THREE.BoxHelper>();
+
+  const eraserRadiusRef = useRef<number>(1);
   // path ref
   const globalPathRef = useRef<THREE.Mesh | null>(null);
   const localPathRef = useRef<THREE.Mesh | null>(null);
@@ -103,7 +108,7 @@ const LidarCanvas = ({
   const selectedNodeRef = useRef<THREE.Object3D | null>(null);
   const selectedNodesArrayRef = useRef<THREE.Object3D[]>([]);
 
-  const cloudRef = useRef<string[][] | null>(null);
+  const cloudArrayRef = useRef<string[][] | null>(null);
   const goals = useRef<number[]>([0]);
   const goalNum = useRef<number>(0);
   const routes = useRef<number[]>([0]);
@@ -129,6 +134,7 @@ const LidarCanvas = ({
   let lastToastMsg = "";
 
   const isMarkingModeRef = useRef<boolean>(false);
+  const isErasingModeRef = useRef<boolean>(false);
 
   // robot info
   const [robotState, setRobotState] = useState<RobotState>({
@@ -300,6 +306,14 @@ const LidarCanvas = ({
           toggleObject(CANVAS_OBJECT.ROBOT);
           toggleObject(CANVAS_OBJECT.ORIGIN);
           break;
+        case CANVAS_ACTION.TOGGLE_ERASER_MODE:
+          action.value === "true"
+            ? (isErasingModeRef.current = true)
+            : (isErasingModeRef.current = false);
+          break;
+        case CANVAS_ACTION.CHANGE_ERASER_RADIUS:
+          eraserRadiusRef.current = Number(action.value);
+          break;
         default:
           break;
       }
@@ -369,7 +383,7 @@ const LidarCanvas = ({
   }, [isMarkingMode]);
 
   useEffect(() => {
-    cloudRef.current = cloudData;
+    cloudArrayRef.current = cloudData;
   }, [cloudData]);
 
   const updateProperty = (
@@ -457,7 +471,7 @@ const LidarCanvas = ({
       visible: false,
     });
     const plane = new THREE.Mesh(planeGeometry, planeMaterial);
-    plane.name = "plane";
+    globalPlaneRef.current = plane;
     scene.add(plane);
 
     // camera
@@ -607,7 +621,7 @@ const LidarCanvas = ({
       transformControlRef.current.detach();
       controlRef.current.enableRotate = true;
       // Delete Helper
-      const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+      const robotHelper = helperRef.current;
       if (robotHelper) {
         sceneRef.current?.remove(robotHelper);
       }
@@ -759,13 +773,13 @@ const LidarCanvas = ({
     transformControlRef.current?.detach();
     if (!sceneRef.current || !raycaster) return;
 
-    const plane = sceneRef.current.getObjectByName("plane");
+    const plane = globalPlaneRef.current;
     if (!plane) return;
     const intersects = raycaster.intersectObject(plane, true);
 
     if (intersects.length > 0) {
       // remove prev craeteHelper
-      const prevHelper = sceneRef.current.getObjectByName("robotHelper");
+      const prevHelper = helperRef.current;
       if (prevHelper) {
         sceneRef.current.remove(prevHelper);
       }
@@ -777,6 +791,7 @@ const LidarCanvas = ({
         group.scale.set(0.0315, 0.0315, 0.0315);
         group.position.set(intersect.point.x, intersect.point.y, 0);
         group.name = "robotHelper";
+        helperRef.current = group;
 
         group.traverse((obj) => {
           if (obj instanceof THREE.Mesh) {
@@ -834,7 +849,7 @@ const LidarCanvas = ({
       if (selectedNodeRef.current) {
         targetObj = selectedNodeRef.current;
       } else {
-        const robotHelper = sceneRef.current?.getObjectByName("robotHelper");
+        const robotHelper = helperRef.current;
         if (robotHelper) targetObj = robotHelper;
       }
       if (
@@ -854,7 +869,7 @@ const LidarCanvas = ({
 
         raycaster.setFromCamera(mouse, cameraRef.current);
 
-        const plane = sceneRef.current.getObjectByName("plane");
+        const plane = globalPlaneRef.current;
         if (!plane) return;
 
         const intersects = raycaster.intersectObject(plane, true);
@@ -874,34 +889,51 @@ const LidarCanvas = ({
     isTouchDragging = true;
   };
 
-  const erasePoint = (point: THREE.Intersection | null) => {
-    if (!point) return;
+  const getScreenDiagonal = (divider: number = 1) => {
+    const screenWidth = window.innerWidth;
+    const screenHeight = window.innerHeight;
 
-    const index = point.index;
+    const screenDiagonal = Math.sqrt(screenWidth ** 2 + screenHeight ** 2);
 
-    if (index !== undefined) {
-      const points = sceneRef.current?.getObjectByName(
-        "PointCloud"
-      ) as THREE.Points;
+    return screenDiagonal / divider;
+  };
 
-      const positions = points.geometry.attributes.position.array;
-      const indexToRemove = index * 3;
+  const erasePoints = (intersection: THREE.Intersection | null) => {
+    if (!intersection) return;
+    const eraserRadius = eraserRadiusRef.current;
+    const eraseCenter = intersection.point;
+    const points = pointCloudRef.current as THREE.Points;
 
-      const newPositions = new Float32Array(positions.length - 3);
-      newPositions.set(positions.slice(0, indexToRemove), 0);
-      newPositions.set(positions.slice(indexToRemove + 3), indexToRemove);
+    const distanceToCamera = intersection.distance;
+    const calibrationFactor = getScreenDiagonal(10);
+    const adjustedRadius =
+      (eraserRadius * distanceToCamera) / calibrationFactor;
 
-      points.geometry.setAttribute(
-        "position",
-        new THREE.Float32BufferAttribute(newPositions, 3)
+    const positions = points.geometry.attributes.position.array;
+    const numPoints = positions.length / 3;
+    const newPositions: number[] = [];
+
+    for (let i = 0; i < numPoints; i++) {
+      const x = positions[i * 3] * SCALE_FACTOR;
+      const y = positions[i * 3 + 1] * SCALE_FACTOR;
+      const z = positions[i * 3 + 2] * SCALE_FACTOR;
+
+      const distance = Math.sqrt(
+        (x - eraseCenter.x) ** 2 +
+          (y - eraseCenter.y) ** 2 +
+          (z - eraseCenter.z) ** 2
       );
-      points.geometry.attributes.position.needsUpdate = true;
 
-      // cloud data for http request
-      if (cloudRef.current !== null) {
-        cloudRef.current.splice(index, 1);
+      if (distance > adjustedRadius) {
+        newPositions.push(x / SCALE_FACTOR, y / SCALE_FACTOR, z / SCALE_FACTOR);
       }
     }
+
+    points.geometry.setAttribute(
+      "position",
+      new THREE.Float32BufferAttribute(newPositions, 3)
+    );
+    points.geometry.attributes.position.needsUpdate = true;
   };
 
   const handleMouseUp = (event: MouseEvent) => {
@@ -910,29 +942,22 @@ const LidarCanvas = ({
 
     switch (event.button) {
       case 0:
-        // Normal cursor
-        if (!document.body.classList.contains("eraser-cursor")) {
+        if (isErasingModeRef.current) {
+          // Eraser cursor
+          const plane = globalPlaneRef.current;
+          if (!plane) return;
+          const intersect = getIntersectByRaycasting(event, [plane], false);
+          erasePoints(intersect);
+        } else {
+          // Normal cursor
           const intersect = getIntersectByRaycasting(
             event,
             raycastTargetsRef.current
           );
           if (isMouseDragged) break;
-          if (intersect !== null) {
-            selectObject(intersect.object);
-          } else {
-            selectObject(null);
-          }
-        } else {
-          // Eraser cursor
-          const pointCloud: THREE.Object3D | undefined =
-            sceneRef.current?.getObjectByName("PointCloud");
-          if (!pointCloud) return null;
-          const intersect = getIntersectByRaycasting(
-            event,
-            [pointCloud],
-            false
-          );
-          erasePoint(intersect);
+          intersect !== null
+            ? selectObject(intersect.object)
+            : selectObject(null);
         }
         break;
       default:
@@ -940,8 +965,7 @@ const LidarCanvas = ({
     }
 
     if (!transformControlRef.current || event.button !== 2) return;
-    const robotHelper: THREE.Object3D | undefined =
-      sceneRef.current?.getObjectByName("robotHelper");
+    const robotHelper = helperRef.current;
     if (robotHelper) {
       dispatch(
         updateRobotHelper({
@@ -1295,7 +1319,7 @@ const LidarCanvas = ({
       });
 
       const points = new THREE.Points(geo, material);
-      points.name = "PointCloud";
+      pointCloudRef.current = points;
       points.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
 
       mappingPointsArr.current.push(points.id);
@@ -1793,7 +1817,7 @@ const LidarCanvas = ({
     try {
       const response = await axios.post(
         url + `/map/cloud/${filename}`,
-        cloudRef.current
+        cloudArrayRef.current
       );
       return response;
     } catch (e) {
@@ -1803,7 +1827,7 @@ const LidarCanvas = ({
   };
 
   const saveMap = async (filename: string) => {
-    if (cloudRef.current === null) return;
+    if (cloudArrayRef.current === null) return;
     const annoRes = await saveAnnotation(filename);
     const cloudRes = await saveCloud(filename);
 
